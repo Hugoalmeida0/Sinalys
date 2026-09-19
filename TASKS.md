@@ -30,9 +30,28 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 
 ## ⚙️ Módulo 3: Motor Matemático de Risco e Urgência
 
-- [ ] **Task 3.1:** Implementar a rotina de normalização de métricas (cálculo de desvio padrão/Z-score e média móvel temporal).
-- [ ] **Task 3.2:** Desenvolver a lógica de cálculo do Score de Risco baseada na aplicação dos pesos configurados nas regras do modelo.
-- [ ] **Task 3.3:** Criar o cálculo da Matriz de Urgência cruzando a probabilidade de risco com o impacto financeiro (receita) para gerar a ordenação da fila.
+- [X] **Task 3.1:** Implementar a rotina de normalização de métricas (cálculo de desvio padrão/Z-score e média móvel temporal). _(`lib/motor/normalizacao.ts`: `calcularZScoreCarteira` — z-score da entidade vs. média/desvio da carteira — e `calcularMediaMovel` — z-score da janela recente vs. o próprio histórico da entidade. Omissão de dado é tratada como sinal de risco (não como zero), ver `lib/motor/calcular.ts`.)_
+- [X] **Task 3.2:** Desenvolver a lógica de cálculo do Score de Risco baseada na aplicação dos pesos configurados nas regras do modelo. _(`lib/motor/score.ts`: `pontuacao = Σ(valor_normalizado × peso) / Σ(peso)` — média ponderada, não soma pura, para respeitar o CHECK 0-100 de `predicoes.pontuacao`. `faixa_risco` reaproveita `faixaRiscoFromScore` de `lib/risk.ts`. `cobertura` = proporção de regras avaliáveis.)_
+- [X] **Task 3.3:** Criar o cálculo da Matriz de Urgência cruzando a probabilidade de risco com o impacto financeiro (receita) para gerar a ordenação da fila. _(`lib/motor/urgencia.ts`: `score_urgencia = pontuacao × valor_impacto`, calculado sob demanda — não persistido em coluna própria. `valor_impacto` vem da métrica reservada `receita_mensal`. `GET /api/motor/fila` devolve a fila ordenada.)_
+
+**Rotas e biblioteca implementadas:**
+
+- `lib/motor/*.ts`: funções puras de normalização, score e urgência, reutilizáveis pelo Vercel Cron do Módulo 5.4.
+- `POST /api/motor/calcular`: roda o motor completo (3.1→3.3) para todas as entidades de um projeto sob um modelo (`modelo_id` ou o modelo `ativo` do projeto) e data de referência (`referencia_em`, default agora), persistindo em `predicoes`/`motivos_predicao`.
+- `GET /api/motor/fila`: devolve a predição mais recente de cada entidade, ordenada por Score de Urgência (Task 3.3).
+
+**Decisões de arquitetura tomadas nesta etapa (validadas com o usuário via perguntas diretas):**
+
+- Direção do risco (`maior_pior`/`menor_pior`) fica em `regras_modelo.config_regra.direcao`, não em `definicoes_metricas` — permite a mesma métrica ter sentidos diferentes entre modelos.
+- Receita mensal (impacto financeiro) vem de uma métrica reservada com código fixo `receita_mensal` (`lib/motor/constantes.ts`), buscada como observação normal — mantém o padrão agnóstico do schema.
+- Métrica ausente para uma entidade é pontuada com `pontuacao_omissao` (default 70, configurável por regra) e conta como regra avaliada (`acionado=true`) — distinto de "não avaliável" (`acionado=null`), reservado para quando a carteira/histórico não tem dados suficientes para a comparação estatística (ex: <2 valores na carteira, <2 pontos de histórico anterior à janela).
+
+**Pendências registradas durante a execução do Módulo 3:**
+
+- ⚠️ **CRUD de `modelos`/`regras_modelo`:** não implementado nesta etapa (decisão explícita do usuário — fora do escopo declarado do Módulo 3). Um modelo de teste (`status='ativo'`, 3 regras cobrindo `zscore_carteira` e `media_movel`) foi inserido manualmente via MCP do Supabase para validar o motor ponta a ponta. Criar endpoints de gestão de modelo/pesos antes de expor isso a usuários finais.
+- ⚠️ **RLS ainda desabilitado** nas 13 tabelas (herdado do Módulo 2 — decisão já registrada lá). Sem mudanças nesta etapa.
+- ⚠️ **Autenticação/multi-tenant:** `POST /api/motor/calcular` e `GET /api/motor/fila` seguem o mesmo padrão do Módulo 2 (`DEFAULT_PROJETO_ID` como fallback). Revisitar junto com as demais rotas quando a autenticação for implementada.
+- Validado ponta a ponta via `POST /api/motor/calcular` e `GET /api/motor/fila` contra dados reais do projeto seed (2 entidades, cenário de queda abrupta de uso e contraste de receita/risco) — ver histórico da conversa para os números.
 
 ## 🧠 Módulo 4: Inteligência, RAG e Orquestração de IA
 
