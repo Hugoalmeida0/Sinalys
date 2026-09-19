@@ -1,5 +1,7 @@
 BEGIN;
 
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE TABLE organizacoes (
   id uuid PRIMARY KEY, 
   nome text NOT NULL, 
@@ -170,6 +172,29 @@ CREATE TABLE motivos_predicao (
   pontos numeric(12,6) NOT NULL DEFAULT 0,
   PRIMARY KEY (predicao_id, regra_modelo_id)
 );
+
+-- Histórico vetorizado de casos (RAG / busca lookalike). Cada linha consolida o
+-- contexto textual de um cliente em um dado momento + a ação tomada + o desfecho
+-- observado, embutido em `embedding` para recuperação por similaridade (Rota
+-- POST /app/api/feedback e POST /app/api/analyze-churn, ver docs/instructions.md).
+-- Dimensão 768 corresponde ao modelo de embeddings do Google (text-embedding-004).
+CREATE TABLE casos_historicos_embeddings (
+  id uuid PRIMARY KEY,
+  projeto_id uuid NOT NULL,
+  entidade_id uuid NOT NULL,
+  evento_desfecho_id uuid,
+  contexto_texto text NOT NULL,
+  acao_realizada text NOT NULL,
+  desfecho text NOT NULL CHECK (desfecho IN ('recuperado', 'cancelado')),
+  embedding vector(768) NOT NULL,
+  criado_em timestamptz NOT NULL DEFAULT now(),
+  FOREIGN KEY (projeto_id, entidade_id) REFERENCES entidades(projeto_id, id),
+  FOREIGN KEY (evento_desfecho_id) REFERENCES eventos_desfecho(id)
+);
+
+CREATE INDEX idx_casos_historicos_embedding ON casos_historicos_embeddings
+  USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX idx_casos_historicos_projeto ON casos_historicos_embeddings(projeto_id, criado_em DESC);
 
 CREATE INDEX idx_observacoes_asof ON observacoes(entidade_id, metrica_id, observado_em DESC, disponivel_em);
 CREATE INDEX idx_eventos_projeto_data ON eventos_desfecho(projeto_id, codigo_evento, ocorrido_em);
