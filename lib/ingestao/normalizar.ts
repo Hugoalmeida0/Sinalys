@@ -54,6 +54,15 @@ function parseData(valor: unknown): Date | null {
   return Number.isNaN(isoTentativa.getTime()) ? null : isoTentativa;
 }
 
+/** Quebra um array em lotes — evita payloads gigantes numa única chamada ao PostgREST. */
+function emLotes<T>(itens: T[], tamanho: number): T[][] {
+  const lotes: T[][] = [];
+  for (let i = 0; i < itens.length; i += tamanho) {
+    lotes.push(itens.slice(i, i + tamanho));
+  }
+  return lotes;
+}
+
 function coagirValorMetrica(
   valorBruto: unknown,
   tipoValor: DefinicaoMetricaRegistro["tipo_valor"]
@@ -160,51 +169,49 @@ export async function processarMapeamentos(params: {
       entidadesPorIdExterno.set(idExterno, atual);
     }
 
-    // Passo 2: upsert de entidades, mesclando atributos com o que já existe.
+    // Passo 2: upsert de entidades em lote — 1 SELECT + 1 UPSERT por lote,
+    // em vez de 2 round-trips por entidade (gargalo real em arquivos com
+    // muitos clientes: uma consulta sequencial por linha chegava a levar
+    // minutos e estourava o timeout de função serverless na Vercel).
     const idEntidadePorIdExterno = new Map<string, string>();
-    for (const [idExterno, dados] of entidadesPorIdExterno) {
-      const { data: existente, error: erroSelect } = await supabase
+    const idsExternos = Array.from(entidadesPorIdExterno.keys());
+
+    const existentesPorIdExterno = new Map<
+      string,
+      { id: string; atributos: Record<string, unknown>; iniciado_em: string | null }
+    >();
+    for (const lote of emLotes(idsExternos, 500)) {
+      const { data: existentes, error: erroSelect } = await supabase
         .from("entidades")
-        .select("id, atributos, iniciado_em")
+        .select("id, id_externo, atributos, iniciado_em")
         .eq("projeto_id", projetoId)
-        .eq("id_externo", idExterno)
-        .maybeSingle();
+        .in("id_externo", lote);
 
       if (erroSelect) {
-        relatorio.erros.push(`Entidade ${idExterno}: falha ao consultar (${erroSelect.message}).`);
+        relatorio.erros.push(`Aba "${abaOrigem}": falha ao consultar entidades existentes (${erroSelect.message}).`);
         continue;
       }
+      for (const e of existentes ?? []) {
+        existentesPorIdExterno.set(e.id_externo, e);
+      }
+    }
 
-      if (existente) {
-        const atributosMesclados = { ...(existente.atributos ?? {}), ...dados.atributos };
-        const { error: erroUpdate } = await supabase
-          .from("entidades")
-          .update({
-            atributos: atributosMesclados,
-            iniciado_em: existente.iniciado_em ?? dados.iniciadoEm?.toISOString() ?? null,
-          })
-          .eq("id", existente.id);
-        if (erroUpdate) {
-          relatorio.erros.push(`Entidade ${idExterno}: falha ao atualizar (${erroUpdate.message}).`);
-          continue;
-        }
-        idEntidadePorIdExterno.set(idExterno, existente.id);
-        relatorio.entidades_atualizadas += 1;
-      } else {
-        const novoId = randomUUID();
-        const { error: erroInsert } = await supabase.from("entidades").insert({
-          id: novoId,
-          projeto_id: projetoId,
-          id_externo: idExterno,
-          iniciado_em: dados.iniciadoEm?.toISOString() ?? null,
-          atributos: dados.atributos,
-        });
-        if (erroInsert) {
-          relatorio.erros.push(`Entidade ${idExterno}: falha ao criar (${erroInsert.message}).`);
-          continue;
-        }
-        idEntidadePorIdExterno.set(idExterno, novoId);
-        relatorio.entidades_criadas += 1;
+    const linhasEntidade = idsExternos.map((idExterno) => {
+      const dados = entidadesPorIdExterno.get(idExterno)!;
+      const existente = existentesPorIdExterno.get(idExterno);
+      const id = existente?.id ?? randomUUID();
+      const atributos = { ...(existente?.atributos ?? {}), ...dados.atributos };
+      const iniciado_em = existente?.iniciado_em ?? dados.iniciadoEm?.toISOString() ?? null;
+      if (existente) relatorio.entidades_atualizadas += 1;
+      else relatorio.entidades_criadas += 1;
+      idEntidadePorIdExterno.set(idExterno, id);
+      return { id, projeto_id: projetoId, id_externo: idExterno, iniciado_em, atributos };
+    });
+
+    for (const lote of emLotes(linhasEntidade, 500)) {
+      const { error: erroUpsert } = await supabase.from("entidades").upsert(lote, { onConflict: "id" });
+      if (erroUpsert) {
+        relatorio.erros.push(`Aba "${abaOrigem}": falha ao gravar entidades (${erroUpsert.message}).`);
       }
     }
 
@@ -297,25 +304,25 @@ export async function processarMapeamentos(params: {
       }
     }
 
-    if (observacoesParaGravar.length > 0) {
+    for (const lote of emLotes(observacoesParaGravar, 1000)) {
       const { error, count } = await supabase
         .from("observacoes")
-        .upsert(observacoesParaGravar, { onConflict: "entidade_id,metrica_id,observado_em", count: "exact" });
+        .upsert(lote, { onConflict: "entidade_id,metrica_id,observado_em", count: "exact" });
       if (error) {
         relatorio.erros.push(`Aba "${abaOrigem}": falha ao gravar observações (${error.message}).`);
       } else {
-        relatorio.observacoes_gravadas += count ?? observacoesParaGravar.length;
+        relatorio.observacoes_gravadas += count ?? lote.length;
       }
     }
 
-    if (eventosParaGravar.length > 0) {
+    for (const lote of emLotes(eventosParaGravar, 1000)) {
       const { error, count } = await supabase
         .from("eventos_desfecho")
-        .upsert(eventosParaGravar, { onConflict: "entidade_id,codigo_evento,ocorrido_em", count: "exact" });
+        .upsert(lote, { onConflict: "entidade_id,codigo_evento,ocorrido_em", count: "exact" });
       if (error) {
         relatorio.erros.push(`Aba "${abaOrigem}": falha ao gravar eventos (${error.message}).`);
       } else {
-        relatorio.eventos_gravados += count ?? eventosParaGravar.length;
+        relatorio.eventos_gravados += count ?? lote.length;
       }
     }
   }

@@ -56,6 +56,7 @@ export function MapeamentoStep({
   onVoltar: () => void;
 }) {
   const [abaAtiva, setAbaAtiva] = useState(uploadResultado.abas[0]?.aba_origem ?? "");
+  const [abasIgnoradas, setAbasIgnoradas] = useState<Set<string>>(new Set());
   const [estado, setEstado] = useState<EstadoPorAba>(() => {
     const inicial: EstadoPorAba = {};
     for (const aba of uploadResultado.abas) {
@@ -116,9 +117,19 @@ export function MapeamentoStep({
     }
   }
 
+  function alternarIgnorarAba(aba: string) {
+    setAbasIgnoradas((prev) => {
+      const proximo = new Set(prev);
+      if (proximo.has(aba)) proximo.delete(aba);
+      else proximo.add(aba);
+      return proximo;
+    });
+  }
+
   function montarPayload(): MapeamentoEnvio[] {
     const payload: MapeamentoEnvio[] = [];
     for (const aba of uploadResultado.abas) {
+      if (abasIgnoradas.has(aba.aba_origem)) continue;
       for (const coluna of aba.colunas) {
         const c = estado[aba.aba_origem][coluna];
         if (!c || c.tipoDestino === IGNORAR) continue;
@@ -169,35 +180,64 @@ export function MapeamentoStep({
     return <p className="text-sm text-slate-500">Nenhuma aba detectada no arquivo enviado.</p>;
   }
 
+  const abaAtualIgnorada = abasIgnoradas.has(abaAtual.aba_origem);
+
   return (
     <div className="flex flex-col gap-4">
       {uploadResultado.abas.length > 1 && (
         <div className="flex flex-wrap gap-1.5 border-b border-slate-100 pb-3">
-          {uploadResultado.abas.map((aba) => (
-            <button
-              key={aba.aba_origem || "planilha"}
-              type="button"
-              onClick={() => setAbaAtiva(aba.aba_origem)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                aba.aba_origem === abaAtiva
-                  ? "bg-brand-navy text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {aba.aba_origem || "Planilha"}
-            </button>
-          ))}
+          {uploadResultado.abas.map((aba) => {
+            const ignorada = abasIgnoradas.has(aba.aba_origem);
+            return (
+              <div
+                key={aba.aba_origem || "planilha"}
+                className={`flex items-center gap-1 rounded-full pl-3 pr-1.5 py-1 text-xs font-medium transition-colors ${
+                  ignorada
+                    ? "bg-slate-50 text-slate-400 line-through"
+                    : aba.aba_origem === abaAtiva
+                      ? "bg-brand-navy text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                <button type="button" onClick={() => setAbaAtiva(aba.aba_origem)}>
+                  {aba.aba_origem || "Planilha"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => alternarIgnorarAba(aba.aba_origem)}
+                  title={ignorada ? "Voltar a considerar esta aba" : "Ignorar esta aba (não será importada)"}
+                  className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] leading-none ${
+                    ignorada
+                      ? "bg-slate-200 text-slate-500 hover:bg-slate-300"
+                      : aba.aba_origem === abaAtiva
+                        ? "bg-white/20 text-white hover:bg-white/30"
+                        : "bg-slate-200 text-slate-500 hover:bg-slate-300"
+                  }`}
+                >
+                  {ignorada ? "+" : "×"}
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {!temIdEntidadePorAba[abaAtual.aba_origem] && (
-        <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
-          <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" />
-          Esta aba ainda não tem uma coluna marcada como &quot;Identificador da entidade&quot;. Sem
-          isso, ela será ignorada no processamento.
+      {abaAtualIgnorada ? (
+        <div className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-xs text-slate-500">
+          Esta aba está marcada para ser ignorada — nenhuma coluna dela será importada. Clique no
+          &quot;+&quot; ao lado do nome da aba para voltar a considerá-la.
         </div>
+      ) : (
+        !temIdEntidadePorAba[abaAtual.aba_origem] && (
+          <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
+            <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" />
+            Esta aba ainda não tem uma coluna marcada como &quot;Identificador da entidade&quot;. Sem
+            isso, ela será ignorada no processamento.
+          </div>
+        )
       )}
 
+      {!abaAtualIgnorada && (
       <div className="overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
@@ -389,6 +429,7 @@ export function MapeamentoStep({
           </tbody>
         </table>
       </div>
+      )}
 
       {erro && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{erro}</p>}
 
