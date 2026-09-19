@@ -14,7 +14,7 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 
 - [X] **Task 2.1:** Criar rota de upload de arquivos (Excel/CSV) para registrar as execuções de ingestão. _(`POST /api/ingestao/upload`: arquiva o arquivo bruto no Supabase Storage — bucket privado `ingestao-raw` — registra `execucoes_ingestao` e devolve abas/colunas detectadas. Componente de UI fica pendente, ver seção "A fazer no front" abaixo.)_
 - [X] **Task 2.2:** Desenvolver o endpoint de mapeamento dinâmico (De-Para), permitindo associar colunas arbitrárias às definições de métricas e entidades. _(`GET/POST /api/ingestao/mapeamento` grava em `mapeamentos_importacao`; `GET/POST /api/definicoes-metricas` lista/cria métricas customizadas sob demanda. Interface de UI fica pendente.)_
-- [X] **Task 2.3:** Implementar o parser universal que normaliza e persiste os dados de diferentes fontes na tabela padronizada de observações. _(`POST /api/ingestao/processar`: baixa o arquivo arquivado, aplica o De-Para salvo e grava em `entidades`/`observacoes`/`eventos_desfecho`, com coerção de tipo por `definicoes_metricas.tipo_valor`. Ver `lib/ingestao/`.)_
+- [X] **Task 2.3:** Implementar o parser universal que normaliza e persiste os dados de diferentes fontes na tabela padronizada de observações. _(`POST /api/ingestao/processar`: baixa o arquivo arquivado, aplica o De-Para salvo e grava em `entidades`/`observacoes`/`eventos_desfecho`, com coerção de tipo por `definicoes_metricas.tipo_valor`. Ver `lib/ingestao/`.)  _
 
 **Pendências registradas durante a execução do Módulo 2:**
 
