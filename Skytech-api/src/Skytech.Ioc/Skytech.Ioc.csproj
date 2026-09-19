@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Skytech.Aplicacao\Skytech.Aplicacao.csproj" />
+    <ProjectReference Include="..\Skytech.Dominio\Skytech.Dominio.csproj" />
+    <ProjectReference Include="..\Skytech.Infra\Skytech.Infra.csproj" />
+    <ProjectReference Include="..\Skytech.CrossCutting\Skytech.CrossCutting.csproj" />
+    <ProjectReference Include="..\Skytech.DataTransfer\Skytech.DataTransfer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App">
+      <PrivateAssets>none</PrivateAssets>
+    </FrameworkReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Skytech.API" />
+  </ItemGroup>
+
+</Project>
