@@ -31,6 +31,8 @@ export type DetalheClientePainel = ClientePainel & {
   historico: EventoHistorico[];
   evolucaoScore: PontoScore[];
   resumoCliente: string;
+  /** Explicação em linguagem natural do "porquê" do score, direto das regras do motor (sem IA). */
+  explicacaoRisco: string;
 };
 
 const AVALIACAO_SEM_DIAGNOSTICO =
@@ -57,6 +59,47 @@ function tituloDaEvidencia(s: SinalRisco): string {
   if (!Number.isFinite(valor)) return `${s.metrica} fora do padrão`;
   const unidade = s.unidade ? ` ${s.unidade}` : "";
   return `${s.metrica} em ${valor.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}${unidade}, fora do padrão da carteira`;
+}
+
+/**
+ * Explicabilidade: traduz os sinais acionados pelo motor matemático (peso ×
+ * contribuição em pontos, já calculados e persistidos em `motivos_predicao`)
+ * em um parágrafo direto sobre por que o score é o que é — sem depender do
+ * diagnóstico de IA, que pode não existir ou estar indisponível.
+ */
+function montarExplicacaoRisco(contexto: {
+  pontuacao: number;
+  faixa_risco: string | null;
+  cobertura: number | null;
+  sinais: SinalRisco[];
+}): string {
+  const acionados = [...contexto.sinais]
+    .filter((s) => s.acionado === true)
+    .sort((a, b) => b.pontos - a.pontos);
+
+  const abertura = `Score ${Math.round(contexto.pontuacao)}/100 (faixa ${contexto.faixa_risco ?? "indefinida"}).`;
+
+  if (acionados.length === 0) {
+    return `${abertura} Nenhum sinal de risco individual foi acionado pelo motor — o score reflete o comportamento geral da conta frente à carteira.`;
+  }
+
+  const total = acionados.reduce((soma, s) => soma + s.pontos, 0) || 1;
+  const principais = acionados.slice(0, 3).map((s) => {
+    const participacao = Math.round((s.pontos / total) * 100);
+    const obs = s.valor_observado ?? {};
+    const causa =
+      obs.omissao === true
+        ? "sem dado reportado no período"
+        : tituloDaEvidencia(s).replace(`${s.metrica}: `, "").replace(`${s.metrica} `, "");
+    return `${s.metrica} (${causa}, responde por ${participacao}% do score)`;
+  });
+
+  const cobertura =
+    contexto.cobertura != null && contexto.cobertura < 1
+      ? ` Apenas ${Math.round(contexto.cobertura * 100)}% das regras do modelo puderam ser avaliadas para este cliente.`
+      : "";
+
+  return `${abertura} Principal(is) motivo(s): ${principais.join("; ")}.${cobertura}`;
 }
 
 function rotuloMes(iso: string): string {
@@ -184,6 +227,7 @@ export async function montarDetalheCliente(params: {
     diagnosticoGeradoEm: diagnostico?.criado_em ?? null,
     historico,
     evolucaoScore,
+    explicacaoRisco: montarExplicacaoRisco(contexto),
     resumoCliente: [
       `${contexto.rotulo_entidade} do segmento ${cliente.segmento || "não informado"}`,
       cliente.porte ? `de porte ${cliente.porte.toLowerCase()}` : null,

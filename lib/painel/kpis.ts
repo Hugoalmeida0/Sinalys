@@ -81,6 +81,69 @@ async function calcularAntecedencias(
   return meses;
 }
 
+const JANELA_RECEITA_SALVA_DIAS = 30;
+
+/**
+ * "Receita salva": clientes que estavam em crítico/alerta e cuja predição mais
+ * recente caiu para uma faixa fora de alerta (recuperação), com a transição
+ * ocorrendo dentro da janela. Soma a receita anualizada (valor_impacto × 12) no
+ * momento da recuperação — é o KPI de negócio mais direto do produto: quanto
+ * a operação de CS evitou perder, não só quanto está em risco.
+ */
+async function calcularReceitaSalva(
+  supabase: SupabaseClient,
+  projetoId: string,
+  modeloId: string,
+  agora: Date
+): Promise<{ receita: number; clientes: number }> {
+  const desde = new Date(agora.getTime() - JANELA_RECEITA_SALVA_DIAS * 86_400_000);
+
+  const { data: predicoes, error } = await supabase
+    .from("predicoes")
+    .select("entidade_id, referencia_em, faixa_risco, valor_impacto")
+    .eq("projeto_id", projetoId)
+    .eq("modelo_id", modeloId)
+    .order("entidade_id", { ascending: true })
+    .order("referencia_em", { ascending: true });
+  if (error) throw new Error(`Falha ao buscar predições: ${error.message}`);
+
+  const porEntidade = new Map<
+    string,
+    { referencia_em: string; faixa_risco: string | null; valor_impacto: number | string | null }[]
+  >();
+  for (const p of predicoes ?? []) {
+    const lista = porEntidade.get(p.entidade_id) ?? [];
+    lista.push(p);
+    porEntidade.set(p.entidade_id, lista);
+  }
+
+  let receita = 0;
+  let clientesRecuperados = 0;
+
+  for (const [, serie] of porEntidade) {
+    // Última recuperação da série: última predição fora de alerta cuja predição
+    // imediatamente anterior estava em alerta e a transição caiu na janela.
+    for (let i = serie.length - 1; i > 0; i -= 1) {
+      const atual = serie[i];
+      const anterior = serie[i - 1];
+      const atualEmAlerta = atual.faixa_risco != null && FAIXAS_ALERTA.has(atual.faixa_risco);
+      const anteriorEmAlerta = anterior.faixa_risco != null && FAIXAS_ALERTA.has(anterior.faixa_risco);
+      const dentroDaJanela = new Date(atual.referencia_em) >= desde;
+
+      if (!atualEmAlerta && anteriorEmAlerta && dentroDaJanela) {
+        const valorImpacto = atual.valor_impacto == null ? 0 : Number(atual.valor_impacto);
+        receita += valorImpacto * 12;
+        clientesRecuperados += 1;
+        break;
+      }
+      // Se a predição mais recente já está em alerta de novo, não há recuperação a contar.
+      if (i === serie.length - 1 && atualEmAlerta) break;
+    }
+  }
+
+  return { receita, clientes: clientesRecuperados };
+}
+
 async function contarContatados(
   supabase: SupabaseClient,
   projetoId: string,
@@ -112,9 +175,10 @@ export async function calcularKpisPainel(params: {
     (c) => FAIXAS_ALERTA.has(c.faixaRisco) && !c.silenciadoAte && !c.cancelado
   );
 
-  const [antecedencias, clientesContatados7d] = await Promise.all([
+  const [antecedencias, clientesContatados7d, receitaSalva] = await Promise.all([
     calcularAntecedencias(supabase, projetoId, modeloId),
     contarContatados(supabase, projetoId, agora),
+    calcularReceitaSalva(supabase, projetoId, modeloId, agora),
   ]);
 
   return {
@@ -130,5 +194,7 @@ export async function calcularKpisPainel(params: {
       : null,
     desfechosAntecipados: antecedencias.length,
     clientesContatados7d,
+    receitaSalva30d: receitaSalva.receita,
+    clientesRecuperados30d: receitaSalva.clientes,
   };
 }

@@ -5,6 +5,7 @@ import {
   ArrowUpRightIcon,
   CalendarIcon,
   CheckIcon,
+  HeartHandshakeIcon,
   UsersIcon,
 } from "@/components/icons";
 import { AssistantCard } from "@/components/ui/AssistantCard";
@@ -25,6 +26,8 @@ const KPIS_VAZIOS: KpisPainel = {
   antecedenciaMaximaMeses: null,
   desfechosAntecipados: 0,
   clientesContatados7d: 0,
+  receitaSalva30d: 0,
+  clientesRecuperados30d: 0,
 };
 
 function meses(valor: number | null): string {
@@ -51,7 +54,7 @@ export default async function DashboardPage() {
 
   return (
     <RecalculoFilaGate>
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="flex flex-col gap-6">
             <PageHeader
@@ -59,7 +62,18 @@ export default async function DashboardPage() {
               descricao="Aqui estão os clientes que precisam da sua atenção hoje."
             />
 
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+              <KpiCard
+                label="Receita salva (30d)"
+                value={formatCurrencyBRL(kpis.receitaSalva30d)}
+                description={
+                  kpis.clientesRecuperados30d
+                    ? `${kpis.clientesRecuperados30d} clientes saíram do alerta`
+                    : "nenhuma recuperação na janela"
+                }
+                tone="emerald"
+                icon={HeartHandshakeIcon}
+              />
               <KpiCard
                 label="Receita em risco (ano)"
                 value={formatCurrencyBRL(kpis.receitaEmRiscoAno)}

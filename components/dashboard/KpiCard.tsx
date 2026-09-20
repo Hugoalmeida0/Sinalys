@@ -26,7 +26,7 @@ export function KpiCard({
   const classes = toneClasses[tone];
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card sm:p-5">
+    <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card sm:p-5">
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium text-slate-500">{label}</p>
         <span
@@ -35,7 +35,9 @@ export function KpiCard({
           <Icon className={`h-5 w-5 ${classes.icon}`} />
         </span>
       </div>
-      <p className={`mt-3 text-2xl font-bold ${classes.text}`}>{value}</p>
+      <p className={`mt-3 truncate text-xl font-bold sm:text-2xl ${classes.text}`} title={value}>
+        {value}
+      </p>
       <p className="mt-1 text-xs text-slate-500">{description}</p>
     </div>
   );

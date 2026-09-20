@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       modeloId: corpo?.modelo_id,
       origemGatilho: gatilho,
       persistir: corpo?.persistir !== false,
+      forcar: corpo?.forcar === true,
     });
 
     return NextResponse.json({
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
       modelo_embedding: resultado.modelo_embedding,
       contexto: resultado.contexto,
       casos_similares: resultado.casos_similares,
+      origem: resultado.origem,
       ...resultado.diagnostico,
     });
   } catch (erro) {

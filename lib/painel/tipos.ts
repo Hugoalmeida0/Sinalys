@@ -57,4 +57,8 @@ export interface KpisPainel {
   /** Quantidade de desfechos usados no cálculo de antecedência. */
   desfechosAntecipados: number;
   clientesContatados7d: number;
+  /** Receita anualizada de clientes que saíram de crítico/alerta para saudável nos últimos 30 dias. */
+  receitaSalva30d: number;
+  /** Quantidade de clientes que geraram essa recuperação. */
+  clientesRecuperados30d: number;
 }

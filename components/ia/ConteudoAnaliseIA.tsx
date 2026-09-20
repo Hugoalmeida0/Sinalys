@@ -51,6 +51,17 @@ export function ConteudoAnaliseIA({
 
       {plano && (
         <>
+          {plano.origem === "fallback" && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                O analista de IA está indisponível no momento (limite de uso ou instabilidade). Este
+                diagnóstico foi montado automaticamente a partir das regras do motor de risco, sem
+                geração de texto.
+              </p>
+            </div>
+          )}
+
           <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
             <h3 className="flex items-center gap-2 text-sm font-bold text-brand-ink">
               <AlertTriangleIcon className="h-4 w-4 text-red-500" />
@@ -105,8 +116,10 @@ export function ConteudoAnaliseIA({
 
           {plano.geradoEm && (
             <p className="text-xs text-slate-400">
-              Gerado pela IA em {formatDatePtBR(plano.geradoEm)} às {formatTimePtBR(plano.geradoEm)}.
-              O conteúdo é uma recomendação: confira os sinais antes de agir.
+              {plano.origem === "fallback" ? "Gerado por regras" : "Gerado pela IA"} em{" "}
+              {formatDatePtBR(plano.geradoEm)} às {formatTimePtBR(plano.geradoEm)}
+              {plano.origem === "cache" ? " (reaproveitado da última análise)" : ""}. O conteúdo é uma
+              recomendação: confira os sinais antes de agir.
             </p>
           )}
         </>

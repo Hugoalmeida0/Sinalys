@@ -15,6 +15,8 @@ import { esquemaDiagnostico, type Diagnostico } from "./esquema";
 import { montarPromptUsuario, PROMPT_SISTEMA } from "./prompt";
 import type { CasoSimilar, ContextoAtual } from "./tipos";
 
+export const MODELO_IA_FALLBACK = "fallback-regras";
+
 export interface ResultadoAnalise {
   diagnostico_id: string;
   contexto: ContextoAtual;
@@ -22,6 +24,14 @@ export interface ResultadoAnalise {
   diagnostico: Diagnostico;
   modelo_ia: string;
   modelo_embedding: string;
+  /**
+   * "cache": diagnóstico reaproveitado de uma análise anterior para a mesma
+   * predição (nada mudou desde então). "fallback": o LLM falhou/estourou o
+   * limite gratuito e a resposta foi montada por regras determinísticas a
+   * partir do motor de risco, sem passar por geração de texto. "ia": geração
+   * normal via LLM.
+   */
+  origem: "ia" | "cache" | "fallback";
 }
 
 /**
@@ -40,6 +50,8 @@ export async function analisarRiscoEntidade(params: {
   modeloId?: string;
   origemGatilho?: "manual" | "cron";
   persistir?: boolean;
+  /** Ignora o cache e força uma nova chamada ao LLM mesmo com diagnóstico recente para a mesma predição. */
+  forcar?: boolean;
 }): Promise<ResultadoAnalise> {
   const {
     supabase,
@@ -48,6 +60,7 @@ export async function analisarRiscoEntidade(params: {
     modeloId,
     origemGatilho = "manual",
     persistir = true,
+    forcar = false,
   } = params;
 
   const entidade = await resolverEntidade(supabase, projetoId, identificadorEntidade);
@@ -59,6 +72,15 @@ export async function analisarRiscoEntidade(params: {
 
   // 1. Coleta de evidências: raio-x da última predição do motor matemático.
   const contexto = await montarContextoAtual({ supabase, projetoId, entidade, modeloId });
+
+  // Cache: a predição não muda entre corridas do motor, então um diagnóstico já
+  // gerado para ela continua válido. Evita queimar cota do LLM gratuito (50
+  // req/dia) reanalisando um cliente sem nenhum dado novo.
+  if (!forcar) {
+    const cache = await buscarDiagnosticoEmCache(supabase, projetoId, contexto.predicao_id);
+    if (cache) return { ...cache, contexto };
+  }
+
   const perfilRisco = descreverPerfilRisco(contexto);
 
   // 2. Busca RAG: casos históricos com comportamento parecido (Task 4.2).
@@ -69,22 +91,39 @@ export async function analisarRiscoEntidade(params: {
     entidadeExcluida: entidade.id,
   });
 
+  const modeloEmbedding = obterModeloEmbedding();
+
   // 3. Prompting e IA: contrato de saída forçado por schema Zod (vira
   //    `response_format: json_schema` na OpenRouter — verificado no modelo padrão).
-  const openrouter = criarProvedorOpenRouter();
   const modeloLlm = obterModeloLlm();
+  let diagnostico: Diagnostico;
+  let origem: ResultadoAnalise["origem"];
+  let modeloUsado: string;
 
-  const { object: bruto } = await generateObject({
-    model: openrouter.chat(modeloLlm),
-    schema: esquemaDiagnostico,
-    schemaName: "DiagnosticoChurn",
-    schemaDescription: "Diagnóstico de risco de churn e plano de ação prescritivo para Customer Success.",
-    system: PROMPT_SISTEMA,
-    prompt: montarPromptUsuario({ contexto, casosSimilares }),
-  });
-  const diagnostico = normalizarDiagnostico(bruto);
+  try {
+    const openrouter = criarProvedorOpenRouter();
+    const { object: bruto } = await generateObject({
+      model: openrouter.chat(modeloLlm),
+      schema: esquemaDiagnostico,
+      schemaName: "DiagnosticoChurn",
+      schemaDescription:
+        "Diagnóstico de risco de churn e plano de ação prescritivo para Customer Success.",
+      system: PROMPT_SISTEMA,
+      prompt: montarPromptUsuario({ contexto, casosSimilares }),
+    });
+    diagnostico = normalizarDiagnostico(bruto);
+    origem = "ia";
+    modeloUsado = modeloLlm;
+  } catch (erroLlm) {
+    // Fallback: LLM indisponível, sem cota ou timeout. Em vez de quebrar a
+    // experiência do analista, devolve um diagnóstico determinístico montado
+    // direto das regras do motor matemático — sem geração de texto.
+    console.error(`[ia/analisar] LLM falhou, usando fallback por regras: ${(erroLlm as Error).message}`);
+    diagnostico = gerarDiagnosticoFallback(contexto, casosSimilares);
+    origem = "fallback";
+    modeloUsado = MODELO_IA_FALLBACK;
+  }
 
-  const modeloEmbedding = obterModeloEmbedding();
   // Quando `persistir: false`, o id é só um identificador de correlação da resposta.
   let diagnosticoId: string = randomUUID();
 
@@ -95,7 +134,7 @@ export async function analisarRiscoEntidade(params: {
       contexto,
       casosSimilares,
       diagnostico,
-      modeloLlm,
+      modeloLlm: modeloUsado,
       modeloEmbedding,
       origemGatilho,
     });
@@ -106,8 +145,110 @@ export async function analisarRiscoEntidade(params: {
     contexto,
     casos_similares: casosSimilares,
     diagnostico,
-    modelo_ia: modeloLlm,
+    modelo_ia: modeloUsado,
     modelo_embedding: modeloEmbedding,
+    origem,
+  };
+}
+
+/**
+ * Reaproveita o diagnóstico mais recente já persistido para esta predição, se
+ * existir. Retorna `null` quando não há nada em cache (primeira análise).
+ */
+async function buscarDiagnosticoEmCache(
+  supabase: SupabaseClient,
+  projetoId: string,
+  predicaoId: string
+): Promise<ResultadoAnalise | null> {
+  const { data, error } = await supabase
+    .from("diagnosticos_ia")
+    .select(
+      "id, diagnostico_principal, analise_lookalike, plano_acao_imediato, casos_similares, modelo_ia, modelo_embedding, entidade_id"
+    )
+    .eq("projeto_id", projetoId)
+    .eq("predicao_id", predicaoId)
+    .order("criado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(`Falha ao consultar cache de diagnóstico: ${error.message}`);
+  if (!data) return null;
+
+  const casosSimilares = Array.isArray(data.casos_similares)
+    ? (data.casos_similares as Array<Record<string, unknown>>).map(
+        (c): CasoSimilar => ({
+          id: String(c.caso_id ?? ""),
+          entidade_id: String(c.entidade_id ?? ""),
+          nome_exibicao: null,
+          contexto_texto: "",
+          acao_realizada: "",
+          desfecho: c.desfecho === "recuperado" ? "recuperado" : "cancelado",
+          similaridade: Number(c.similaridade ?? 0),
+          criado_em: "",
+        })
+      )
+    : [];
+
+  // `contexto` é preenchido pelo chamador com o já calculado acima — o cache
+  // existe para poupar a chamada ao LLM, não a leitura do motor matemático.
+  return {
+    diagnostico_id: data.id,
+    contexto: undefined as unknown as ContextoAtual,
+    casos_similares: casosSimilares,
+    diagnostico: {
+      diagnostico_principal: data.diagnostico_principal,
+      analise_lookalike: data.analise_lookalike,
+      plano_acao_imediato: Array.isArray(data.plano_acao_imediato)
+        ? (data.plano_acao_imediato as string[])
+        : [],
+    },
+    modelo_ia: data.modelo_ia,
+    modelo_embedding: data.modelo_embedding,
+    origem: "cache",
+  };
+}
+
+/**
+ * Diagnóstico sem LLM: traduz os sinais já calculados pelo motor matemático
+ * (docs/motor-matematico.md) em texto direto. Menos rico que a análise por IA,
+ * mas 100% determinístico e disponível mesmo com o LLM fora do ar.
+ */
+export function gerarDiagnosticoFallback(
+  contexto: ContextoAtual,
+  casosSimilares: CasoSimilar[]
+): Diagnostico {
+  const acionados = [...contexto.sinais]
+    .filter((s) => s.acionado === true)
+    .sort((a, b) => b.pontos - a.pontos);
+
+  const principal = acionados[0];
+  const diagnosticoPrincipal = principal
+    ? `Principal ofensor: ${principal.metrica} (peso ${principal.peso}, ${principal.pontos.toFixed(1)} pontos de contribuição). ` +
+      `Score de risco atual: ${contexto.pontuacao.toFixed(1)}/100 (faixa ${contexto.faixa_risco ?? "indefinida"}). ` +
+      `Diagnóstico gerado por regras do motor de risco (IA indisponível no momento).`
+    : `Nenhum sinal de risco individual foi acionado, mas o score combinado é ${contexto.pontuacao.toFixed(1)}/100 (faixa ${contexto.faixa_risco ?? "indefinida"}). ` +
+      `Diagnóstico gerado por regras do motor de risco (IA indisponível no momento).`;
+
+  const analiseLookalike = casosSimilares.length
+    ? `${casosSimilares.length} caso(s) histórico(s) com perfil parecido foram encontrados na base ` +
+      `(similaridade máxima ${(Math.max(...casosSimilares.map((c) => c.similaridade)) * 100).toFixed(0)}%), ` +
+      `mas a leitura comparativa detalhada exige o analista de IA, que está indisponível no momento.`
+    : "Nenhum caso histórico similar foi encontrado na base vetorial.";
+
+  const plano = acionados.slice(0, 5).map((s) => {
+    const obs = s.valor_observado ?? {};
+    if (obs.omissao === true) {
+      return `Verificar com o cliente por que "${s.metrica}" deixou de ser reportado e reativar o acompanhamento.`;
+    }
+    return `Investigar e agir sobre "${s.metrica}", sinal com maior contribuição de risco (${s.pontos.toFixed(1)} pontos).`;
+  });
+
+  return {
+    diagnostico_principal: diagnosticoPrincipal,
+    analise_lookalike: analiseLookalike,
+    plano_acao_imediato: plano.length
+      ? plano
+      : ["Revisar manualmente a conta: nenhum sinal individual foi acionado pelo motor."],
   };
 }
 

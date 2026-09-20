@@ -305,3 +305,9 @@ CREATE INDEX idx_silenciamentos_projeto_vigencia
 CREATE INDEX idx_silenciamentos_entidade ON silenciamentos_alerta(entidade_id);
 
 COMMIT;
+
+-- RLS: ver docs/rls.sql (já aplicado ao banco). Resumo: todas as tabelas têm
+-- RLS habilitado; só a role `authenticated` (sessão válida) pode ler/escrever
+-- por fora do service_role. Sem filtro por organização/projeto ainda — não há
+-- tabela de vínculo usuário↔projeto hoje (login é single-tenant). Filtrar por
+-- tenant é o próximo passo quando o multi-tenant real existir.

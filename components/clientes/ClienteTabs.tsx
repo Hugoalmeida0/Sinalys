@@ -9,7 +9,6 @@ import {
   ArrowUpIcon,
   CalendarIcon,
   DollarIcon,
-  FileTextIcon,
   LoaderIcon,
   ReportsIcon,
   TargetIcon,
@@ -246,12 +245,15 @@ function VisaoGeral({ detalhe }: { detalhe: DetalheCliente }) {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
         <Card>
           <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-pale text-brand-royal">
-              <FileTextIcon className="h-5.5 w-5.5" />
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+              <TargetIcon className="h-5.5 w-5.5" />
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="text-lg font-bold text-brand-ink">Resumo do cliente</h3>
+              <h3 className="text-lg font-bold text-brand-ink">Por que este cliente está em risco</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                {detalhe.explicacaoRisco}
+              </p>
+              <p className="mt-3 text-xs text-slate-400">
                 {detalhe.resumoCliente}
               </p>
             </div>
@@ -308,6 +310,7 @@ function planoInicial(detalhe: DetalheCliente): PlanoIA | null {
     analiseLookalike: detalhe.analiseLookalike,
     acoes: detalhe.proximasAcoes.map((a) => a.titulo),
     geradoEm: detalhe.diagnosticoGeradoEm,
+    origem: "cache",
   };
 }
 
@@ -319,7 +322,9 @@ function PlanoDeAcao({ detalhe }: { detalhe: DetalheCliente }) {
   const { plano, analisando, analisar } = estado;
 
   async function analisarERecarregar() {
-    const ok = await analisar();
+    // Reanalisar deve ignorar o cache (o usuário quer uma leitura nova); a
+    // primeira análise pode reaproveitar um diagnóstico recente da mesma predição.
+    const ok = await analisar(Boolean(plano));
     // O diagnóstico foi persistido: sincroniza visão geral e header com o servidor.
     if (ok) router.refresh();
   }

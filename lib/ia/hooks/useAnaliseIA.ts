@@ -6,6 +6,8 @@ export interface PlanoIA {
   analiseLookalike: string | null;
   acoes: string[];
   geradoEm: string | null;
+  /** "ia": gerado agora pelo LLM. "cache": reaproveitado de uma análise anterior. "fallback": LLM indisponível, montado por regras. */
+  origem: "ia" | "cache" | "fallback";
 }
 
 /**
@@ -20,14 +22,14 @@ export function useAnaliseIA(clienteId: string, planoInicial: PlanoIA | null = n
   const [erro, setErro] = useState<string | null>(null);
   const [concluidas, setConcluidas] = useState<Record<number, boolean>>({});
 
-  async function analisar() {
+  async function analisar(forcar = false) {
     setAnalisando(true);
     setErro(null);
     try {
       const resposta = await fetch("/api/inteligencia/analisar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cliente_id: clienteId, trigger_source: "manual" }),
+        body: JSON.stringify({ cliente_id: clienteId, trigger_source: "manual", forcar }),
       });
       const corpo = await resposta.json().catch(() => ({}));
       if (!resposta.ok) {
@@ -38,6 +40,7 @@ export function useAnaliseIA(clienteId: string, planoInicial: PlanoIA | null = n
         analiseLookalike: corpo.analise_lookalike ?? null,
         acoes: Array.isArray(corpo.plano_acao_imediato) ? corpo.plano_acao_imediato : [],
         geradoEm: new Date().toISOString(),
+        origem: corpo.origem === "cache" || corpo.origem === "fallback" ? corpo.origem : "ia",
       });
       setConcluidas({});
       return true;
