@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { AcoesCliente } from "@/components/AcoesCliente";
+import { CompartilharHealthScore } from "@/components/clientes/CompartilharHealthScore";
 import { ChevronRightIcon } from "@/components/icons";
 import { Badge, SoftBadge } from "@/components/ui/Badge";
 import type { DetalheClientePainel as DetalheCliente } from "@/lib/painel/detalhe";
 import { faixaRiscoClasses, faixaRiscoLabel } from "@/lib/risk";
 
-export function ClienteHeader({ detalhe }: { detalhe: DetalheCliente }) {
+export function ClienteHeader({ detalhe, baseUrl }: { detalhe: DetalheCliente; baseUrl: string }) {
   return (
     <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
       <nav className="flex items-center gap-1.5 text-sm text-slate-400">
@@ -38,6 +39,7 @@ export function ClienteHeader({ detalhe }: { detalhe: DetalheCliente }) {
           <Badge className="bg-white px-3.5 py-2 font-semibold text-slate-700 ring-1 ring-slate-200 ring-inset">
             Score {detalhe.scoreRisco}/{detalhe.scoreMax}
           </Badge>
+          <CompartilharHealthScore token={detalhe.tokenCompartilhamento} baseUrl={baseUrl} />
           <AcoesCliente
             clienteId={detalhe.id}
             clienteLabel={detalhe.nome}

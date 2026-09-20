@@ -127,7 +127,7 @@ export async function montarClientesPainel(params: {
   ] = await Promise.all([
     supabase
       .from("entidades")
-      .select("id, id_externo, nome_exibicao, iniciado_em, atributos")
+      .select("id, id_externo, nome_exibicao, iniciado_em, atributos, token_compartilhamento")
       .eq("projeto_id", projetoId),
     buscarTodasLinhas<PredicaoLinha>(() =>
       supabase
@@ -301,6 +301,7 @@ export async function montarClientesPainel(params: {
       cancelado: canceladoEmPorEntidade.has(e.id),
       canceladoEm: canceladoEmPorEntidade.get(e.id) ?? null,
       motivoCancelamento: motivoPorEntidade.get(e.id) ?? null,
+      tokenCompartilhamento: e.token_compartilhamento,
     });
   }
 

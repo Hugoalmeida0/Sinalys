@@ -27,8 +27,12 @@ CREATE TABLE entidades (
   iniciado_em timestamptz, 
   atributos jsonb NOT NULL DEFAULT '{}'::jsonb,
   criado_em timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (projeto_id, id), 
-  UNIQUE (projeto_id, id_externo)
+  -- Token opaco da página pública de Health Score (/health/[token]), lida sem
+  -- sessão via service_role. Não é PK: pode ser rotacionado sem afetar FKs.
+  token_compartilhamento uuid NOT NULL DEFAULT gen_random_uuid(),
+  UNIQUE (projeto_id, id),
+  UNIQUE (projeto_id, id_externo),
+  UNIQUE (token_compartilhamento)
 );
 
 CREATE TABLE definicoes_metricas (

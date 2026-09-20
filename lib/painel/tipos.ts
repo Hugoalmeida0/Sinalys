@@ -47,6 +47,8 @@ export interface ClientePainel {
   canceladoEm: string | null;
   /** Motivo estruturado do cancelamento mais recente, ou null se não capturado / cliente ativo. */
   motivoCancelamento: { categoria: MotivoCancelamento; detalhe: string | null } | null;
+  /** Token opaco da página pública de Health Score (/health/[token]). */
+  tokenCompartilhamento: string;
 }
 
 export interface KpisPainel {

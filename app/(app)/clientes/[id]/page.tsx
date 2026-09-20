@@ -1,14 +1,17 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ClienteHeader } from "@/components/clientes/ClienteHeader";
 import { ClienteTabs } from "@/components/clientes/ClienteTabs";
 import { montarDetalheCliente } from "@/lib/painel/detalhe";
 import { carregarPainel } from "@/lib/painel/servidor";
+import { resolverBaseUrlAbsoluta } from "@/lib/config/base-url";
 
 export default async function ClienteDetalhePage(
   props: PageProps<"/clientes/[id]">,
 ) {
   const { id } = await props.params;
-  const painel = await carregarPainel();
+  const [painel, listaHeaders] = await Promise.all([carregarPainel(), headers()]);
+  const baseUrl = resolverBaseUrlAbsoluta(listaHeaders);
 
   // Aceita o código visível (C001) ou o UUID interno.
   const cliente = painel.clientes.find((c) => c.id === id || c.entidadeId === id);
@@ -23,7 +26,7 @@ export default async function ClienteDetalhePage(
 
   return (
     <div>
-      <ClienteHeader detalhe={detalhe} />
+      <ClienteHeader detalhe={detalhe} baseUrl={baseUrl} />
       <ClienteTabs detalhe={detalhe} />
     </div>
   );
