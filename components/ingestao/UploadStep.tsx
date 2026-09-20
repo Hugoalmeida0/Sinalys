@@ -62,18 +62,21 @@ export function UploadStep({
         onDragLeave={() => setArrastando(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
-        className={`flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
-          arrastando ? "border-brand-royal bg-brand-pale" : "border-slate-200 hover:border-slate-300"
+        className={`flex cursor-pointer flex-col items-center gap-4 rounded-2xl border-2 border-dashed px-6 py-14 text-center transition-colors ${
+          arrastando
+            ? "border-brand-royal bg-brand-pale"
+            : "border-slate-200 hover:border-brand-royal/50 hover:bg-slate-50/60"
         }`}
       >
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-pale text-brand-royal">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-pale text-brand-royal">
           <UploadIcon className="h-6 w-6" />
         </span>
         <div>
-          <p className="text-sm font-medium text-slate-700">
+          <p className="text-base font-semibold text-brand-ink">
             Arraste um arquivo aqui ou clique para selecionar
           </p>
-          <p className="mt-1 text-xs text-slate-400">Formatos aceitos: .xlsx, .xls, .csv</p>
+          <p className="mt-1.5 text-sm text-slate-400">Formatos aceitos: .xlsx, .xls, .csv</p>
+          <p className="text-sm text-slate-400">Tamanho máximo: 50 MB</p>
         </div>
         <input
           ref={inputRef}
@@ -88,10 +91,10 @@ export function UploadStep({
       </div>
 
       {arquivo && (
-        <div className="flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3">
           <FileSpreadsheetIcon className="h-5 w-5 shrink-0 text-brand-royal" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-800">{arquivo.name}</p>
+            <p className="truncate text-sm font-semibold text-brand-ink">{arquivo.name}</p>
             <p className="text-xs text-slate-400">{(arquivo.size / 1024).toFixed(0)} KB</p>
           </div>
           <button
@@ -105,12 +108,17 @@ export function UploadStep({
       )}
 
       {erro && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{erro}</p>
+        <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-700">{erro}</p>
       )}
 
       <div className="flex justify-end">
-        <Button onClick={handleEnviar} disabled={!arquivo || enviando}>
-          {enviando ? "Enviando..." : "Enviar arquivo"}
+        {/* Sem arquivo escolhido, o botão abre o seletor em vez de ficar inerte. */}
+        <Button
+          size="lg"
+          onClick={arquivo ? handleEnviar : () => inputRef.current?.click()}
+          disabled={enviando}
+        >
+          {enviando ? "Enviando..." : arquivo ? "Enviar arquivo" : "Selecionar arquivo"}
         </Button>
       </div>
     </div>

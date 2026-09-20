@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a2d6b;
+  color-scheme: light;
+
+  --background: #f6f8fc;
+  --foreground: #0f2557;
 
   /* Sinalys brand palette */
   --color-navy: #0a2d6b;
@@ -10,6 +12,11 @@
   --color-cyan: #06b6d4;
   --color-light-blue: #60a5fa;
   --color-pale: #e8f1fa;
+
+  /* Tons profundos usados na sidebar e nos blocos escuros */
+  --color-ink: #0f2557;
+  --color-navy-deep: #081a3f;
+  --color-navy-darkest: #050f2b;
 }
 
 @theme inline {
@@ -21,20 +28,52 @@
   --color-brand-cyan: var(--color-cyan);
   --color-brand-light: var(--color-light-blue);
   --color-brand-pale: var(--color-pale);
+  --color-brand-ink: var(--color-ink);
+  --color-brand-deep: var(--color-navy-deep);
+  --color-brand-darkest: var(--color-navy-darkest);
 
   --font-sans: var(--font-montserrat);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #e8f1fa;
-  }
+  /* Sombras suaves e azuladas — usadas em todos os cards */
+  --shadow-card: 0 1px 2px rgba(15, 37, 87, 0.04), 0 10px 26px -18px rgba(15, 37, 87, 0.22);
+  --shadow-card-hover: 0 1px 2px rgba(15, 37, 87, 0.05), 0 18px 38px -20px rgba(15, 37, 87, 0.3);
+  --shadow-float: 0 18px 40px -20px rgba(15, 37, 87, 0.35);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Fundo geral do app: branco levemente azulado com brilho no topo. */
+.app-canvas {
+  background:
+    radial-gradient(120% 70% at 78% -10%, #ffffff 0%, rgba(255, 255, 255, 0) 60%),
+    linear-gradient(180deg, #f8fafd 0%, #f4f7fc 100%);
+}
+
+/* Fundo da barra lateral e dos blocos escuros. */
+.navy-surface {
+  background:
+    radial-gradient(90% 45% at 12% 0%, rgba(37, 99, 235, 0.35) 0%, rgba(37, 99, 235, 0) 62%),
+    linear-gradient(170deg, #0b1e48 0%, #081735 52%, #050f2b 100%);
+}
+
+/* Barra de rolagem discreta em listas e tabelas. */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.scroll-slim::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
 }

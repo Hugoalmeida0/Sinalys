@@ -17,14 +17,14 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t border-slate-200 bg-white px-2 lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 flex h-18 items-center justify-around border-t border-slate-200/80 bg-white/95 px-2 backdrop-blur lg:hidden">
       {mobileItems.map((item, index) => {
         if (index === 2) {
           return (
             <button
               key="acao-rapida"
               type="button"
-              className="flex h-12 w-12 -translate-y-3 items-center justify-center rounded-full bg-brand-royal text-white shadow-lg shadow-brand-royal/30"
+              className="flex h-13 w-13 -translate-y-4 items-center justify-center rounded-2xl bg-brand-royal text-white shadow-[0_14px_28px_-12px_rgba(37,99,235,0.95)]"
               aria-label="Nova ação"
             >
               <PlusIcon className="h-6 w-6" />
@@ -40,7 +40,7 @@ export function MobileNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-medium ${
+            className={`flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-semibold transition-colors ${
               isActive ? "text-brand-royal" : "text-slate-400"
             }`}
           >

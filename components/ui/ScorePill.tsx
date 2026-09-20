@@ -14,11 +14,11 @@ export function ScorePill({
   size?: "sm" | "md";
 }) {
   const faixa = faixaProp ?? faixaRiscoFromScore(score, max);
-  const dimensions = size === "sm" ? "h-8 w-8 text-sm" : "h-10 w-10 text-base";
+  const dimensions = size === "sm" ? "h-8 w-8 text-xs" : "h-9 w-9 text-sm";
 
   return (
     <span
-      className={`inline-flex ${dimensions} shrink-0 items-center justify-center rounded-full font-semibold ${scoreBadgeClasses[faixa]}`}
+      className={`inline-flex ${dimensions} shrink-0 items-center justify-center rounded-full font-bold ${scoreBadgeClasses[faixa]}`}
       title={`Score de risco: ${score} de ${max}`}
     >
       {score}

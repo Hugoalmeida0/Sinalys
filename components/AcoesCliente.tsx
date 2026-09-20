@@ -10,10 +10,13 @@ export function AcoesCliente({
   clienteId,
   clienteLabel,
   showVerDetalhes = true,
+  compacto = false,
 }: {
   clienteId: string;
   clienteLabel: string;
   showVerDetalhes?: boolean;
+  /** Em listas densas, mostra apenas o menu "..." sem o botão "Ações". */
+  compacto?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -22,7 +25,7 @@ export function AcoesCliente({
   return (
     <div className="flex items-center gap-1">
       <div
-        className="relative"
+        className={`relative ${compacto ? "hidden" : ""}`}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) setMenuOpen(false);
         }}
@@ -38,7 +41,7 @@ export function AcoesCliente({
         </Button>
 
         {menuOpen && (
-          <div className="absolute right-0 z-20 mt-1 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          <div className="absolute right-0 z-20 mt-1.5 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-float">
             <button
               type="button"
               onClick={() => {
@@ -78,13 +81,35 @@ export function AcoesCliente({
           onClick={() => setMoreOpen((v) => !v)}
           aria-expanded={moreOpen}
           aria-label="Mais opções"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
         >
           <MoreIcon className="h-4 w-4" />
         </button>
 
         {moreOpen && (
-          <div className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          <div className="absolute right-0 z-20 mt-1.5 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-float">
+            {compacto && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalOpen(true);
+                    setMoreOpen(false);
+                  }}
+                  className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  Registrar contato
+                </button>
+                {showVerDetalhes && (
+                  <Link
+                    href={`/clientes/${clienteId}`}
+                    className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    Ver detalhes
+                  </Link>
+                )}
+              </>
+            )}
             <button
               type="button"
               className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"

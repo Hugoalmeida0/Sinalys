@@ -18,8 +18,8 @@ export function PlaybookCard({ playbook }: { playbook: Playbook }) {
           <SoftBadge className={categoriaClasses[playbook.categoria]}>
             {playbook.categoria}
           </SoftBadge>
-          <CardTitle className="mt-2">{playbook.titulo}</CardTitle>
-          <p className="mt-1 text-xs text-slate-500">Gatilho: {playbook.gatilho}</p>
+          <CardTitle className="mt-2 text-lg">{playbook.titulo}</CardTitle>
+          <p className="mt-1 text-sm text-slate-500">Gatilho: {playbook.gatilho}</p>
         </div>
       </CardHeader>
       <CardContent>
@@ -33,13 +33,13 @@ export function PlaybookCard({ playbook }: { playbook: Playbook }) {
         </ul>
 
         <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-          <span className="text-xs text-slate-400">
+          <span className="text-sm text-slate-400">
             <span className="font-semibold text-slate-600">{playbook.clientesElegiveis}</span>{" "}
             clientes elegíveis
           </span>
           <button
             type="button"
-            className="text-xs font-semibold text-brand-royal hover:underline"
+            className="text-sm font-semibold text-brand-royal hover:underline"
           >
             Ver clientes
           </button>

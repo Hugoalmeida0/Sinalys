@@ -7,7 +7,7 @@ export function Card({
 }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`rounded-xl border border-slate-200 bg-white shadow-sm ${className}`}
+      className={`rounded-2xl border border-slate-200/80 bg-white shadow-card ${className}`}
       {...props}
     >
       {children}
@@ -33,7 +33,7 @@ export function CardTitle({
   ...props
 }: HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={`text-sm font-semibold text-slate-900 ${className}`} {...props}>
+    <h3 className={`text-base font-bold text-brand-ink ${className}`} {...props}>
       {children}
     </h3>
   );

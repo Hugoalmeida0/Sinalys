@@ -21,6 +21,23 @@ export function formatDatePtBR(iso: string): string {
   });
 }
 
+/** Ex.: "12 de set. de 2026" — usado nas colunas de data das tabelas. */
+export function formatDateLongPtBR(iso: string): string {
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/** Ex.: "14:32" — hora de envio/processamento nas ingestões. */
+export function formatTimePtBR(iso: string): string {
+  return new Date(iso).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function formatDateShortPtBR(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",

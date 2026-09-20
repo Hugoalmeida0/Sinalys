@@ -2,40 +2,41 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BellIcon, MenuIcon, XIcon } from "@/components/icons";
+import { usuarioAtual } from "@/lib/mock-data";
 import { navItems } from "./nav-items";
 
 export function MobileHeader() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <>
-      <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/sinalys-symbol-color.png"
-            alt=""
-            width={24}
-            height={24}
-            className="h-6 w-6"
-          />
-          <span className="text-base font-bold text-brand-navy">Sinalys</span>
-        </div>
+      <header className="navy-surface flex h-16 items-center justify-between px-4 lg:hidden">
+        <Image
+          src="/sinalys-logo-horizontal-white.png"
+          alt="Sinalys"
+          width={296}
+          height={106}
+          priority
+          className="h-7 w-auto"
+        />
 
         <div className="flex items-center gap-1">
           <button
             type="button"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-500"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full text-blue-100/80"
             aria-label="Notificações"
           >
             <BellIcon className="h-5 w-5" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#0b1e48]" />
           </button>
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-600"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-white"
             aria-label="Abrir menu"
           >
             <MenuIcon className="h-5 w-5" />
@@ -48,37 +49,62 @@ export function MobileHeader() {
           <button
             type="button"
             aria-label="Fechar menu"
-            className="absolute inset-0 bg-slate-900/40"
+            className="absolute inset-0 bg-slate-900/50"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute inset-y-0 right-0 flex w-72 max-w-[80%] flex-col bg-white shadow-xl">
-            <div className="flex h-14 items-center justify-between border-b border-slate-100 px-4">
-              <span className="text-sm font-semibold text-slate-900">Menu</span>
+          <div className="navy-surface absolute inset-y-0 right-0 flex w-72 max-w-[82%] flex-col shadow-float">
+            <div className="flex h-16 items-center justify-between px-4">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-royal text-[11px] font-bold text-white">
+                  {usuarioAtual.iniciais}
+                </span>
+                <span className="leading-tight">
+                  <span className="block text-sm font-bold text-white">{usuarioAtual.nome}</span>
+                  <span className="block text-[11px] text-blue-100/60">{usuarioAtual.cargo}</span>
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-blue-100/70 hover:bg-white/10"
                 aria-label="Fechar"
               >
                 <XIcon className="h-5 w-5" />
               </button>
             </div>
-            <nav className="flex flex-1 flex-col gap-1 p-3">
+
+            <nav className="flex flex-1 flex-col gap-1.5 p-4">
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const isActive =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href);
+
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                    className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-colors ${
+                      isActive
+                        ? "bg-brand-royal text-white"
+                        : "text-blue-100/70 hover:bg-white/10 hover:text-white"
+                    }`}
                   >
-                    <Icon className="h-5 w-5 text-slate-400" />
+                    <Icon className="h-5 w-5 shrink-0" />
                     {item.label}
                   </Link>
                 );
               })}
             </nav>
+
+            <div className="px-6 pb-7">
+              <p className="text-sm font-bold text-white">Sinalys</p>
+              <p className="mt-0.5 text-xs leading-snug text-blue-100/60">
+                Dados que antecipam o futuro.
+              </p>
+            </div>
           </div>
         </div>
       )}

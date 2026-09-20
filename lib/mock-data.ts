@@ -8,6 +8,7 @@ export type TendenciaScore = "subindo" | "descendo" | "estavel";
 
 export type Cliente = {
   id: string;
+  nome: string;
   segmento: string;
   porte: "Pequeno" | "Médio" | "Grande";
   tipo: string;
@@ -19,11 +20,17 @@ export type Cliente = {
   tendenciaScore: TendenciaScore;
   clienteDesde: string; // ISO date
   resumoAlerta: string;
+  /** Variação do MRR frente ao mês anterior, em pontos percentuais. */
+  variacaoMrr: number;
+  /** Chips exibidos na coluna "Principais sinais" da lista de clientes. */
+  sinais: string[];
+  atualizadoEm: string; // ISO date
 };
 
 export const clientes: Cliente[] = [
   {
     id: "C061",
+    nome: "Distribuidora RT",
     segmento: "Varejo",
     porte: "Grande",
     tipo: "Enterprise",
@@ -35,9 +42,13 @@ export const clientes: Cliente[] = [
     tendenciaScore: "subindo",
     clienteDesde: "2021-03-12",
     resumoAlerta: "Uso caiu de 85% para 74%; 4 críticos; NPS detrator (6)",
+    variacaoMrr: -8,
+    sinais: ["Uso ↓ 85%", "4 críticos", "NPS detrator"],
+    atualizadoEm: "2026-09-18",
   },
   {
     id: "C080",
+    nome: "Comercial Alves",
     segmento: "Varejo",
     porte: "Grande",
     tipo: "Enterprise",
@@ -49,9 +60,13 @@ export const clientes: Cliente[] = [
     tendenciaScore: "subindo",
     clienteDesde: "2022-01-08",
     resumoAlerta: "SLA caiu de 76% para 61%; 11 reaberturas; 3 críticos",
+    variacaoMrr: 12,
+    sinais: ["SLA ↓ 76%", "11 reaberturas", "3 críticos"],
+    atualizadoEm: "2026-09-19",
   },
   {
     id: "C011",
+    nome: "Mercado do Povo",
     segmento: "Varejo",
     porte: "Grande",
     tipo: "Enterprise",
@@ -63,9 +78,13 @@ export const clientes: Cliente[] = [
     tendenciaScore: "subindo",
     clienteDesde: "2020-07-22",
     resumoAlerta: "6 críticos; 6 reaberturas; 11 dias de atraso",
+    variacaoMrr: -4,
+    sinais: ["6 críticos", "6 reaberturas", "11 dias de atraso"],
+    atualizadoEm: "2026-09-17",
   },
   {
     id: "C071",
+    nome: "Super Azul",
     segmento: "Varejo",
     porte: "Grande",
     tipo: "Enterprise",
@@ -77,9 +96,13 @@ export const clientes: Cliente[] = [
     tendenciaScore: "subindo",
     clienteDesde: "2021-11-02",
     resumoAlerta: "5 críticos; 5 reclamações; NPS detrator (6)",
+    variacaoMrr: 3,
+    sinais: ["NPS ↓", "5 críticos", "5 reclamações"],
+    atualizadoEm: "2026-09-14",
   },
   {
     id: "C052",
+    nome: "Atacado Central",
     segmento: "Saúde",
     porte: "Grande",
     tipo: "Enterprise",
@@ -91,9 +114,13 @@ export const clientes: Cliente[] = [
     tendenciaScore: "descendo",
     clienteDesde: "2019-09-15",
     resumoAlerta: "SLA caiu de 95% para 77%; 2 reclamações; 11 dias de atraso",
+    variacaoMrr: -6,
+    sinais: ["SLA ↓ 95%", "2 reclamações", "11 dias de atraso"],
+    atualizadoEm: "2026-09-12",
   },
   {
     id: "C034",
+    nome: "Instituto Horizonte",
     segmento: "Educação",
     porte: "Médio",
     tipo: "Standard",
@@ -105,9 +132,13 @@ export const clientes: Cliente[] = [
     tendenciaScore: "estavel",
     clienteDesde: "2022-05-30",
     resumoAlerta: "Uso caiu de 70% para 63%; 1 reabertura",
+    variacaoMrr: 2,
+    sinais: ["Uso ↓ 70%", "1 reabertura"],
+    atualizadoEm: "2026-09-10",
   },
   {
     id: "C019",
+    nome: "Banco Meridiano",
     segmento: "Financeiro",
     porte: "Grande",
     tipo: "Enterprise",
@@ -119,9 +150,13 @@ export const clientes: Cliente[] = [
     tendenciaScore: "estavel",
     clienteDesde: "2018-02-11",
     resumoAlerta: "Todos os indicadores dentro do esperado",
+    variacaoMrr: 5,
+    sinais: ["Tudo em dia"],
+    atualizadoEm: "2026-09-08",
   },
   {
     id: "C045",
+    nome: "Loja Prática",
     segmento: "Varejo",
     porte: "Pequeno",
     tipo: "Standard",
@@ -133,6 +168,9 @@ export const clientes: Cliente[] = [
     tendenciaScore: "subindo",
     clienteDesde: "2023-04-18",
     resumoAlerta: "3 chamados críticos; atraso recorrente no pagamento",
+    variacaoMrr: -11,
+    sinais: ["3 chamados", "Atraso de pagamento"],
+    atualizadoEm: "2026-09-15",
   },
 ];
 
@@ -140,6 +178,24 @@ export function getFilaDoDia(): Cliente[] {
   return [...clientes]
     .filter((c) => c.faixaRisco === "critico" || c.faixaRisco === "alerta")
     .sort((a, b) => b.receitaAnualRisco - a.receitaAnualRisco);
+}
+
+/** Contagem e participação de cada faixa de risco na carteira. */
+export function getResumoCarteira(): {
+  faixa: FaixaRisco;
+  total: number;
+  percentual: number;
+}[] {
+  const ordem: FaixaRisco[] = ["critico", "alerta", "atencao", "saudavel"];
+
+  return ordem.map((faixa) => {
+    const total = clientes.filter((c) => c.faixaRisco === faixa).length;
+    return {
+      faixa,
+      total,
+      percentual: Math.round((total / clientes.length) * 100),
+    };
+  });
 }
 
 export function getCliente(id: string): Cliente | undefined {
@@ -177,6 +233,11 @@ export type EventoHistorico = {
   autor?: string;
 };
 
+export type PontoScore = {
+  mes: string;
+  score: number;
+};
+
 export type DetalheCliente = Cliente & {
   nomeFantasia: string;
   responsavelCS: string;
@@ -184,7 +245,39 @@ export type DetalheCliente = Cliente & {
   proximasAcoes: ProximaAcao[];
   avaliacaoIA: string;
   historico: EventoHistorico[];
+  /** Série de 12 meses exibida no gráfico de evolução do score. */
+  evolucaoScore: PontoScore[];
+  resumoCliente: string;
 };
+
+/**
+ * Gera uma série plausível de 12 meses terminando no score atual do cliente.
+ * Determinística (sem random) para não divergir entre servidor e cliente.
+ */
+function gerarEvolucaoScore(atual: number, max: number): PontoScore[] {
+  const meses = [
+    "out/25",
+    "nov/25",
+    "dez/25",
+    "jan/26",
+    "fev/26",
+    "mar/26",
+    "abr/26",
+    "mai/26",
+    "jun/26",
+    "jul/26",
+    "ago/26",
+    "set/26",
+  ];
+  const variacao = [0, 1, -1, 0, 1, 0, -1, 0, 1, 1, 0, 0];
+  const inicio = Math.max(1, Math.round(atual * 0.55));
+
+  return meses.map((mes, i) => {
+    const progresso = inicio + ((atual - inicio) * i) / (meses.length - 1);
+    const valor = i === meses.length - 1 ? atual : progresso + variacao[i];
+    return { mes, score: Math.min(max, Math.max(0, Math.round(valor))) };
+  });
+}
 
 const avaliacaoPadrao =
   "Risco em observação. Recomendamos acompanhar a evolução dos indicadores nas próximas semanas e manter contato regular.";
@@ -209,6 +302,8 @@ const detalhesEspecificos: Record<string, Partial<DetalheCliente>> = {
     ],
     avaliacaoIA:
       "Alto risco de cancelamento. Há deterioração consistente nos principais indicadores nos últimos 3 meses.",
+    resumoCliente:
+      "Cliente do segmento varejo, de grande porte, com contrato Enterprise. Apresenta queda recente no nível de serviço, aumento de chamados reabertos e atraso no pagamento. Requer atenção imediata e plano de ação conjunto.",
     historico: [
       {
         id: "h1",
@@ -272,6 +367,10 @@ export function getDetalheCliente(id: string): DetalheCliente | undefined {
       ],
     avaliacaoIA: overrides?.avaliacaoIA ?? avaliacaoPadrao,
     historico: overrides?.historico ?? [],
+    evolucaoScore: gerarEvolucaoScore(base.scoreRisco, base.scoreMax),
+    resumoCliente:
+      overrides?.resumoCliente ??
+      `Cliente do segmento ${base.segmento.toLowerCase()}, de ${base.porte.toLowerCase()} porte, com contrato ${base.tipo}. ${base.resumoAlerta}.`,
   };
 }
 
@@ -366,3 +465,130 @@ export const usuarioAtual = {
   cargo: "Gestora de Relacionamento",
   iniciais: "AS",
 };
+
+export type StatusIngestao = "processado" | "com_erros" | "em_processamento";
+
+export type IngestaoRegistro = {
+  id: string;
+  arquivo: string;
+  tamanho: string;
+  enviadoEm: string; // ISO datetime
+  registros: number;
+  status: StatusIngestao;
+  processadoEm: string | null; // ISO datetime
+};
+
+export const historicoIngestoes: IngestaoRegistro[] = [
+  {
+    id: "i1",
+    arquivo: "base_clientes_set2026.xlsx",
+    tamanho: "2,4 MB",
+    enviadoEm: "2026-09-18T14:32:00",
+    registros: 8542,
+    status: "processado",
+    processadoEm: "2026-09-18T14:35:00",
+  },
+  {
+    id: "i2",
+    arquivo: "distribuidores.csv",
+    tamanho: "1,1 MB",
+    enviadoEm: "2026-09-15T10:15:00",
+    registros: 2316,
+    status: "com_erros",
+    processadoEm: "2026-09-15T10:18:00",
+  },
+  {
+    id: "i3",
+    arquivo: "carteira_varejo.xlsx",
+    tamanho: "3,8 MB",
+    enviadoEm: "2026-09-11T16:20:00",
+    registros: 12094,
+    status: "processado",
+    processadoEm: "2026-09-11T16:25:00",
+  },
+  {
+    id: "i4",
+    arquivo: "prospect_sudeste.csv",
+    tamanho: "900 KB",
+    enviadoEm: "2026-09-08T09:41:00",
+    registros: 1103,
+    status: "em_processamento",
+    processadoEm: null,
+  },
+];
+
+export type Integracao = {
+  id: string;
+  nome: string;
+  descricao: string;
+  status: "conectado" | "pendente";
+  /** Cor de fundo do quadradinho da marca na lista. */
+  marca: "supabase" | "gemini" | "vercel";
+};
+
+export const integracoes: Integracao[] = [
+  {
+    id: "supabase",
+    nome: "Supabase (Postgres + pgvector)",
+    descricao: "Banco de dados vetorial para clientes e embeddings.",
+    status: "conectado",
+    marca: "supabase",
+  },
+  {
+    id: "gemini",
+    nome: "Google Gemini (IA generativa)",
+    descricao: "Geração de insights e resumos inteligentes.",
+    status: "conectado",
+    marca: "gemini",
+  },
+  {
+    id: "vercel",
+    nome: "Vercel Cron (varredura diária)",
+    descricao: "Execução de rotinas de atualização de dados.",
+    status: "pendente",
+    marca: "vercel",
+  },
+];
+
+export const pesosModeloRisco = [
+  { sinal: "Queda severa de uso do sistema", peso: 5 },
+  { sinal: "Atraso de pagamento", peso: 4 },
+  { sinal: "Queda de SLA", peso: 4 },
+  { sinal: "Chamados críticos abertos", peso: 3 },
+  { sinal: "Reaberturas de chamados", peso: 2 },
+  { sinal: "NPS detrator", peso: 2 },
+];
+
+export const PESO_MAXIMO = 5;
+
+export type MembroEquipe = {
+  id: string;
+  nome: string;
+  iniciais: string;
+  email: string;
+  papel: "Administrador" | "Gestor" | "Analista";
+};
+
+export const equipe: MembroEquipe[] = [
+  {
+    id: "u1",
+    nome: "Ana Souza",
+    iniciais: "AS",
+    email: "ana.souza@sinalys.com.br",
+    papel: "Administrador",
+  },
+  {
+    id: "u2",
+    nome: "Rafael Torres",
+    iniciais: "RT",
+    email: "rafael.torres@sinalys.com.br",
+    papel: "Gestor",
+  },
+  {
+    id: "u3",
+    nome: "Marina Costa",
+    iniciais: "MC",
+    email: "marina.costa@sinalys.com.br",
+    papel: "Analista",
+  },
+];

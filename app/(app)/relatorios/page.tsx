@@ -1,6 +1,7 @@
 import { BarraHorizontal } from "@/components/relatorios/BarraHorizontal";
 import { BarraVertical } from "@/components/relatorios/BarraVertical";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { formatCurrencyBRL } from "@/lib/format";
 import {
   desfechos90dias,
@@ -19,25 +20,23 @@ export default function RelatoriosPage() {
   );
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 sm:p-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Relatórios</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Visão consolidada de risco e desfechos dos últimos 90 dias.
-        </p>
-      </div>
+    <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        titulo="Relatórios"
+        descricao="Visão consolidada de risco e desfechos dos últimos 90 dias."
+      />
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MiniStat label="Receita em risco (ano)" value={formatCurrencyBRL(kpisDashboard.receitaEmRiscoAno)} />
         <MiniStat label="Taxa de recuperação" value={`${taxaRecuperacao}%`} tone="emerald" />
         <MiniStat label="Score médio da carteira" value="8,3 / 18" tone="amber" />
         <MiniStat label="NPS médio" value="42" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Receita em risco por segmento</CardTitle>
+            <CardTitle className="text-lg">Receita em risco por segmento</CardTitle>
           </CardHeader>
           <CardContent>
             <BarraHorizontal dados={receitaPorSegmento} />
@@ -46,7 +45,7 @@ export default function RelatoriosPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Evolução do score médio de risco</CardTitle>
+            <CardTitle className="text-lg">Evolução do score médio de risco</CardTitle>
           </CardHeader>
           <CardContent>
             <BarraVertical dados={evolucaoScoreMedio} />
@@ -56,10 +55,10 @@ export default function RelatoriosPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Desfechos dos últimos 90 dias</CardTitle>
+          <CardTitle className="text-lg">Desfechos dos últimos 90 dias</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <DesfechoStat
               label="Recuperados"
               valor={desfechos90dias.recuperados}
@@ -95,12 +94,12 @@ function MiniStat({
   tone?: "emerald" | "amber";
 }) {
   const toneClass =
-    tone === "emerald" ? "text-emerald-600" : tone === "amber" ? "text-amber-600" : "text-slate-900";
+    tone === "emerald" ? "text-emerald-600" : tone === "amber" ? "text-amber-600" : "text-brand-ink";
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className={`mt-2 text-xl font-bold ${toneClass}`}>{value}</p>
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-card">
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className={`mt-2 text-2xl font-bold ${toneClass}`}>{value}</p>
     </div>
   );
 }
