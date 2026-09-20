@@ -8,6 +8,8 @@ import type {
   ProximaAcao,
 } from "@/lib/mock-data";
 import { TIPOS_CONTATO, type TipoContato } from "@/lib/contatos/constantes";
+import { PREFIXO_SOLICITACAO_AGENDAMENTO } from "@/lib/health/agendamento";
+import type { BaseSimulacao } from "@/lib/motor/simulador";
 import type { ClientePainel } from "./tipos";
 
 /** Meses de histórico exibidos no gráfico de evolução do score. */
@@ -33,6 +35,14 @@ export type DetalheClientePainel = ClientePainel & {
   resumoCliente: string;
   /** Explicação em linguagem natural do "porquê" do score, direto das regras do motor (sem IA). */
   explicacaoRisco: string;
+  /**
+   * Sinais dentro do esperado (acionado === false), candidatos a "destaque
+   * positivo" na página pública — é entre estes que o CS escolhe no modal
+   * de compartilhamento. Ordem do motor (mais pesados primeiro).
+   */
+  destaquesDisponiveis: { codigo: string; rotulo: string }[];
+  /** Base do simulador de cenários (lib/motor/simulador.ts). */
+  simulacao: BaseSimulacao;
 };
 
 const AVALIACAO_SEM_DIAGNOSTICO =
@@ -159,13 +169,34 @@ export async function montarDetalheCliente(params: {
   }
 
   // Evidências: só sinais acionados, dos mais pesados para os mais leves.
-  const evidencias: Evidencia[] = contexto.sinais
-    .filter((s) => s.acionado === true)
-    .map((s, i) => ({
-      id: `e${i + 1}`,
-      severidade: severidadeDoSinal(s),
-      titulo: tituloDaEvidencia(s),
-    }));
+  const acionados = contexto.sinais.filter((s) => s.acionado === true);
+  const evidencias: Evidencia[] = acionados.map((s, i) => ({
+    id: `e${i + 1}`,
+    severidade: severidadeDoSinal(s),
+    titulo: tituloDaEvidencia(s),
+  }));
+
+  const destaquesDisponiveis = contexto.sinais
+    .filter((s) => s.acionado === false)
+    .map((s) => ({ codigo: s.codigo_sinal, rotulo: s.metrica }));
+
+  // Simulador: o CS só "resolve" sinais acionados, mas o denominador do
+  // score é a soma dos pesos de TODAS as regras avaliáveis (score.ts).
+  const simulacao: BaseSimulacao = {
+    scoreRisco: cliente.scoreRisco,
+    somaPesos: contexto.sinais
+      .filter((s) => s.acionado !== null)
+      .reduce((soma, s) => soma + s.peso, 0),
+    mrr: cliente.mrr,
+    impactoRelativo: cliente.impactoRelativo,
+    sinais: acionados.map((s) => ({
+      codigo: s.codigo_sinal,
+      metrica: s.metrica,
+      peso: s.peso,
+      pontos: s.pontos,
+      descricao: tituloDaEvidencia(s),
+    })),
+  };
 
   // Evolução: última predição de cada mês da janela.
   const porMes = new Map<string, number>();
@@ -190,7 +221,11 @@ export async function montarDetalheCliente(params: {
       id: `c-${c.id}`,
       data: String(c.realizado_em).slice(0, 10),
       tipo: c.tipo === "reuniao_presencial" || c.tipo === "videochamada" ? "reuniao" : "contato",
-      titulo: rotuloTipoContato(c.tipo),
+      // Pedido de call feito pelo próprio cliente na página pública de Health
+      // Score (app/api/health/agendamento) — merece um título próprio na timeline.
+      titulo: c.resumo.startsWith(PREFIXO_SOLICITACAO_AGENDAMENTO)
+        ? "Cliente pediu uma call de alinhamento"
+        : rotuloTipoContato(c.tipo),
       descricao: c.proximo_passo ? `${c.resumo} Próximo passo: ${c.proximo_passo}.` : c.resumo,
       autor: c.autor_nome ?? undefined,
     })),
@@ -228,6 +263,8 @@ export async function montarDetalheCliente(params: {
     historico,
     evolucaoScore,
     explicacaoRisco: montarExplicacaoRisco(contexto),
+    destaquesDisponiveis,
+    simulacao,
     resumoCliente: [
       `${contexto.rotulo_entidade} do segmento ${cliente.segmento || "não informado"}`,
       cliente.porte ? `de porte ${cliente.porte.toLowerCase()}` : null,

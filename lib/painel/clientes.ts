@@ -8,6 +8,7 @@ import {
 } from "@/lib/motor/urgencia";
 import type { MotivoCancelamento } from "@/lib/cancelamento/constantes";
 import { obterMetricaReceitaIdCache, obterProjetoInfoCache } from "./cache-estatico";
+import { lerConfigHealthPublico } from "./health-config";
 import type { ClientePainel } from "./tipos";
 
 /** Máximo de chips em "Principais sinais". */
@@ -335,6 +336,7 @@ export async function montarClientesPainel(params: {
       testeOrigem: atributoTexto(e.atributos, "teste_origem") || null,
       motivoCancelamento: motivoPorEntidade.get(e.id) ?? null,
       tokenCompartilhamento: e.token_compartilhamento,
+      healthPublico: lerConfigHealthPublico(e.atributos),
     });
   }
 

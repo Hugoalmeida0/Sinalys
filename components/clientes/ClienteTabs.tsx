@@ -15,6 +15,7 @@ import {
   type IconProps,
 } from "@/components/icons";
 import { ScoreEvolucaoChart } from "@/components/clientes/ScoreEvolucaoChart";
+import { SimuladorCenarios } from "@/components/clientes/SimuladorCenarios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { Button } from "@/components/ui/Button";
@@ -34,7 +35,7 @@ import {
   severidadeNome,
 } from "@/lib/risk";
 
-const tabs = ["Visão geral", "Sinais de risco", "Plano de ação"] as const;
+const tabs = ["Visão geral", "Sinais de risco", "Simulador", "Plano de ação"] as const;
 
 type Tab = (typeof tabs)[number];
 
@@ -64,6 +65,7 @@ export function ClienteTabs({ detalhe }: { detalhe: DetalheCliente }) {
 
       {tab === "Visão geral" && <VisaoGeral detalhe={detalhe} />}
       {tab === "Sinais de risco" && <SinaisDeRisco detalhe={detalhe} />}
+      {tab === "Simulador" && <SimuladorCenarios base={detalhe.simulacao} clienteId={detalhe.id} />}
       {tab === "Plano de ação" && <PlanoDeAcao detalhe={detalhe} />}
     </div>
   );

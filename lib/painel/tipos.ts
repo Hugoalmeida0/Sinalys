@@ -1,5 +1,6 @@
 import type { FaixaRisco, TendenciaScore } from "@/lib/mock-data";
 import type { MotivoCancelamento } from "@/lib/cancelamento/constantes";
+import type { ConfigHealthPublico } from "./health-config";
 
 /**
  * Cliente na forma que o painel consome (mesmos campos do `Cliente` de
@@ -63,6 +64,8 @@ export interface ClientePainel {
   motivoCancelamento: { categoria: MotivoCancelamento; detalhe: string | null } | null;
   /** Token opaco da página pública de Health Score (/health/[token]). */
   tokenCompartilhamento: string;
+  /** Personalização da página pública escolhida pelo CS (`atributos.health_publico`). */
+  healthPublico: ConfigHealthPublico;
 }
 
 export interface KpisPainel {

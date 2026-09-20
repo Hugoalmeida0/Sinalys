@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { buscarHealthPublico, DESTAQUE_PADRAO } from "@/lib/painel/health-publico";
 import { resolverBaseUrlAbsoluta } from "@/lib/config/base-url";
 import { SinalysMascot } from "@/components/ui/SinalysMascot";
+import { AgendarCall } from "@/components/health/AgendarCall";
 import {
   CheckIcon,
   ClockIcon,
@@ -31,7 +32,7 @@ async function gerarQrCodeSvg(url: string): Promise<string> {
   });
 }
 
-/** Ícone + cor por posição — a ordem dos benefícios é fixa em `lib/painel/health-publico.ts`. */
+/** Ícone + cor por posição — a ordem dos benefícios é fixa em `lib/painel/health-config.ts`. */
 const ESTILO_BENEFICIO: { icone: ComponentType<IconProps>; bg: string; icone_cor: string; anel: string }[] = [
   { icone: ClockIcon, bg: "bg-emerald-50", icone_cor: "text-emerald-600", anel: "ring-emerald-100" },
   { icone: TargetIcon, bg: "bg-brand-pale", icone_cor: "text-brand-royal", anel: "ring-brand-royal/10" },
@@ -162,15 +163,18 @@ export default async function HealthScorePublicoPage({
           </div>
         </section>
 
-        {/* CTA */}
+        {/* CTA + agendamento */}
         <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-royal to-brand-navy px-6 py-10 text-center shadow-xl sm:px-10">
           <h2 className="text-2xl font-bold text-white">
             Vamos conversar sobre os próximos passos da sua conta?
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-white/85">
-            Seu time de sucesso preparou algumas recomendações personalizadas para você. Fale com
-            quem te enviou este link para marcarmos uma conversa.
+            Seu time de sucesso preparou algumas recomendações personalizadas para você. Marque
+            uma call de alinhamento no horário que for melhor para o seu time.
           </p>
+          <div className="mt-6 flex justify-center">
+            <AgendarCall token={token} linkAgendamento={health.linkAgendamento} />
+          </div>
         </section>
       </div>
 
