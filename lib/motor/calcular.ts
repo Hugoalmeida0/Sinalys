@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { buscarTodasLinhas } from "@/lib/supabase/paginar";
 import {
   CODIGO_METRICA_RECEITA_MENSAL,
   PADRAO_CLIP_Z,
@@ -52,16 +53,18 @@ async function buscarValorMaisRecentePorEntidade(
   metricaId: string,
   referenciaEmIso: string
 ): Promise<Map<string, number>> {
-  const { data, error } = await supabase
-    .from("observacoes")
-    .select("entidade_id, valor_numero, observado_em")
-    .eq("projeto_id", projetoId)
-    .eq("metrica_id", metricaId)
-    .not("valor_numero", "is", null)
-    .lte("observado_em", referenciaEmIso)
-    .lte("disponivel_em", referenciaEmIso)
-    .order("entidade_id", { ascending: true })
-    .order("observado_em", { ascending: false });
+  const { data, error } = await buscarTodasLinhas(() =>
+    supabase
+      .from("observacoes")
+      .select("entidade_id, valor_numero, observado_em")
+      .eq("projeto_id", projetoId)
+      .eq("metrica_id", metricaId)
+      .not("valor_numero", "is", null)
+      .lte("observado_em", referenciaEmIso)
+      .lte("disponivel_em", referenciaEmIso)
+      .order("entidade_id", { ascending: true })
+      .order("observado_em", { ascending: false })
+  );
 
   if (error) throw new Error(`Falha ao buscar observações da métrica ${metricaId}: ${error.message}`);
 
@@ -81,15 +84,18 @@ async function buscarHistoricoPorEntidade(
   metricaId: string,
   referenciaEmIso: string
 ): Promise<Map<string, ObservacaoNumerica[]>> {
-  const { data, error } = await supabase
-    .from("observacoes")
-    .select("entidade_id, valor_numero, observado_em")
-    .eq("projeto_id", projetoId)
-    .eq("metrica_id", metricaId)
-    .not("valor_numero", "is", null)
-    .lte("observado_em", referenciaEmIso)
-    .lte("disponivel_em", referenciaEmIso)
-    .order("observado_em", { ascending: true });
+  const { data, error } = await buscarTodasLinhas(() =>
+    supabase
+      .from("observacoes")
+      .select("entidade_id, valor_numero, observado_em")
+      .eq("projeto_id", projetoId)
+      .eq("metrica_id", metricaId)
+      .not("valor_numero", "is", null)
+      .lte("observado_em", referenciaEmIso)
+      .lte("disponivel_em", referenciaEmIso)
+      .order("entidade_id", { ascending: true })
+      .order("observado_em", { ascending: true })
+  );
 
   if (error) throw new Error(`Falha ao buscar histórico da métrica ${metricaId}: ${error.message}`);
 

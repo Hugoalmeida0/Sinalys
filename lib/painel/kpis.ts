@@ -108,7 +108,9 @@ export async function calcularKpisPainel(params: {
   const { supabase, projetoId, modeloId, clientes } = params;
   const agora = params.agora ?? new Date();
 
-  const emAlerta = clientes.filter((c) => FAIXAS_ALERTA.has(c.faixaRisco) && !c.silenciadoAte);
+  const emAlerta = clientes.filter(
+    (c) => FAIXAS_ALERTA.has(c.faixaRisco) && !c.silenciadoAte && !c.cancelado
+  );
 
   const [antecedencias, clientesContatados7d] = await Promise.all([
     calcularAntecedencias(supabase, projetoId, modeloId),

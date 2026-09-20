@@ -40,6 +40,10 @@ export interface ClientePainel {
   scoreUrgencia: number | null;
   /** ISO datetime até quando os alertas estão silenciados, ou null. */
   silenciadoAte: string | null;
+  /** true quando há um evento de desfecho (código-alvo do projeto, ex. "cancelamento") registrado para o cliente. */
+  cancelado: boolean;
+  /** ISO date do desfecho mais recente, ou null se o cliente segue ativo. */
+  canceladoEm: string | null;
 }
 
 export interface KpisPainel {

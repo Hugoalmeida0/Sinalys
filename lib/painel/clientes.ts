@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { buscarTodasLinhas } from "@/lib/supabase/paginar";
 import type { FaixaRisco, TendenciaScore } from "@/lib/mock-data";
 import { CODIGO_METRICA_RECEITA_MENSAL } from "@/lib/motor/constantes";
 import { calcularScoreUrgencia } from "@/lib/motor/urgencia";
@@ -118,22 +119,50 @@ export async function montarClientesPainel(params: {
   const agora = params.agora ?? new Date();
   const agoraIso = agora.toISOString();
 
-  const [{ data: entidades, error: erroEnt }, { data: predicoes, error: erroPred }] =
-    await Promise.all([
-      supabase
-        .from("entidades")
-        .select("id, id_externo, nome_exibicao, iniciado_em, atributos")
-        .eq("projeto_id", projetoId),
+  const [
+    { data: entidades, error: erroEnt },
+    { data: predicoes, error: erroPred },
+    { data: projeto, error: erroProjeto },
+  ] = await Promise.all([
+    supabase
+      .from("entidades")
+      .select("id, id_externo, nome_exibicao, iniciado_em, atributos")
+      .eq("projeto_id", projetoId),
+    buscarTodasLinhas<PredicaoLinha>(() =>
       supabase
         .from("predicoes")
         .select("id, entidade_id, referencia_em, pontuacao, faixa_risco, cobertura, valor_impacto")
         .eq("projeto_id", projetoId)
         .eq("modelo_id", modeloId)
         .order("entidade_id", { ascending: true })
-        .order("referencia_em", { ascending: false }),
-    ]);
+        .order("referencia_em", { ascending: false })
+    ),
+    supabase.from("projetos").select("codigo_evento_alvo").eq("id", projetoId).maybeSingle(),
+  ]);
   if (erroEnt) throw new Error(`Falha ao buscar entidades: ${erroEnt.message}`);
   if (erroPred) throw new Error(`Falha ao buscar predições: ${erroPred.message}`);
+  if (erroProjeto) throw new Error(`Falha ao buscar projeto: ${erroProjeto.message}`);
+
+  // Clientes com o evento de desfecho-alvo (ex. "cancelamento") já registrado —
+  // não entram na fila do dia e aparecem marcados na listagem.
+  const canceladoEmPorEntidade = new Map<string, string>();
+  if (projeto?.codigo_evento_alvo) {
+    const { data: eventos, error: erroEventos } = await buscarTodasLinhas(() =>
+      supabase
+        .from("eventos_desfecho")
+        .select("entidade_id, ocorrido_em")
+        .eq("projeto_id", projetoId)
+        .eq("codigo_evento", projeto.codigo_evento_alvo)
+        .order("entidade_id", { ascending: true })
+    );
+    if (erroEventos) throw new Error(`Falha ao buscar desfechos: ${erroEventos.message}`);
+    for (const evento of eventos) {
+      const atual = canceladoEmPorEntidade.get(evento.entidade_id);
+      if (!atual || evento.ocorrido_em > atual) {
+        canceladoEmPorEntidade.set(evento.entidade_id, evento.ocorrido_em);
+      }
+    }
+  }
 
   // Última e penúltima predição por entidade (para score atual e tendência).
   const ultima = new Map<string, PredicaoLinha>();
@@ -186,16 +215,18 @@ export async function montarClientesPainel(params: {
   // Duas últimas observações de receita por entidade → variação de MRR.
   const receitaHistorico = new Map<string, number[]>();
   if (receitaMetricaRes.data && entidadeIds.length) {
-    const { data: obs, error } = await supabase
-      .from("observacoes")
-      .select("entidade_id, valor_numero")
-      .eq("projeto_id", projetoId)
-      .eq("metrica_id", receitaMetricaRes.data.id)
-      .in("entidade_id", entidadeIds)
-      .not("valor_numero", "is", null)
-      .lte("observado_em", agoraIso)
-      .order("entidade_id", { ascending: true })
-      .order("observado_em", { ascending: false });
+    const { data: obs, error } = await buscarTodasLinhas(() =>
+      supabase
+        .from("observacoes")
+        .select("entidade_id, valor_numero")
+        .eq("projeto_id", projetoId)
+        .eq("metrica_id", receitaMetricaRes.data!.id)
+        .in("entidade_id", entidadeIds)
+        .not("valor_numero", "is", null)
+        .lte("observado_em", agoraIso)
+        .order("entidade_id", { ascending: true })
+        .order("observado_em", { ascending: false })
+    );
     if (error) throw new Error(`Falha ao buscar receita: ${error.message}`);
     for (const o of obs ?? []) {
       const lista = receitaHistorico.get(o.entidade_id) ?? [];
@@ -254,6 +285,8 @@ export async function montarClientesPainel(params: {
       cobertura: numero(p.cobertura),
       scoreUrgencia: calcularScoreUrgencia(pontuacao, numero(p.valor_impacto)),
       silenciadoAte: silenciadoAte.get(e.id) ?? null,
+      cancelado: canceladoEmPorEntidade.has(e.id),
+      canceladoEm: canceladoEmPorEntidade.get(e.id) ?? null,
     });
   }
 
@@ -275,6 +308,7 @@ export function montarFilaDoDia(
 ): ClientePainel[] {
   const faixas = new Set(opcoes.faixas ?? FAIXAS_FILA_PADRAO);
   return clientes
+    .filter((c) => !c.cancelado)
     .filter((c) => faixas.has(c.faixaRisco))
     .filter((c) => opcoes.incluirSilenciados || !c.silenciadoAte)
     .sort((a, b) => {

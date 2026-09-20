@@ -167,7 +167,10 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
                 </td>
                 <td className="py-3.5 pr-3">
                   <Link href={`/clientes/${cliente.id}`} className="block">
-                    <p className="text-sm font-semibold text-brand-royal">{cliente.nome}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-brand-royal">{cliente.nome}</p>
+                      {cliente.cancelado && <BadgeCancelado />}
+                    </div>
                     <p className="mt-0.5 text-xs text-slate-400">
                       {cliente.porte} · {cliente.tipo}
                     </p>
@@ -214,7 +217,10 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
                   faixa={cliente.faixaRisco}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-brand-ink">{cliente.nome}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-bold text-brand-ink">{cliente.nome}</p>
+                    {cliente.cancelado && <BadgeCancelado />}
+                  </div>
                   <p className="text-xs text-slate-400">
                     {cliente.id} · {cliente.porte} · {cliente.tipo}
                   </p>
@@ -293,6 +299,15 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Marca clientes com o evento de desfecho-alvo (ex. cancelamento) já registrado. */
+function BadgeCancelado() {
+  return (
+    <SoftBadge className="shrink-0 bg-slate-200 text-slate-600" title="Cliente cancelou o plano">
+      Cancelado
+    </SoftBadge>
   );
 }
 

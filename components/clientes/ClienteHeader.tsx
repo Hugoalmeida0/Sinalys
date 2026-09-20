@@ -27,6 +27,11 @@ export function ClienteHeader({ detalhe }: { detalhe: DetalheCliente }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {detalhe.cancelado && (
+            <Badge className="bg-slate-200 px-3.5 py-2 font-semibold text-slate-600">
+              Cancelado
+            </Badge>
+          )}
           <Badge className={`px-3.5 py-2 font-semibold ${faixaRiscoClasses[detalhe.faixaRisco]}`}>
             {faixaRiscoLabel[detalhe.faixaRisco]}
           </Badge>
