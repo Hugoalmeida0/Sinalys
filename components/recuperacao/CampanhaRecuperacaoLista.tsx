@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { SoftBadge } from "@/components/ui/Badge";
 import { useAnaliseIA } from "@/lib/ia/hooks/useAnaliseIA";
 import { formatCurrencyBRLOuTraco, formatDateLongPtBR } from "@/lib/format";
+import { MOTIVOS_CANCELAMENTO } from "@/lib/cancelamento/constantes";
 import type { ClientePainel } from "@/lib/painel/tipos";
 
 export function CampanhaRecuperacaoLista({ clientes }: { clientes: ClientePainel[] }) {
@@ -77,6 +78,11 @@ function CardCliente({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-base font-bold text-brand-ink">{cliente.nome}</span>
             <SoftBadge className="bg-slate-200 text-slate-600">Cancelado</SoftBadge>
+            {cliente.motivoCancelamento && (
+              <SoftBadge className="bg-red-50 text-red-700">
+                {MOTIVOS_CANCELAMENTO[cliente.motivoCancelamento.categoria]}
+              </SoftBadge>
+            )}
           </div>
           <p className="mt-0.5 text-sm text-slate-500">
             {[cliente.segmento, cliente.porte, cliente.tipo].filter(Boolean).join(" · ") ||
@@ -92,6 +98,12 @@ function CardCliente({
               <span>Cancelado em {formatDateLongPtBR(cliente.canceladoEm)}</span>
             )}
           </div>
+
+          {cliente.motivoCancelamento?.detalhe && (
+            <p className="mt-2 text-sm text-slate-500 italic">
+              &ldquo;{cliente.motivoCancelamento.detalhe}&rdquo;
+            </p>
+          )}
 
           {cliente.sinais.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">

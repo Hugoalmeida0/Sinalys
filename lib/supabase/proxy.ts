@@ -2,8 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { obterConfigSupabasePublica } from "./chave-publica";
 
-/** Rotas de página acessíveis sem sessão. */
-const ROTAS_PUBLICAS = ["/login"];
+/**
+ * Rotas de página acessíveis sem sessão. `/health` é a página de Health Score
+ * compartilhável com o cliente final (token opaco na URL, não é dado sensível
+ * de sessão) — ver lib/painel/health-publico.ts.
+ */
+const ROTAS_PUBLICAS = ["/login", "/health"];
 
 /**
  * Renova o token de sessão do Supabase a cada requisição (Server Components

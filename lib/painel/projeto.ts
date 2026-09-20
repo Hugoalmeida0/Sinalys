@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { obterUsuarioSessao } from "@/lib/auth/usuario";
 import { obterProjetoIdPadrao } from "@/lib/ingestao/constantes";
+import { obterModeloAtivoIdCache } from "./cache-estatico";
 
 /**
  * Resolve o projeto (tenant) da requisição, nesta ordem:
@@ -15,17 +16,16 @@ export async function resolverProjetoId(explicito?: string | null): Promise<stri
   return obterProjetoIdPadrao();
 }
 
-/** Modelo ativo do projeto, ou `null` se não houver. */
+/**
+ * Modelo ativo do projeto, ou `null` se não houver. Cacheado por 12h
+ * (lib/painel/cache-estatico.ts) — troca de modelo ativo é uma ação manual
+ * rara, não faz parte do fluxo normal de uso. `supabase` fica no parâmetro só
+ * para não quebrar as chamadas existentes; a leitura cacheada abre seu
+ * próprio client internamente.
+ */
 export async function resolverModeloAtivoId(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   projetoId: string
 ): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("modelos")
-    .select("id")
-    .eq("projeto_id", projetoId)
-    .eq("status", "ativo")
-    .maybeSingle();
-  if (error) throw new Error(`Falha ao buscar modelo ativo: ${error.message}`);
-  return (data?.id as string | undefined) ?? null;
+  return obterModeloAtivoIdCache(projetoId);
 }

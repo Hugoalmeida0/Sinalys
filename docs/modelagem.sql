@@ -27,8 +27,12 @@ CREATE TABLE entidades (
   iniciado_em timestamptz, 
   atributos jsonb NOT NULL DEFAULT '{}'::jsonb,
   criado_em timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (projeto_id, id), 
-  UNIQUE (projeto_id, id_externo)
+  -- Token opaco da página pública de Health Score (/health/[token]), lida sem
+  -- sessão via service_role. Não é PK: pode ser rotacionado sem afetar FKs.
+  token_compartilhamento uuid NOT NULL DEFAULT gen_random_uuid(),
+  UNIQUE (projeto_id, id),
+  UNIQUE (projeto_id, id_externo),
+  UNIQUE (token_compartilhamento)
 );
 
 CREATE TABLE definicoes_metricas (
@@ -107,8 +111,14 @@ CREATE TABLE eventos_desfecho (
   codigo_evento text NOT NULL,
   ocorrido_em timestamptz NOT NULL, 
   registrado_em timestamptz NOT NULL DEFAULT now(),
-  execucao_ingestao_id uuid, 
+  execucao_ingestao_id uuid,
   detalhes_evento jsonb NOT NULL DEFAULT '{}'::jsonb,
+  -- Motivo estruturado do desfecho (cancelamento), para analytics de
+  -- causa-raiz agregada (/recuperacao). NULL nos desfechos importados antes
+  -- desta coluna existir ou nos que não são cancelamento.
+  motivo_categoria text
+    CHECK (motivo_categoria IN ('preco', 'suporte', 'produto', 'concorrencia', 'financeiro', 'outro')),
+  motivo_detalhe text,
   FOREIGN KEY (projeto_id, entidade_id) REFERENCES entidades(projeto_id, id),
   FOREIGN KEY (projeto_id, execucao_ingestao_id) REFERENCES execucoes_ingestao(projeto_id, id),
   UNIQUE (entidade_id, codigo_evento, ocorrido_em)
