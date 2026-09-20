@@ -3,9 +3,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buscarTodasLinhas } from "@/lib/supabase/paginar";
 import {
   CODIGO_METRICA_RECEITA_MENSAL,
+  LIMIAR_Z_ACIONADO,
+  OMISSAO_SEM_PONTUACAO,
   PADRAO_CLIP_Z,
   PADRAO_JANELA_MEDIA_MOVEL_DIAS,
-  PADRAO_PONTUACAO_OMISSAO,
+  PADRAO_JANELA_OBSERVACOES,
 } from "./constantes";
 import { calcularMediaMovel, calcularZScoreCarteira } from "./normalizacao";
 import { calcularPredicaoEntidade } from "./score";
@@ -28,7 +30,17 @@ function parseConfigRegra(raw: unknown): ConfigRegra | null {
   const clipZ = typeof config.clip_z === "number" ? config.clip_z : undefined;
 
   if (config.tipo === "zscore_carteira") {
-    return { tipo: "zscore_carteira", direcao, pontuacao_omissao: pontuacaoOmissao, clip_z: clipZ };
+    const janelaObservacoes =
+      typeof config.janela_observacoes === "number" && config.janela_observacoes >= 1
+        ? Math.floor(config.janela_observacoes)
+        : PADRAO_JANELA_OBSERVACOES;
+    return {
+      tipo: "zscore_carteira",
+      direcao,
+      janela_observacoes: janelaObservacoes,
+      pontuacao_omissao: pontuacaoOmissao,
+      clip_z: clipZ,
+    };
   }
   if (config.tipo === "media_movel") {
     const janelaDias =
@@ -46,13 +58,27 @@ function parseConfigRegra(raw: unknown): ConfigRegra | null {
   return null;
 }
 
-/** Busca, por métrica, a última observação (respeitando `disponivel_em` — sem look-ahead) de cada entidade até `referenciaEm`. */
-async function buscarValorMaisRecentePorEntidade(
+/** Valor recente de uma entidade para uma métrica: média das últimas N observações, mais a última isolada e quantas entraram. */
+export interface ValorRecente {
+  valor: number;
+  ultimo_valor: number;
+  observacoes: number;
+}
+
+/**
+ * Busca, por métrica, as `janelaObservacoes` observações mais recentes
+ * (respeitando `disponivel_em` — sem look-ahead) de cada entidade até
+ * `referenciaEm` e devolve a média delas. Com janela 1 é só a última
+ * observação; com 3 (padrão) um período isolado — um percentual sobre 1
+ * chamado, um atraso de um mês — deixa de saturar o sinal sozinho.
+ */
+async function buscarValorRecentePorEntidade(
   supabase: SupabaseClient,
   projetoId: string,
   metricaId: string,
-  referenciaEmIso: string
-): Promise<Map<string, number>> {
+  referenciaEmIso: string,
+  janelaObservacoes: number
+): Promise<Map<string, ValorRecente>> {
   const { data, error } = await buscarTodasLinhas(() =>
     supabase
       .from("observacoes")
@@ -68,13 +94,52 @@ async function buscarValorMaisRecentePorEntidade(
 
   if (error) throw new Error(`Falha ao buscar observações da métrica ${metricaId}: ${error.message}`);
 
-  const resultado = new Map<string, number>();
+  const acumulado = new Map<string, number[]>();
   for (const linha of data ?? []) {
-    if (!resultado.has(linha.entidade_id)) {
-      resultado.set(linha.entidade_id, Number(linha.valor_numero));
-    }
+    const lista = acumulado.get(linha.entidade_id) ?? [];
+    if (lista.length < janelaObservacoes) lista.push(Number(linha.valor_numero));
+    acumulado.set(linha.entidade_id, lista);
+  }
+
+  const resultado = new Map<string, ValorRecente>();
+  for (const [entidadeId, valores] of acumulado) {
+    resultado.set(entidadeId, {
+      valor: valores.reduce((soma, v) => soma + v, 0) / valores.length,
+      ultimo_valor: valores[0],
+      observacoes: valores.length,
+    });
   }
   return resultado;
+}
+
+/**
+ * Task A.1 — referência padrão do motor: a data da observação mais recente
+ * do projeto, não "agora". Com dados mensais que terminam em junho e o
+ * relógio em setembro, "agora" deixa a janela recente da média móvel vazia e
+ * mata toda regra `media_movel` (cobertura cai pela metade sem aviso).
+ */
+export async function resolverReferenciaPadrao(
+  supabase: SupabaseClient,
+  projetoId: string
+): Promise<Date | null> {
+  const { data, error } = await supabase
+    .from("observacoes")
+    .select("observado_em")
+    .eq("projeto_id", projetoId)
+    .order("observado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`Falha ao buscar última observação: ${error.message}`);
+  return data ? new Date(data.observado_em) : null;
+}
+
+/** Task A.4 — uma predição por entidade por dia: a chave de dedup é o dia (UTC), não o instante. */
+function truncarAoDia(data: Date): Date {
+  return new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth(), data.getUTCDate()));
+}
+
+function fimDoDia(dia: Date): Date {
+  return new Date(dia.getTime() + 86_400_000 - 1);
 }
 
 /** Busca o histórico completo (ordenado) de cada entidade para uma métrica, até `referenciaEm`. */
@@ -115,22 +180,44 @@ async function buscarHistoricoPorEntidade(
 export interface CalcularPredicoesResultado {
   predicoes: ResultadoPredicaoEntidade[];
   avisos: string[];
+  /** Dia de referência efetivamente usado (truncado ao dia, UTC). */
+  referenciaEm: Date;
 }
 
 /**
  * Orquestra o motor matemático completo (Tasks 3.1-3.3) para todas as
  * entidades de um projeto, sob um modelo e data de referência, e persiste o
  * resultado em `predicoes`/`motivos_predicao`.
+ *
+ * `referenciaEm` ausente = última observação do projeto (Task A.1). A
+ * referência é sempre truncada ao dia: as observações consideradas vão até o
+ * fim desse dia e a predição gravada é única por (entidade, dia) — rodar
+ * duas vezes no mesmo dia atualiza em vez de duplicar (Task A.4).
+ *
+ * `somenteEntidades` restringe quais entidades têm predição calculada e
+ * gravada; a estatística de carteira (z-score) continua sobre o projeto
+ * inteiro, então o resultado é o mesmo que uma rodada completa teria dado.
  */
 export async function calcularPredicoesProjeto(params: {
   supabase: SupabaseClient;
   projetoId: string;
   modeloId: string;
-  referenciaEm: Date;
+  referenciaEm?: Date | null;
+  somenteEntidades?: string[];
 }): Promise<CalcularPredicoesResultado> {
-  const { supabase, projetoId, modeloId, referenciaEm } = params;
-  const referenciaEmIso = referenciaEm.toISOString();
+  const { supabase, projetoId, modeloId } = params;
   const avisos: string[] = [];
+
+  const referenciaBase = params.referenciaEm ?? (await resolverReferenciaPadrao(supabase, projetoId));
+  if (!referenciaBase) {
+    return {
+      predicoes: [],
+      avisos: ["Projeto sem observações: não há data de referência para calcular."],
+      referenciaEm: truncarAoDia(new Date()),
+    };
+  }
+  const referenciaEm = truncarAoDia(referenciaBase);
+  const referenciaEmIso = fimDoDia(referenciaEm).toISOString();
 
   const { data: entidades, error: erroEntidades } = await supabase
     .from("entidades")
@@ -138,9 +225,12 @@ export async function calcularPredicoesProjeto(params: {
     .eq("projeto_id", projetoId);
   if (erroEntidades) throw new Error(`Falha ao buscar entidades: ${erroEntidades.message}`);
   if (!entidades || entidades.length === 0) {
-    return { predicoes: [], avisos: ["Nenhuma entidade cadastrada no projeto."] };
+    return { predicoes: [], avisos: ["Nenhuma entidade cadastrada no projeto."], referenciaEm };
   }
-  const entidadeIds = entidades.map((e) => e.id as string);
+  const restricao = params.somenteEntidades ? new Set(params.somenteEntidades) : null;
+  const entidadeIds = entidades
+    .map((e) => e.id as string)
+    .filter((id) => !restricao || restricao.has(id));
 
   const { data: regrasBrutas, error: erroRegras } = await supabase
     .from("regras_modelo")
@@ -149,7 +239,7 @@ export async function calcularPredicoesProjeto(params: {
     .eq("modelo_id", modeloId);
   if (erroRegras) throw new Error(`Falha ao buscar regras do modelo: ${erroRegras.message}`);
   if (!regrasBrutas || regrasBrutas.length === 0) {
-    return { predicoes: [], avisos: ["Modelo não possui regras cadastradas em regras_modelo."] };
+    return { predicoes: [], avisos: ["Modelo não possui regras cadastradas em regras_modelo."], referenciaEm };
   }
 
   const regras: RegraModeloRegistro[] = [];
@@ -170,18 +260,26 @@ export async function calcularPredicoesProjeto(params: {
     });
   }
   if (regras.length === 0) {
-    return { predicoes: [], avisos };
+    return { predicoes: [], avisos, referenciaEm };
   }
 
-  // Pré-carrega, por métrica, os dados necessários (carteira e/ou histórico) antes de iterar por entidade.
-  const valoresCarteiraPorMetrica = new Map<string, Map<string, number>>();
+  // Pré-carrega, por (métrica, janela), os dados necessários (carteira e/ou histórico) antes de iterar por entidade.
+  const valoresCarteiraPorChave = new Map<string, Map<string, ValorRecente>>();
   const historicoPorMetrica = new Map<string, Map<string, ObservacaoNumerica[]>>();
+  const chaveCarteira = (regra: RegraModeloRegistro) =>
+    `${regra.metrica_id}:${regra.config_regra.tipo === "zscore_carteira" ? regra.config_regra.janela_observacoes : 1}`;
 
   for (const regra of regras) {
-    if (regra.config_regra.tipo === "zscore_carteira" && !valoresCarteiraPorMetrica.has(regra.metrica_id)) {
-      valoresCarteiraPorMetrica.set(
-        regra.metrica_id,
-        await buscarValorMaisRecentePorEntidade(supabase, projetoId, regra.metrica_id, referenciaEmIso)
+    if (regra.config_regra.tipo === "zscore_carteira" && !valoresCarteiraPorChave.has(chaveCarteira(regra))) {
+      valoresCarteiraPorChave.set(
+        chaveCarteira(regra),
+        await buscarValorRecentePorEntidade(
+          supabase,
+          projetoId,
+          regra.metrica_id,
+          referenciaEmIso,
+          regra.config_regra.janela_observacoes ?? PADRAO_JANELA_OBSERVACOES
+        )
       );
     }
     if (regra.config_regra.tipo === "media_movel" && !historicoPorMetrica.has(regra.metrica_id)) {
@@ -192,20 +290,20 @@ export async function calcularPredicoesProjeto(params: {
     }
   }
 
-  // Z-score de carteira é o mesmo para todas as entidades de uma métrica — calcula uma vez por métrica.
-  const zscorePorMetrica = new Map<string, Map<string, number>>();
-  for (const [metricaId, valores] of valoresCarteiraPorMetrica) {
-    const regraDaMetrica = regras.find(
-      (r) => r.metrica_id === metricaId && r.config_regra.tipo === "zscore_carteira"
-    )!;
-    const config = regraDaMetrica.config_regra as Extract<ConfigRegra, { tipo: "zscore_carteira" }>;
-    zscorePorMetrica.set(
-      metricaId,
-      calcularZScoreCarteira(valores, config.direcao, config.clip_z ?? PADRAO_CLIP_Z)
+  // Z-score de carteira é o mesmo para todas as entidades de uma regra — calcula uma vez por regra.
+  const zscorePorRegra = new Map<string, Map<string, number>>();
+  for (const regra of regras) {
+    if (regra.config_regra.tipo !== "zscore_carteira") continue;
+    const valores = valoresCarteiraPorChave.get(chaveCarteira(regra))!;
+    const medias = new Map<string, number>();
+    for (const [entidadeId, v] of valores) medias.set(entidadeId, v.valor);
+    zscorePorRegra.set(
+      regra.id,
+      calcularZScoreCarteira(medias, regra.config_regra.direcao, regra.config_regra.clip_z ?? PADRAO_CLIP_Z)
     );
   }
 
-  // Receita mensal (Task 3.3) — métrica reservada, se definida no projeto.
+  // Receita mensal (Task 3.3) — métrica reservada, se definida no projeto. Só a última observação.
   const { data: metricaReceita } = await supabase
     .from("definicoes_metricas")
     .select("id")
@@ -213,19 +311,46 @@ export async function calcularPredicoesProjeto(params: {
     .eq("codigo", CODIGO_METRICA_RECEITA_MENSAL)
     .maybeSingle();
 
-  let receitaPorEntidade = new Map<string, number>();
+  let receitaPorEntidade = new Map<string, ValorRecente>();
   if (metricaReceita) {
-    receitaPorEntidade = await buscarValorMaisRecentePorEntidade(
+    receitaPorEntidade = await buscarValorRecentePorEntidade(
       supabase,
       projetoId,
       metricaReceita.id,
-      referenciaEmIso
+      referenciaEmIso,
+      1
     );
   } else {
     avisos.push(
-      `Métrica reservada "${CODIGO_METRICA_RECEITA_MENSAL}" não está definida no projeto — Score de Urgência (Task 3.3) não poderá ser calculado.`
+      `Métrica reservada "${CODIGO_METRICA_RECEITA_MENSAL}" não está definida no projeto — o impacto financeiro (Score de Prioridade) usará o porte da entidade como aproximação.`
     );
   }
+
+  /** Task D.2 — "acionado" exige um desvio real, não qualquer valor acima da média. */
+  const limiarAcionado = (clipZ: number) => Math.min(100, (LIMIAR_Z_ACIONADO / clipZ) * 100);
+
+  /** Task A.5 — omissão só pontua quando a regra diz quanto; do contrário é "não avaliável". */
+  const motivoOmissao = (regra: RegraModeloRegistro): ResultadoRegraEntidade => {
+    const pontuacaoOmissao = regra.config_regra.pontuacao_omissao ?? OMISSAO_SEM_PONTUACAO;
+    if (pontuacaoOmissao == null) {
+      return {
+        regra_modelo_id: regra.id,
+        peso: regra.peso,
+        acionado: null,
+        valor_observado: { omissao: true },
+        valor_normalizado: null,
+        pontos: 0,
+      };
+    }
+    return {
+      regra_modelo_id: regra.id,
+      peso: regra.peso,
+      acionado: pontuacaoOmissao >= limiarAcionado(regra.config_regra.clip_z ?? PADRAO_CLIP_Z),
+      valor_observado: { omissao: true },
+      valor_normalizado: pontuacaoOmissao,
+      pontos: regra.peso * pontuacaoOmissao,
+    };
+  };
 
   const resultados: ResultadoPredicaoEntidade[] = [];
 
@@ -233,34 +358,30 @@ export async function calcularPredicoesProjeto(params: {
     const motivos: ResultadoRegraEntidade[] = [];
 
     for (const regra of regras) {
-      const pontuacaoOmissao = regra.config_regra.pontuacao_omissao ?? PADRAO_PONTUACAO_OMISSAO;
+      const clipZ = regra.config_regra.clip_z ?? PADRAO_CLIP_Z;
 
       if (regra.config_regra.tipo === "zscore_carteira") {
-        const valores = valoresCarteiraPorMetrica.get(regra.metrica_id)!;
-        const valorEntidade = valores.get(entidadeId);
+        const valores = valoresCarteiraPorChave.get(chaveCarteira(regra))!;
+        const recente = valores.get(entidadeId);
 
-        if (valorEntidade === undefined) {
-          // Omissão: entidade sem observação para esta métrica (docs/motor-matematico.md §1).
-          motivos.push({
-            regra_modelo_id: regra.id,
-            peso: regra.peso,
-            acionado: true,
-            valor_observado: { omissao: true },
-            valor_normalizado: pontuacaoOmissao,
-            pontos: regra.peso * pontuacaoOmissao,
-          });
+        if (recente === undefined) {
+          motivos.push(motivoOmissao(regra));
           continue;
         }
 
-        const normalizadoPorEntidade = zscorePorMetrica.get(regra.metrica_id)!;
-        const normalizado = normalizadoPorEntidade.get(entidadeId);
+        const observado = {
+          valor: recente.valor,
+          ultimo_valor: recente.ultimo_valor,
+          observacoes: recente.observacoes,
+        };
+        const normalizado = zscorePorRegra.get(regra.id)!.get(entidadeId);
         if (normalizado === undefined) {
           // Carteira com menos de 2 valores conhecidos: comparação estatística impossível.
           motivos.push({
             regra_modelo_id: regra.id,
             peso: regra.peso,
             acionado: null,
-            valor_observado: { valor: valorEntidade },
+            valor_observado: observado,
             valor_normalizado: null,
             pontos: 0,
           });
@@ -270,8 +391,8 @@ export async function calcularPredicoesProjeto(params: {
         motivos.push({
           regra_modelo_id: regra.id,
           peso: regra.peso,
-          acionado: normalizado > 0,
-          valor_observado: { valor: valorEntidade },
+          acionado: normalizado >= limiarAcionado(clipZ),
+          valor_observado: observado,
           valor_normalizado: normalizado,
           pontos: regra.peso * normalizado,
         });
@@ -283,24 +404,16 @@ export async function calcularPredicoesProjeto(params: {
       const historicoEntidade = historicoPorEntidade.get(entidadeId) ?? [];
 
       if (historicoEntidade.length === 0) {
-        // Omissão: nenhuma observação registrada para esta métrica nesta entidade.
-        motivos.push({
-          regra_modelo_id: regra.id,
-          peso: regra.peso,
-          acionado: true,
-          valor_observado: { omissao: true },
-          valor_normalizado: pontuacaoOmissao,
-          pontos: regra.peso * pontuacaoOmissao,
-        });
+        motivos.push(motivoOmissao(regra));
         continue;
       }
 
       const normalizado = calcularMediaMovel(
         historicoEntidade,
-        referenciaEm,
+        fimDoDia(referenciaEm),
         regra.config_regra.janela_dias,
         regra.config_regra.direcao,
-        regra.config_regra.clip_z ?? PADRAO_CLIP_Z
+        clipZ
       );
 
       if (normalizado === null) {
@@ -318,7 +431,7 @@ export async function calcularPredicoesProjeto(params: {
       motivos.push({
         regra_modelo_id: regra.id,
         peso: regra.peso,
-        acionado: normalizado > 0,
+        acionado: normalizado >= limiarAcionado(clipZ),
         valor_observado: { ultimo_valor: historicoEntidade[historicoEntidade.length - 1].valor_numero },
         valor_normalizado: normalizado,
         pontos: regra.peso * normalizado,
@@ -329,14 +442,19 @@ export async function calcularPredicoesProjeto(params: {
       calcularPredicaoEntidade({
         entidadeId,
         motivos,
-        valorImpacto: receitaPorEntidade.get(entidadeId) ?? null,
+        valorImpacto: receitaPorEntidade.get(entidadeId)?.ultimo_valor ?? null,
       })
     );
   }
 
-  await persistirResultados(supabase, { projetoId, modeloId, referenciaEmIso, resultados });
+  await persistirResultados(supabase, {
+    projetoId,
+    modeloId,
+    referenciaEmIso: referenciaEm.toISOString(),
+    resultados,
+  });
 
-  return { predicoes: resultados, avisos };
+  return { predicoes: resultados, avisos, referenciaEm };
 }
 
 /** Tamanho de lote para inserts/upserts em massa (mesmo padrão de `lib/ingestao/normalizar.ts`). */

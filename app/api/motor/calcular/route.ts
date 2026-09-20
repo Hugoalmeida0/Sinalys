@@ -10,11 +10,12 @@ export const maxDuration = 60;
 
 /**
  * Módulo 3 — Motor Matemático (Tasks 3.1-3.3): calcula Score de Risco e
- * Score de Urgência para todas as entidades de um projeto, sob um modelo e
+ * impacto financeiro para todas as entidades de um projeto, sob um modelo e
  * data de referência, e persiste em `predicoes`/`motivos_predicao`.
  *
- * Reutilizável pelo Vercel Cron do Módulo 5.4 (varredura diária) — basta
- * chamar sem `referencia_em` para usar o instante atual.
+ * Sem `referencia_em` a referência é a última observação do projeto (Task
+ * A.1) — não "agora", que com dados mensais deixaria a janela recente vazia.
+ * Reutilizável pelo Vercel Cron do Módulo 5.4 e pelo backfill mensal (B.5).
  */
 export async function POST(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
@@ -22,14 +23,12 @@ export async function POST(request: Request) {
 
   const projetoId = await resolverProjetoId(corpo?.projeto_id);
 
-  let referenciaEm: Date;
+  let referenciaEm: Date | undefined;
   if (corpo?.referencia_em) {
     referenciaEm = new Date(corpo.referencia_em);
     if (Number.isNaN(referenciaEm.getTime())) {
       return NextResponse.json({ erro: "referencia_em inválido (use ISO 8601)." }, { status: 400 });
     }
-  } else {
-    referenciaEm = new Date();
   }
 
   let modeloId: string | undefined = corpo?.modelo_id;
@@ -66,7 +65,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       projeto_id: projetoId,
       modelo_id: modeloId,
-      referencia_em: referenciaEm.toISOString(),
+      referencia_em: resultado.referenciaEm.toISOString(),
       total_entidades: resultado.predicoes.length,
       predicoes: resultado.predicoes,
       avisos: resultado.avisos,

@@ -1,48 +1,43 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
 import { AcoesCliente } from "@/components/AcoesCliente";
-import { ChevronRightIcon } from "@/components/icons";
-import { Select } from "@/components/ui/Select";
+import { ArrowRightIcon, ChevronRightIcon } from "@/components/icons";
+import { BadgeTeste } from "@/components/ui/Badge";
 import { ScorePill } from "@/components/ui/ScorePill";
-import { formatCurrencyBRL } from "@/lib/format";
+import { formatCurrencyBRLOuTraco } from "@/lib/format";
+import { TAMANHO_RESUMO_FILA } from "@/lib/painel/clientes";
 import type { ClientePainel } from "@/lib/painel/tipos";
 
-const TODOS_SEGMENTOS = "Todos os segmentos";
+/** Fila completa em /clientes, na mesma ordem do resumo (Score de Prioridade). */
+const HREF_FILA_COMPLETA = "/clientes?ordem=prioridade";
 
 export function FilaDoDia({
   clientes,
-  segmentos,
-  mensagemVazia = "Nenhum cliente em risco crítico ou alerta hoje.",
+  mensagemVazia = "Nenhum cliente na fila hoje.",
 }: {
+  /** Já limitado ao top N (ver `montarResumoFila`). */
   clientes: ClientePainel[];
-  /** Segmentos existentes na carteira (o filtro é montado a partir deles). */
-  segmentos: string[];
   mensagemVazia?: string;
 }) {
-  const [segmento, setSegmento] = useState(TODOS_SEGMENTOS);
-  const opcoesSegmento = [TODOS_SEGMENTOS, ...segmentos];
-
-  const listaFiltrada =
-    segmento === TODOS_SEGMENTOS ? clientes : clientes.filter((c) => c.segmento === segmento);
+  const listaFiltrada = clientes;
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-3 p-5">
         <div>
-          <h2 className="text-xl font-bold text-brand-ink">Sua fila do dia</h2>
+          <h2 className="text-xl font-bold text-brand-ink">Breve resumo da sua fila hoje</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Ordenada por receita em risco. Foque no que mais importa.
+            Os {TAMANHO_RESUMO_FILA} clientes que mais merecem atenção, ordenados por prioridade
+            (risco × impacto financeiro).
           </p>
         </div>
 
-        <Select
-          value={segmento}
-          options={opcoesSegmento.map((v) => ({ value: v, label: v }))}
-          onChange={setSegmento}
-          className="w-full shrink-0 sm:w-52"
-        />
+        <Link
+          href={HREF_FILA_COMPLETA}
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 transition-colors hover:bg-slate-50 hover:ring-slate-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-royal"
+        >
+          Ver fila completa
+          <ArrowRightIcon className="h-4 w-4" />
+        </Link>
       </div>
 
       {listaFiltrada.length === 0 && (
@@ -62,7 +57,8 @@ export function FilaDoDia({
               <th className="py-3 pr-4 font-semibold">Cliente</th>
               <th className="py-3 pr-4 font-semibold">MRR</th>
               <th className="py-3 pr-4 font-semibold">Receita em risco (ano)</th>
-              <th className="py-3 pr-4 font-semibold">Score</th>
+              <th className="py-3 pr-4 font-semibold">Prioridade</th>
+              <th className="py-3 pr-4 font-semibold">Risco</th>
               <th className="py-3 pr-4 font-semibold">Principais sinais</th>
               <th className="py-3 pr-3 text-right font-semibold">Ações</th>
             </tr>
@@ -78,19 +74,25 @@ export function FilaDoDia({
                 </td>
                 <td className="py-3.5 pr-4">
                   <Link href={`/clientes/${cliente.id}`} className="block">
-                    <p className="text-sm font-semibold text-brand-royal">{cliente.nome}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-brand-royal">{cliente.nome}</p>
+                      {cliente.teste && <BadgeTeste origem={cliente.testeOrigem} />}
+                    </div>
                     <p className="mt-0.5 text-xs text-slate-400">
                       {[cliente.id, cliente.segmento, cliente.porte].filter(Boolean).join(" · ")}
                     </p>
                   </Link>
                 </td>
                 <td className="py-3.5 pr-4 text-sm font-medium whitespace-nowrap text-slate-700">
-                  {formatCurrencyBRL(cliente.mrr)}
+                  {formatCurrencyBRLOuTraco(cliente.mrr)}
                 </td>
                 <td className="py-3.5 pr-4">
                   <p className="text-sm font-bold whitespace-nowrap text-red-600">
-                    {formatCurrencyBRL(cliente.receitaAnualRisco)}
+                    {formatCurrencyBRLOuTraco(cliente.receitaAnualRisco)}
                   </p>
+                </td>
+                <td className="py-3.5 pr-4">
+                  <PrioridadeBadge valor={cliente.scorePrioridade} />
                 </td>
                 <td className="py-3.5 pr-4">
                   <div className="flex items-center gap-1.5">
@@ -129,16 +131,21 @@ export function FilaDoDia({
                 {index + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-brand-ink">{cliente.nome}</p>
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-brand-ink">{cliente.nome}</p>
+                  {cliente.teste && <BadgeTeste origem={cliente.testeOrigem} />}
+                </div>
                 <p className="truncate text-xs text-slate-400">
                   {[cliente.id, cliente.segmento, cliente.porte].filter(Boolean).join(" · ")}
                 </p>
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-sm font-semibold text-red-600">
-                  {formatCurrencyBRL(cliente.receitaAnualRisco)}
+                  {formatCurrencyBRLOuTraco(cliente.receitaAnualRisco)}
                 </p>
-                <p className="text-xs text-slate-400">Score {cliente.scoreRisco}</p>
+                <p className="text-xs text-slate-400">
+                  Prioridade {Math.round(cliente.scorePrioridade)} · Risco {cliente.scoreRisco}
+                </p>
               </div>
               <ChevronRightIcon className="h-4 w-4 shrink-0 text-slate-300" />
             </Link>
@@ -146,6 +153,18 @@ export function FilaDoDia({
         ))}
       </ul>
     </div>
+  );
+}
+
+/** Score de Prioridade (0-100): risco modulado pelo impacto financeiro — o critério de ordem da fila. */
+export function PrioridadeBadge({ valor }: { valor: number }) {
+  return (
+    <span
+      title="Risco × (0,5 + impacto financeiro relativo na carteira)"
+      className="inline-flex h-8 min-w-10 items-center justify-center rounded-lg bg-brand-navy px-2 text-sm font-bold text-white tabular-nums"
+    >
+      {Math.round(valor)}
+    </span>
   );
 }
 

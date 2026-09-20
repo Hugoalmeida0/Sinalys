@@ -31,7 +31,6 @@ async function recalcularEDevolverModelo(params: {
     supabase,
     projetoId,
     modeloId,
-    referenciaEm: new Date(),
   });
   const detalhe = await carregarModeloAtivoDetalhado(supabase, projetoId);
   return { ...detalhe, recalculo: { total_entidades: resultado.predicoes.length, avisos: resultado.avisos } };
@@ -76,7 +75,7 @@ export async function PATCH(request: Request) {
   }
 }
 
-/** Body: `{ metrica_id, tipo, direcao, peso, janela_dias? }` — cria uma regra nova. */
+/** Body: `{ metrica_id, tipo, direcao, peso, janela_dias?, janela_observacoes?, pontuacao_omissao? }` — cria uma regra nova. */
 export async function POST(request: Request) {
   const corpo = await request.json().catch(() => ({}));
 
@@ -85,6 +84,8 @@ export async function POST(request: Request) {
   const direcao: unknown = corpo?.direcao;
   const peso: unknown = corpo?.peso;
   const janelaDias: unknown = corpo?.janela_dias;
+  const janelaObservacoes: unknown = corpo?.janela_observacoes;
+  const pontuacaoOmissao: unknown = corpo?.pontuacao_omissao;
 
   if (typeof metricaId !== "string" || !metricaId) {
     return NextResponse.json({ erro: "Campo 'metrica_id' é obrigatório." }, { status: 400 });
@@ -107,6 +108,8 @@ export async function POST(request: Request) {
       direcao: direcao as DirecaoRisco,
       peso,
       janelaDias: typeof janelaDias === "number" ? janelaDias : undefined,
+      janelaObservacoes: typeof janelaObservacoes === "number" ? janelaObservacoes : undefined,
+      pontuacaoOmissao: typeof pontuacaoOmissao === "number" ? pontuacaoOmissao : undefined,
     });
     const detalhe = await recalcularEDevolverModelo({ supabase, projetoId, modeloId });
     return NextResponse.json(detalhe, { status: 201 });

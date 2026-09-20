@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AcoesCliente } from "@/components/AcoesCliente";
+import { PrioridadeBadge } from "@/components/dashboard/FilaDoDia";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -12,14 +13,23 @@ import {
 import { Button } from "@/components/ui/Button";
 import { ScorePill } from "@/components/ui/ScorePill";
 import { Select } from "@/components/ui/Select";
-import { SoftBadge } from "@/components/ui/Badge";
-import { formatCurrencyBRL, formatDateLongPtBR } from "@/lib/format";
+import { BadgeTeste, SoftBadge } from "@/components/ui/Badge";
+import { formatCurrencyBRLOuTraco, formatDateLongPtBR } from "@/lib/format";
+import { compararPrioridade } from "@/lib/painel/clientes";
 import type { FaixaRisco } from "@/lib/mock-data";
 import type { ClientePainel } from "@/lib/painel/tipos";
 import { faixaRiscoLabelCurto, faixaRiscoSoftClasses } from "@/lib/risk";
 
 type FiltroRisco = FaixaRisco | "todos";
-type Ordenacao = "score" | "receita" | "mrr" | "atualizacao";
+/** Ativos = sem desfecho-alvo registrado; inativos = cancelados. */
+type FiltroSituacao = "ativos" | "inativos" | "todos";
+export type Ordenacao = "prioridade" | "score" | "receita" | "mrr" | "atualizacao";
+
+const opcoesSituacao: { value: FiltroSituacao; label: string }[] = [
+  { value: "ativos", label: "Clientes ativos" },
+  { value: "inativos", label: "Clientes inativos" },
+  { value: "todos", label: "Ativos e inativos" },
+];
 
 const opcoesRisco: { value: FiltroRisco; label: string }[] = [
   { value: "todos", label: "Todos os riscos" },
@@ -30,7 +40,8 @@ const opcoesRisco: { value: FiltroRisco; label: string }[] = [
 ];
 
 const opcoesOrdenacao: { value: Ordenacao; label: string }[] = [
-  { value: "score", label: "Ordenar por score" },
+  { value: "prioridade", label: "Ordenar por prioridade" },
+  { value: "score", label: "Ordenar por risco" },
   { value: "receita", label: "Ordenar por receita em risco" },
   { value: "mrr", label: "Ordenar por MRR" },
   { value: "atualizacao", label: "Ordenar por atualização" },
@@ -38,11 +49,19 @@ const opcoesOrdenacao: { value: Ordenacao; label: string }[] = [
 
 const POR_PAGINA = 8;
 
-export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
+export function ClientesTable({
+  clientes,
+  ordemInicial = "prioridade",
+}: {
+  clientes: ClientePainel[];
+  /** Ordenação com que a tabela abre (ex. `/clientes?ordem=prioridade` vindo do "Ver fila completa"). */
+  ordemInicial?: Ordenacao;
+}) {
   const [busca, setBusca] = useState("");
+  const [situacao, setSituacao] = useState<FiltroSituacao>("ativos");
   const [risco, setRisco] = useState<FiltroRisco>("todos");
   const [segmento, setSegmento] = useState("todos");
-  const [ordem, setOrdem] = useState<Ordenacao>("score");
+  const [ordem, setOrdem] = useState<Ordenacao>(ordemInicial);
   const [pagina, setPagina] = useState(1);
 
   const opcoesSegmento = useMemo(() => {
@@ -57,6 +76,7 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
     const termo = busca.trim().toLowerCase();
 
     return clientes
+      .filter((c) => situacao === "todos" || c.cancelado === (situacao === "inativos"))
       .filter((c) => risco === "todos" || c.faixaRisco === risco)
       .filter((c) => segmento === "todos" || c.segmento === segmento)
       .filter((c) => {
@@ -68,12 +88,13 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
         );
       })
       .sort((a, b) => {
-        if (ordem === "receita") return b.receitaAnualRisco - a.receitaAnualRisco;
-        if (ordem === "mrr") return b.mrr - a.mrr;
+        if (ordem === "prioridade") return compararPrioridade(a, b);
+        if (ordem === "receita") return (b.receitaAnualRisco ?? -1) - (a.receitaAnualRisco ?? -1);
+        if (ordem === "mrr") return (b.mrr ?? -1) - (a.mrr ?? -1);
         if (ordem === "atualizacao") return b.atualizadoEm.localeCompare(a.atualizadoEm);
         return b.scoreRisco - a.scoreRisco;
       });
-  }, [clientes, busca, risco, segmento, ordem]);
+  }, [clientes, busca, situacao, risco, segmento, ordem]);
 
   const totalPaginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
   const paginaAtual = Math.min(pagina, totalPaginas);
@@ -102,7 +123,13 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:ml-auto xl:flex xl:items-center">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:ml-auto xl:flex xl:items-center">
+          <Select
+            value={situacao}
+            options={opcoesSituacao}
+            onChange={aoFiltrar(setSituacao)}
+            className="xl:w-44"
+          />
           <Select
             value={risco}
             options={opcoesRisco}
@@ -121,7 +148,7 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
             onChange={aoFiltrar(setOrdem)}
             className="xl:w-52"
           />
-          <Button variant="secondary" className="justify-center sm:col-span-3 xl:col-auto">
+          <Button variant="secondary" className="justify-center sm:col-span-2 xl:col-auto">
             <DownloadIcon className="h-4 w-4" />
             Exportar
           </Button>
@@ -133,7 +160,8 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-y border-slate-100 text-xs text-slate-500">
-              <th className="py-3 pr-3 pl-5 font-semibold">Score</th>
+              <th className="py-3 pr-3 pl-5 font-semibold">Prioridade</th>
+              <th className="py-3 pr-3 font-semibold">Risco</th>
               <th className="py-3 pr-3 font-semibold">Código</th>
               <th className="py-3 pr-3 font-semibold">Cliente</th>
               <th className="py-3 pr-3 font-semibold">Segmento</th>
@@ -151,6 +179,9 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
                 className="border-b border-slate-50 transition-colors last:border-0 hover:bg-slate-50/70"
               >
                 <td className="py-3.5 pr-3 pl-5">
+                  <PrioridadeBadge valor={cliente.scorePrioridade} />
+                </td>
+                <td className="py-3.5 pr-3">
                   <ScorePill
                     score={cliente.scoreRisco}
                     max={cliente.scoreMax}
@@ -169,6 +200,7 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
                   <Link href={`/clientes/${cliente.id}`} className="block">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-brand-royal">{cliente.nome}</p>
+                      {cliente.teste && <BadgeTeste origem={cliente.testeOrigem} />}
                       {cliente.cancelado && <BadgeCancelado />}
                     </div>
                     <p className="mt-0.5 text-xs text-slate-400">
@@ -180,10 +212,10 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
                   <SoftBadge>{cliente.segmento}</SoftBadge>
                 </td>
                 <td className="py-3.5 pr-3 text-sm font-medium whitespace-nowrap text-slate-700">
-                  {formatCurrencyBRL(cliente.mrr)}
+                  {formatCurrencyBRLOuTraco(cliente.mrr)}
                 </td>
                 <td className="py-3.5 pr-3 text-sm font-bold whitespace-nowrap text-red-600">
-                  {formatCurrencyBRL(cliente.receitaAnualRisco)}
+                  {formatCurrencyBRLOuTraco(cliente.receitaAnualRisco)}
                 </td>
                 <td className="py-3.5 pr-3">
                   <ChipsDeSinais cliente={cliente} />
@@ -219,6 +251,7 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-bold text-brand-ink">{cliente.nome}</p>
+                    {cliente.teste && <BadgeTeste origem={cliente.testeOrigem} />}
                     {cliente.cancelado && <BadgeCancelado />}
                   </div>
                   <p className="text-xs text-slate-400">
@@ -236,13 +269,13 @@ export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
                 <div>
                   <p className="text-xs text-slate-400">MRR</p>
                   <p className="text-sm font-semibold text-slate-700">
-                    {formatCurrencyBRL(cliente.mrr)}
+                    {formatCurrencyBRLOuTraco(cliente.mrr)}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-slate-400">Em risco/ano</p>
                   <p className="text-sm font-bold text-red-600">
-                    {formatCurrencyBRL(cliente.receitaAnualRisco)}
+                    {formatCurrencyBRLOuTraco(cliente.receitaAnualRisco)}
                   </p>
                 </div>
               </div>

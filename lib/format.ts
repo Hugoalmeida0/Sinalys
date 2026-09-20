@@ -79,3 +79,8 @@ export function mesAnoPtBR(iso: string): string {
     .toLocaleDateString("pt-BR", { month: "short", year: "numeric" })
     .replace(".", "");
 }
+
+/** Valor monetário desconhecido mostra "—", nunca "R$ 0" — ausência não é zero. */
+export function formatCurrencyBRLOuTraco(value: number | null | undefined): string {
+  return value == null ? "—" : formatCurrencyBRL(value);
+}

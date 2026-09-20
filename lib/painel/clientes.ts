@@ -2,7 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buscarTodasLinhas } from "@/lib/supabase/paginar";
 import type { FaixaRisco, TendenciaScore } from "@/lib/mock-data";
 import { CODIGO_METRICA_RECEITA_MENSAL } from "@/lib/motor/constantes";
-import { calcularScoreUrgencia } from "@/lib/motor/urgencia";
+import {
+  calcularFaixaReceita,
+  calcularImpactoRelativo,
+  calcularScorePrioridade,
+} from "@/lib/motor/urgencia";
 import type { ClientePainel } from "./tipos";
 
 /** Máximo de chips em "Principais sinais". */
@@ -57,6 +61,11 @@ function numero(v: number | string | null | undefined): number | null {
   if (v == null) return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
+}
+
+function atributoBooleano(atributos: unknown, chave: string): boolean {
+  if (!atributos || typeof atributos !== "object") return false;
+  return (atributos as Record<string, unknown>)[chave] === true;
 }
 
 function atributoTexto(atributos: unknown, chave: string): string {
@@ -241,6 +250,14 @@ export async function montarClientesPainel(params: {
     if (!atual || s.silenciado_ate > atual) silenciadoAte.set(s.entidade_id, s.silenciado_ate);
   }
 
+  // Faixa de receita da carteira ATIVA — base da escala log do impacto relativo.
+  // Cancelados ficam de fora para não esticar a escala com contas que já saíram.
+  const faixaReceita = calcularFaixaReceita(
+    (entidades ?? [])
+      .filter((e) => !canceladoEmPorEntidade.has(e.id))
+      .map((e) => numero(ultima.get(e.id)?.valor_impacto ?? null))
+  );
+
   const clientes: ClientePainel[] = [];
   let semPredicao = 0;
 
@@ -252,7 +269,9 @@ export async function montarClientesPainel(params: {
     }
 
     const pontuacao = numero(p.pontuacao) ?? 0;
-    const mrr = numero(p.valor_impacto) ?? 0;
+    // Receita ausente fica null (não 0): "não sei quanto paga" ≠ "não paga nada".
+    const mrr = numero(p.valor_impacto);
+    const porte = atributoTexto(e.atributos, "porte");
     const motivos = (motivosPorPredicao.get(p.id) ?? []).sort(
       (a, b) => Number(b.pontos) - Number(a.pontos)
     );
@@ -262,17 +281,19 @@ export async function montarClientesPainel(params: {
     const variacaoMrr =
       receitaAtual != null && receitaAnterior
         ? Math.round(((receitaAtual - receitaAnterior) / receitaAnterior) * 100)
-        : 0;
+        : null;
+
+    const impactoRelativo = calcularImpactoRelativo({ receita: mrr, faixa: faixaReceita, porte });
 
     clientes.push({
       id: e.id_externo,
       entidadeId: e.id,
       nome: e.nome_exibicao || e.id_externo,
       segmento: atributoTexto(e.atributos, "segmento"),
-      porte: atributoTexto(e.atributos, "porte"),
+      porte,
       tipo: atributoTexto(e.atributos, "plano"),
       mrr,
-      receitaAnualRisco: Math.round(mrr * 12 * (pontuacao / 100)),
+      receitaAnualRisco: mrr == null ? null : Math.round(mrr * 12 * (pontuacao / 100)),
       scoreRisco: Math.round(pontuacao),
       scoreMax: 100,
       faixaRisco: (p.faixa_risco as FaixaRisco | null) ?? "saudavel",
@@ -283,10 +304,13 @@ export async function montarClientesPainel(params: {
       sinais,
       atualizadoEm: String(p.referencia_em).slice(0, 10),
       cobertura: numero(p.cobertura),
-      scoreUrgencia: calcularScoreUrgencia(pontuacao, numero(p.valor_impacto)),
+      scorePrioridade: Math.round(calcularScorePrioridade(pontuacao, impactoRelativo) * 10) / 10,
+      impactoRelativo,
       silenciadoAte: silenciadoAte.get(e.id) ?? null,
       cancelado: canceladoEmPorEntidade.has(e.id),
       canceladoEm: canceladoEmPorEntidade.get(e.id) ?? null,
+      teste: atributoBooleano(e.atributos, "teste_motor"),
+      testeOrigem: atributoTexto(e.atributos, "teste_origem") || null,
     });
   }
 
@@ -296,11 +320,15 @@ export async function montarClientesPainel(params: {
 /** Faixas que entram na fila do dia por padrão. */
 export const FAIXAS_FILA_PADRAO: FaixaRisco[] = ["critico", "alerta"];
 
+/** Ordem da fila: Score de Prioridade desc; empate por risco desc. */
+export function compararPrioridade(a: ClientePainel, b: ClientePainel): number {
+  return b.scorePrioridade - a.scorePrioridade || b.scoreRisco - a.scoreRisco;
+}
+
 /**
  * Fila de priorização: só as faixas pedidas, sem silenciados (a menos que
- * solicitado), ordenada por Score de Urgência (risco × receita) — a mesma
- * ordem de "receita em risco" exibida no painel. Sem receita mapeada vai para
- * o fim, ordenado por risco.
+ * solicitado), ordenada por Score de Prioridade (risco modulado pelo impacto
+ * financeiro relativo — `lib/motor/urgencia.ts`).
  */
 export function montarFilaDoDia(
   clientes: ClientePainel[],
@@ -311,10 +339,23 @@ export function montarFilaDoDia(
     .filter((c) => !c.cancelado)
     .filter((c) => faixas.has(c.faixaRisco))
     .filter((c) => opcoes.incluirSilenciados || !c.silenciadoAte)
-    .sort((a, b) => {
-      if (a.scoreUrgencia == null && b.scoreUrgencia == null) return b.scoreRisco - a.scoreRisco;
-      if (a.scoreUrgencia == null) return 1;
-      if (b.scoreUrgencia == null) return -1;
-      return b.scoreUrgencia - a.scoreUrgencia;
-    });
+    .sort(compararPrioridade);
+}
+
+/** Todas as faixas de risco, da mais grave para a mais leve. */
+export const TODAS_FAIXAS: FaixaRisco[] = ["critico", "alerta", "atencao", "saudavel"];
+
+/** Quantos clientes o "Breve resumo da sua fila hoje" da tela inicial mostra. */
+export const TAMANHO_RESUMO_FILA = 5;
+
+/**
+ * Top N da fila considerando todas as faixas: quem mais merece atenção pelo
+ * Score de Urgência, mesmo que a carteira não tenha ninguém em crítico/alerta.
+ * Continua excluindo cancelados e silenciados.
+ */
+export function montarResumoFila(
+  clientes: ClientePainel[],
+  limite = TAMANHO_RESUMO_FILA
+): ClientePainel[] {
+  return montarFilaDoDia(clientes, { faixas: TODAS_FAIXAS }).slice(0, limite);
 }

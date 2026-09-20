@@ -15,10 +15,10 @@ export interface ClientePainel {
   porte: string;
   /** Plano/contrato, de `entidades.atributos.plano`. */
   tipo: string;
-  /** Receita mensal (métrica reservada `receita_mensal`); 0 quando não mapeada. */
-  mrr: number;
-  /** MRR × 12 × (score / 100): receita anual ponderada pela probabilidade de risco. */
-  receitaAnualRisco: number;
+  /** Receita mensal (métrica reservada `receita_mensal`); null quando não mapeada — nunca 0. */
+  mrr: number | null;
+  /** MRR × 12 × (score / 100): receita anual ponderada pela probabilidade de risco; null sem MRR. */
+  receitaAnualRisco: number | null;
   /** Score de risco 0-100 do motor (predicoes.pontuacao). */
   scoreRisco: number;
   scoreMax: 100;
@@ -28,22 +28,36 @@ export interface ClientePainel {
   clienteDesde: string;
   /** Frase única com os principais sinais acionados. */
   resumoAlerta: string;
-  /** Variação % do MRR frente à observação anterior (0 se não há histórico). */
-  variacaoMrr: number;
+  /** Variação % do MRR frente à observação anterior; null sem histórico. */
+  variacaoMrr: number | null;
   /** Chips dos principais sinais acionados (até 3). */
   sinais: string[];
   /** ISO date da predição usada (`predicoes.referencia_em`). */
   atualizadoEm: string;
   /** Proporção de regras avaliáveis na predição (0-1). */
   cobertura: number | null;
-  /** Score de Urgência (risco × receita) — critério de ordenação da fila. */
-  scoreUrgencia: number | null;
+  /**
+   * Score de Prioridade (0-100): risco × (0,5 + impacto relativo da receita
+   * na carteira, escala log). Critério de ordenação da fila — ver
+   * `lib/motor/urgencia.ts`.
+   */
+  scorePrioridade: number;
+  /** Posição da receita na carteira ativa (0 = menor conta, 1 = maior); por porte quando sem MRR. */
+  impactoRelativo: number;
   /** ISO datetime até quando os alertas estão silenciados, ou null. */
   silenciadoAte: string | null;
   /** true quando há um evento de desfecho (código-alvo do projeto, ex. "cancelamento") registrado para o cliente. */
   cancelado: boolean;
   /** ISO date do desfecho mais recente, ou null se o cliente segue ativo. */
   canceladoEm: string | null;
+  /**
+   * true para entidades criadas por `scripts/clientes-teste-motor.mts`
+   * (`atributos.teste_motor`): cópias de clientes reais calculadas pelo motor
+   * novo, para comparação lado a lado. Marcadas na UI, nunca silenciosas.
+   */
+  teste: boolean;
+  /** `id_externo` do cliente real de origem, quando `teste`. */
+  testeOrigem: string | null;
 }
 
 export interface KpisPainel {

@@ -17,6 +17,22 @@ export function Badge({
 
 const TOM_PADRAO = "bg-slate-100 text-slate-600";
 
+/** Marca entidades de teste do motor (cópias de clientes reais, ver scripts/clientes-teste-motor.mts). */
+export function BadgeTeste({ origem }: { origem?: string | null }) {
+  return (
+    <SoftBadge
+      className="shrink-0 bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200"
+      title={
+        origem
+          ? `Cópia de teste de ${origem}, calculada pelo motor novo`
+          : "Cliente de teste do motor novo"
+      }
+    >
+      Teste
+    </SoftBadge>
+  );
+}
+
 export function SoftBadge({
   className = "",
   children,

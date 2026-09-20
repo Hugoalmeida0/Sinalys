@@ -11,7 +11,10 @@ export type TipoRegra = "zscore_carteira" | "media_movel";
 
 interface ConfigRegraBase {
   direcao: DirecaoRisco;
-  /** Pontuação (0-100) quando a métrica está ausente para a entidade. */
+  /**
+   * Pontuação (0-100) quando a métrica está ausente para a entidade. Sem
+   * este campo a omissão é "não avaliável" (reduz cobertura, não pontua).
+   */
   pontuacao_omissao?: number;
   /** Limite de |z| para saturar a normalização em 100. */
   clip_z?: number;
@@ -19,6 +22,11 @@ interface ConfigRegraBase {
 
 export interface ConfigRegraZscoreCarteira extends ConfigRegraBase {
   tipo: "zscore_carteira";
+  /**
+   * Quantas observações mais recentes da entidade são agregadas (média)
+   * antes da comparação com a carteira. 1 = só a última observação.
+   */
+  janela_observacoes?: number;
 }
 
 export interface ConfigRegraMediaMovel extends ConfigRegraBase {

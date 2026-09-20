@@ -1,4 +1,4 @@
-import { ClientesTable } from "@/components/clientes/ClientesTable";
+import { ClientesTable, type Ordenacao } from "@/components/clientes/ClientesTable";
 import { ResumoCarteira, type ResumoFaixa } from "@/components/clientes/ResumoCarteira";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -6,24 +6,39 @@ import type { FaixaRisco } from "@/lib/mock-data";
 import { carregarPainel } from "@/lib/painel/servidor";
 
 const ORDEM_FAIXAS: FaixaRisco[] = ["critico", "alerta", "atencao", "saudavel"];
+const ORDENACOES_VALIDAS = new Set<string>(["prioridade", "score", "receita", "mrr", "atualizacao"]);
 
-export default async function ClientesPage() {
-  const { clientes, semPredicao } = await carregarPainel();
-  const ordenados = [...clientes].sort((a, b) => b.scoreRisco - a.scoreRisco);
+export default async function ClientesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ordem?: string }>;
+}) {
+  const [{ clientes, semPredicao }, { ordem }] = await Promise.all([carregarPainel(), searchParams]);
+  const ordemInicial = ordem && ORDENACOES_VALIDAS.has(ordem) ? (ordem as Ordenacao) : undefined;
+
+  // O resumo e a descrição refletem a carteira ativa — a visão padrão da tabela.
+  const ativos = clientes.filter((c) => !c.cancelado);
+  const inativos = clientes.length - ativos.length;
 
   const resumo: ResumoFaixa[] = ORDEM_FAIXAS.map((faixa) => {
-    const total = clientes.filter((c) => c.faixaRisco === faixa).length;
+    const total = ativos.filter((c) => c.faixaRisco === faixa).length;
     return {
       faixa,
       total,
-      percentual: clientes.length ? Math.round((total / clientes.length) * 100) : 0,
+      percentual: ativos.length ? Math.round((total / ativos.length) * 100) : 0,
     };
   });
 
+  const testes = clientes.filter((c) => c.teste).length;
+  const detalhes = [
+    semPredicao ? `${semPredicao} sem score` : "",
+    inativos ? `${inativos} inativos` : "",
+    testes ? `${testes} de teste do motor novo` : "",
+  ].filter(Boolean);
   const descricao =
     clientes.length === 0
       ? "Nenhum cliente com score calculado ainda."
-      : `${clientes.length} clientes na carteira${semPredicao ? ` (${semPredicao} sem score)` : ""}. Acompanhe o score de risco de cada um.`;
+      : `${ativos.length} clientes ativos na carteira${detalhes.length ? ` (${detalhes.join(", ")})` : ""}. Acompanhe o score de risco de cada um.`;
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
@@ -47,7 +62,7 @@ export default async function ClientesPage() {
         />
       </div>
 
-      <ClientesTable clientes={ordenados} />
+      <ClientesTable clientes={clientes} ordemInicial={ordemInicial} />
     </div>
   );
 }

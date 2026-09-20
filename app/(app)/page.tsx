@@ -12,7 +12,7 @@ import { AssistantCard } from "@/components/ui/AssistantCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { obterUsuarioSessao } from "@/lib/auth/usuario";
 import { formatCurrencyBRL } from "@/lib/format";
-import { montarFilaDoDia } from "@/lib/painel/clientes";
+import { montarResumoFila } from "@/lib/painel/clientes";
 import { calcularKpisPainel } from "@/lib/painel/kpis";
 import { carregarPainel } from "@/lib/painel/servidor";
 import type { KpisPainel } from "@/lib/painel/tipos";
@@ -46,8 +46,7 @@ export default async function DashboardPage() {
         clientes: painel.clientes,
       })
     : KPIS_VAZIOS;
-  const fila = montarFilaDoDia(painel.clientes);
-  const segmentos = Array.from(new Set(painel.clientes.map((c) => c.segmento).filter(Boolean))).sort();
+  const fila = montarResumoFila(painel.clientes);
   const percentualAlerta = kpis.totalCarteira
     ? Math.round((kpis.clientesEmAlerta / kpis.totalCarteira) * 100)
     : 0;
@@ -128,13 +127,12 @@ export default async function DashboardPage() {
 
         <FilaDoDia
           clientes={fila}
-          segmentos={segmentos}
           mensagemVazia={
             !painel.modeloId
               ? "Nenhum modelo de risco ativo no projeto. Ative um modelo para gerar a fila."
               : painel.clientes.length === 0
                 ? "Nenhuma predição calculada ainda. Rode o motor de risco após a ingestão de dados."
-                : "Nenhum cliente em risco crítico ou alerta hoje."
+                : "Nenhum cliente na fila hoje."
           }
         />
       </div>

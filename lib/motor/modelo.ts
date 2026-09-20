@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { CODIGO_METRICA_RECEITA_MENSAL, PADRAO_JANELA_MEDIA_MOVEL_DIAS } from "./constantes";
+import {
+  CODIGO_METRICA_RECEITA_MENSAL,
+  PADRAO_JANELA_MEDIA_MOVEL_DIAS,
+  PADRAO_JANELA_OBSERVACOES,
+} from "./constantes";
 import type { DirecaoRisco, TipoRegra } from "./tipos";
 
 /**
@@ -36,6 +40,10 @@ export interface RegraModeloDetalhada {
   direcao: DirecaoRisco;
   /** Só relevante para tipo "media_movel". */
   janela_dias: number | null;
+  /** Só relevante para tipo "zscore_carteira": quantas observações recentes são agregadas (média). */
+  janela_observacoes: number | null;
+  /** Pontuação (0-100) atribuída quando a métrica está ausente; null = "não avaliável". */
+  pontuacao_omissao: number | null;
   peso: number;
 }
 
@@ -108,6 +116,14 @@ export async function carregarModeloAtivoDetalhado(
         tipo: (config.tipo as TipoRegra) ?? "zscore_carteira",
         direcao: (config.direcao as DirecaoRisco) ?? "maior_pior",
         janela_dias: typeof config.janela_dias === "number" ? config.janela_dias : null,
+        janela_observacoes:
+          config.tipo === "zscore_carteira"
+            ? typeof config.janela_observacoes === "number"
+              ? config.janela_observacoes
+              : PADRAO_JANELA_OBSERVACOES
+            : null,
+        pontuacao_omissao:
+          typeof config.pontuacao_omissao === "number" ? config.pontuacao_omissao : null,
         peso: Number(r.peso),
       };
     })
@@ -170,8 +186,13 @@ export async function criarRegraModelo(params: {
   direcao: DirecaoRisco;
   peso: number;
   janelaDias?: number;
+  /** zscore_carteira: quantas observações recentes agregar (média). */
+  janelaObservacoes?: number;
+  /** Pontuação (0-100) quando a métrica está ausente; omitido = "não avaliável". */
+  pontuacaoOmissao?: number | null;
 }): Promise<string> {
   const { supabase, projetoId, modeloId, metricaId, tipo, direcao, peso, janelaDias } = params;
+  const { janelaObservacoes, pontuacaoOmissao } = params;
 
   if (!TIPOS_REGRA_VALIDOS.includes(tipo)) {
     throw new RegraInvalidaError(`Tipo de regra inválido: "${tipo}".`);
@@ -184,6 +205,19 @@ export async function criarRegraModelo(params: {
   }
   if (tipo === "media_movel" && janelaDias !== undefined && (!Number.isInteger(janelaDias) || janelaDias <= 0)) {
     throw new RegraInvalidaError("Janela (dias) deve ser um número inteiro maior que 0.");
+  }
+  if (
+    tipo === "zscore_carteira" &&
+    janelaObservacoes !== undefined &&
+    (!Number.isInteger(janelaObservacoes) || janelaObservacoes <= 0)
+  ) {
+    throw new RegraInvalidaError("Janela (observações) deve ser um número inteiro maior que 0.");
+  }
+  if (
+    pontuacaoOmissao != null &&
+    (!Number.isFinite(pontuacaoOmissao) || pontuacaoOmissao < 0 || pontuacaoOmissao > 100)
+  ) {
+    throw new RegraInvalidaError("Pontuação de omissão deve estar entre 0 e 100.");
   }
 
   const { data: metrica, error: erroMetrica } = await supabase
@@ -202,10 +236,11 @@ export async function criarRegraModelo(params: {
   }
 
   const codigoSinal = `${metrica.codigo}_${tipo}`;
-  const configRegra =
+  const configRegra: Record<string, unknown> =
     tipo === "media_movel"
       ? { tipo, direcao, janela_dias: janelaDias ?? PADRAO_JANELA_MEDIA_MOVEL_DIAS }
-      : { tipo, direcao };
+      : { tipo, direcao, janela_observacoes: janelaObservacoes ?? PADRAO_JANELA_OBSERVACOES };
+  if (pontuacaoOmissao != null) configRegra.pontuacao_omissao = pontuacaoOmissao;
 
   const id = randomUUID();
   const { error } = await supabase.from("regras_modelo").insert({

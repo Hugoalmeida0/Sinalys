@@ -93,11 +93,8 @@ const JANELA_RECEITA_SALVA_DIAS = 30;
 async function calcularReceitaSalva(
   supabase: SupabaseClient,
   projetoId: string,
-  modeloId: string,
-  agora: Date
+  modeloId: string
 ): Promise<{ receita: number; clientes: number }> {
-  const desde = new Date(agora.getTime() - JANELA_RECEITA_SALVA_DIAS * 86_400_000);
-
   const { data: predicoes, error } = await supabase
     .from("predicoes")
     .select("entidade_id, referencia_em, faixa_risco, valor_impacto")
@@ -106,6 +103,16 @@ async function calcularReceitaSalva(
     .order("entidade_id", { ascending: true })
     .order("referencia_em", { ascending: true });
   if (error) throw new Error(`Falha ao buscar predições: ${error.message}`);
+  if (!predicoes?.length) return { receita: 0, clientes: 0 };
+
+  // A janela conta a partir da referência mais recente do motor (tempo dos
+  // dados), não do relógio: com dados mensais que terminam em junho, "últimos
+  // 30 dias" do calendário nunca conteriam uma predição.
+  const ultimaReferencia = predicoes.reduce(
+    (max, p) => Math.max(max, new Date(p.referencia_em).getTime()),
+    0
+  );
+  const desde = new Date(ultimaReferencia - JANELA_RECEITA_SALVA_DIAS * 86_400_000);
 
   const porEntidade = new Map<
     string,
@@ -178,11 +185,11 @@ export async function calcularKpisPainel(params: {
   const [antecedencias, clientesContatados7d, receitaSalva] = await Promise.all([
     calcularAntecedencias(supabase, projetoId, modeloId),
     contarContatados(supabase, projetoId, agora),
-    calcularReceitaSalva(supabase, projetoId, modeloId, agora),
+    calcularReceitaSalva(supabase, projetoId, modeloId),
   ]);
 
   return {
-    receitaEmRiscoAno: emAlerta.reduce((soma, c) => soma + c.receitaAnualRisco, 0),
+    receitaEmRiscoAno: emAlerta.reduce((soma, c) => soma + (c.receitaAnualRisco ?? 0), 0),
     clientesEmAlerta: emAlerta.length,
     totalCarteira: clientes.length,
     antecedenciaMediaMeses: antecedencias.length

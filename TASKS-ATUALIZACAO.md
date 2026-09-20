@@ -69,7 +69,18 @@ Perfil de cada cliente que saiu, medido como desvio (z) contra **os pares no mes
 
 ## 🔴 Módulo A: Destravar o motor (bloqueante)
 
-- [ ] **Task A.1 — `referencia_em` default = última observação do projeto.** `app/api/motor/calcular/route.ts:30` e `lib/motor/calcular.ts` usam `new Date()`. Hoje é 2026-09; a base termina em 2026-06. Em `lib/motor/normalizacao.ts:82` a janela padrão é de 30 dias → o corte cai em 2026-08-20 → `recentes` fica vazio → `calcularMediaMovel` retorna `null` → **toda regra `media_movel` vira "não avaliável"**.
+> **Status verificado em 2026-09-20 (consulta ao banco + leitura de `lib/motor/`, `lib/painel/`):**
+>
+> | Task | Estado | Evidência |
+> | --- | --- | --- |
+> | A.1 | ❌ aberta | Modelo ativo tem 4 regras; as 2 `media_movel` (`uso_queda`, peso 5 de 9,5 = **53% do peso**, e `nota_nps`) estão **100% "não avaliável"** (80/80 e 79/80). Cobertura média **0,503**. Mediana do score entre ativos: **0**. O score de hoje é só SLA + atraso. |
+> | A.2 | 🔸 parcial | `lib/painel/clientes.ts` (`montarFilaDoDia`) já exclui `cancelado`; `app/api/motor/fila/route.ts` ainda não filtra. |
+> | A.3 | 🔸 moot nesta base | `receita_mensal` foi mapeada como métrica e `valor_impacto` está preenchido em 80/80. O fallback para `atributos.valor_mensal` (também 80/80) continua não implementado — importa para a próxima base, não para esta. |
+> | A.4 | 🔸 parcial | Lote ✅ (`persistirResultados` já usa `emLotes`). Dedup por dia ❌: `predicoes` tem **720 linhas com `referencia_em` em 2026-09-20** (9 rodadas × 80). Efeito colateral: `tendenciaScore` compara com a rodada anterior *do mesmo dia* → sempre "estável". |
+> | A.5 | ❌ aberta | `parseConfigRegra` já lê `pontuacao_omissao`, mas nenhuma regra o define e a tela de modelo não expõe. Hoje só 1 entidade cai em omissão (C017, NPS) — porque D.4 mascara: SLA em branco usa o valor de um mês anterior. |
+> | A.6 | ❌ aberta | `classificacao_nps` (texto, 422 obs) existe no projeto e é invisível ao motor, sem aviso. |
+
+- [x] **Task A.1 — `referencia_em` default = última observação do projeto.** _(2026-09-20: `resolverReferenciaPadrao` em `lib/motor/calcular.ts`; cobertura média medida 0,503 → 0,813.)_ `app/api/motor/calcular/route.ts:30` e `lib/motor/calcular.ts` usam `new Date()`. Hoje é 2026-09; a base termina em 2026-06. Em `lib/motor/normalizacao.ts:82` a janela padrão é de 30 dias → o corte cai em 2026-08-20 → `recentes` fica vazio → `calcularMediaMovel` retorna `null` → **toda regra `media_movel` vira "não avaliável"**.
   _Critério de aceite:_ cobertura média volta a 100% e a mediana da pontuação sai de 10,9. Esta task sozinha é responsável pela maior parte do ganho.
 
 - [ ] **Task A.2 — Excluir da fila entidades com o desfecho alvo já registrado.** `app/api/motor/fila/route.ts` não filtra por `eventos_desfecho`. Os 22 clientes cancelados permanecem na fila de priorização indefinidamente.
@@ -78,10 +89,10 @@ Perfil de cada cliente que saiu, medido como desvio (z) contra **os pares no mes
 - [ ] **Task A.3 — `valor_impacto` lido de `entidades.atributos`.** O motor busca a receita como métrica reservada `receita_mensal` (`lib/motor/constantes.ts:8`), lida via `observacoes`. Mas `lib/ingestao/normalizar.ts:236` exige `data_observacao` válida para gravar qualquer métrica, e a aba `clientes` não tem coluna de data (só `inicio_contrato`). O mapeamento **não tem como produzir essa observação**. Sem `valor_impacto`, `calcularScoreUrgencia` retorna `null` e a fila inteira cai no fallback "ordenar só por risco" (`lib/motor/urgencia.ts:29`) — ou seja, a Matriz de Urgência (Task 3.3) não acontece e a pergunta 3 do PDF fica sem resposta.
   _Decisão sugerida:_ ler de `entidades.atributos->>'valor_mensal'`, com fallback para a métrica reservada. Receita de contrato é atributo cadastral, não série temporal.
 
-- [ ] **Task A.4 — Persistência em lote + dedup por dia.** `lib/motor/calcular.ts:335` faz, **por entidade**: SELECT + UPSERT + DELETE + INSERT. São ~320 round-trips sequenciais para 80 clientes — o mesmo gargalo já corrigido em `lib/ingestao/normalizar.ts` e documentado no `TASKS.md`. Além disso o dedup usa `.eq("referencia_em", referenciaEmIso)` com milissegundos: cada rodada sem `referencia_em` explícito **cria linha nova** em vez de atualizar.
+- [x] **Task A.4 — Persistência em lote + dedup por dia.** _(2026-09-20: `referencia_em` truncado ao dia UTC; observações até o fim do dia.)_ `lib/motor/calcular.ts:335` faz, **por entidade**: SELECT + UPSERT + DELETE + INSERT. São ~320 round-trips sequenciais para 80 clientes — o mesmo gargalo já corrigido em `lib/ingestao/normalizar.ts` e documentado no `TASKS.md`. Além disso o dedup usa `.eq("referencia_em", referenciaEmIso)` com milissegundos: cada rodada sem `referencia_em` explícito **cria linha nova** em vez de atualizar.
   _Critério de aceite:_ reutilizar o helper `emLotes`; truncar `referencia_em` ao dia para o dedup.
 
-- [ ] **Task A.5 — `pontuacao_omissao` por regra, não global.** Hoje o default é 70 para tudo (`lib/motor/constantes.ts:19`). Medido na base: as 23 linhas com `pct_sla_cumprido` vazio têm **todas** `chamados_abertos = 0` — é cliente sem nenhum chamado no mês, não dado faltante. O default de 70 fabrica risco alto para clientes calmos.
+- [x] **Task A.5 — `pontuacao_omissao` por regra, não global.** _(2026-09-20: default global removido — omissão sem `pontuacao_omissao` na regra é "não avaliável". Exposto no formulário de nova regra em Configurações.)_ Hoje o default é 70 para tudo (`lib/motor/constantes.ts:19`). Medido na base: as 23 linhas com `pct_sla_cumprido` vazio têm **todas** `chamados_abertos = 0` — é cliente sem nenhum chamado no mês, não dado faltante. O default de 70 fabrica risco alto para clientes calmos.
   _Regra prática:_ omissão em métrica de atendimento ≈ 0 de risco; omissão em métrica de engajamento (resposta de pesquisa) ≈ risco. Precisa ser configurável por regra, nunca global.
 
 - [ ] **Task A.6 — Métricas de texto e booleano são invisíveis ao motor.** `definicoes_metricas.tipo_valor` aceita `'texto'` e `'booleano'`, a ingestão coage e grava (`lib/ingestao/normalizar.ts:245`), e `lib/motor/calcular.ts` filtra `.not("valor_numero", "is", null)` nas duas funções de busca. Um campo `status = 'suspenso'` ou `renovou = false` entra no banco e **desaparece silenciosamente** do cálculo. É um buraco de agnosticismo: numa base onde o sinal forte seja categórico, o motor fica cego sem avisar.
@@ -366,7 +377,7 @@ E as transformações mapeiam nos tipos de regra que o motor **já executa**:
 
 - [ ] **Task D.1 — Novo tipo de regra: persistência.** Só existem `zscore_carteira` e `media_movel`. Não há como expressar "N meses consecutivos acima do limiar", que é o mecanismo anti-alarme-falso que a própria planilha manda usar. É o sinal mais limpo da base (ver Task B.3) e o motor **não consegue representá-lo**.
 
-- [ ] **Task D.2 — Limiar real para `acionado`.** `lib/motor/calcular.ts:262` faz `acionado: normalizado > 0`. Como `escalarBadness` faz clamp do negativo em 0, metade da carteira recebe exatamente 0 (`acionado: false`) e a outra metade recebe `true` em **toda** regra, mesmo a +0,1 desvio. `acionado` hoje significa "está acima da média da carteira", não "tem um alerta" — e como os motivos são a evidência mostrada ao usuário, isso torna a explicação inútil.
+- [x] **Task D.2 — Limiar real para `acionado`.** _(2026-09-20: `LIMIAR_Z_ACIONADO = 1` (≈ 33 na escala 0-100 com clip 3), não os 60 sugeridos — 1σ é explicável ao analista e coerente com os limiares aprendidos em C.5b, que ficam entre 0,5σ e 1σ. Medido: SLA acionado 40/80 → 11/80; atraso 32/80 → 7/80.)_ `lib/motor/calcular.ts:262` faz `acionado: normalizado > 0`. Como `escalarBadness` faz clamp do negativo em 0, metade da carteira recebe exatamente 0 (`acionado: false`) e a outra metade recebe `true` em **toda** regra, mesmo a +0,1 desvio. `acionado` hoje significa "está acima da média da carteira", não "tem um alerta" — e como os motivos são a evidência mostrada ao usuário, isso torna a explicação inútil.
   _Sugestão:_ `normalizado >= 60`.
 
 - [ ] **Task D.3 — `definicoes_metricas.cadencia` existe e nunca é lida.** `janela_dias` em dias, contra dado mensal e NPS trimestral, é um descompasso que o sistema não consegue raciocinar. Funcionou nesta base por coincidência; numa base diária ou semanal os mesmos defaults dão outro resultado sem que ninguém saiba por quê.
@@ -436,6 +447,78 @@ E as transformações mapeiam nos tipos de regra que o motor **já executa**:
 
 ---
 
+## 🟠 Módulo G: Ordem da fila e tratamento de nulos (análise de 2026-09-20)
+
+Origem: pedido do usuário — *"a ordenação tem que ser via score, mas levando em conta o fator financeiro e o tamanho da empresa: uma pequena com score alto vs. uma grande com score médio que gasta mais, a prioridade é a grande"* — e *"alguns campos NULL viram 0 e dão falso alarme"*.
+
+### G.0 — Como a ordem é decidida hoje (medido na base)
+
+Existem **dois números** e a fila usa o segundo:
+
+| | Fórmula | Onde | Problema medido |
+| --- | --- | --- | --- |
+| `pontuacao` (Score de Risco) | `Σ(normalizado × peso) / Σ(peso)`, 0-100 | `lib/motor/score.ts` | Não sabe nada de dinheiro. Top 4 por risco são todos **Pequeno** (C033 50, C009 48,9, C078 43,2, C019 33,1). |
+| `scoreUrgencia` | `pontuacao × valor_impacto` (R$ bruto, sem teto) | `lib/motor/urgencia.ts`, ordena `montarFilaDoDia` | Dominado pelo MRR. **C055 (Grande, score 6,6, "saudável") fica acima de C009 (score 48,9, "alerta")**; C011 (score 24,6, saudável) é o nº 1 da fila. Número ilegível na tela (756.776). |
+
+Ou seja: o pedido do usuário **já é a intenção da Matriz de Urgência** (`docs/motor-matematico.md §4`), mas a implementação atual exagera — o produto puro deixa uma grande saudável na frente de uma pequena em alerta. O `Score de Risco` puro erra para o outro lado. Nenhum dos dois é o que o usuário descreveu.
+
+**Contexto que limita qualquer calibração agora:** todos esses scores foram calculados com **cobertura 0,5** (Task A.1 aberta — a regra de uso, 53% do peso, está morta). Qualquer fórmula de prioridade ajustada hoje será reajustada depois de A.1.
+
+- [x] **Task G.1 — Score de Prioridade (0-100) = risco × fator de impacto limitado.** _(2026-09-20: `calcularScorePrioridade` em `lib/motor/urgencia.ts`; `ClientePainel.scorePrioridade`; fila, tabela de clientes e "Ver fila completa" ordenam por ele. Coluna "Prioridade" ao lado da pílula de risco.)_ Substituir o produto bruto por um fator de impacto **relativo à carteira e em escala log**, para que o MRR module o risco sem engoli-lo:
+
+  ```
+  impacto_rel  = ln(MRR / MRR_min) / ln(MRR_max / MRR_min)      ∈ [0, 1], sobre os ATIVOS da carteira
+  prioridade   = risco × (0.5 + impacto_rel)                    ∈ [0, 1.5 × risco]
+  ```
+
+  Simulado sobre os 58 ativos (scores atuais, cobertura 0,5):
+
+  | Cliente | Porte | Risco | Faixa | MRR | urgência atual (÷1000) | **prioridade** |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | C080 | Grande | 33,0 | atenção | 20.924 | 691 (2º) | **42,8 (1º)** |
+  | C033 | Pequeno | 50,0 | alerta | 4.310 | 216 (6º) | **35,5 (2º)** |
+  | C011 | Grande | 24,6 | saudável | 30.742 | 757 (1º) | 35,4 (3º) |
+  | C009 | Pequeno | 48,9 | alerta | 2.836 | 139 (12º) | 27,1 (4º) |
+  | C055 | Grande | 6,6 | saudável | 31.660 | 210 (7º) | 9,6 (fora do top 10) |
+
+  É exatamente a regra pedida: grande com score médio (C080) passa a pequena com score alto (C033); grande saudável (C055) **não** passa ninguém em alerta. Alternativas testadas e descartadas: linear em vez de log (MRR_max/MRR_min = 15× → linear achata os médios); média geométrica `risco^0.65 × impacto^0.35` (coloca 4 "saudáveis" no top 7).
+
+  _Onde:_ `lib/motor/urgencia.ts` (`calcularScoreUrgencia` recebe também `mrrMin`/`mrrMax` da carteira) e `lib/painel/clientes.ts` (calcula min/max sobre `!cancelado` antes do loop). `montarFilaDoDia` continua ordenando por `scoreUrgencia` — só o número muda. **`pontuacao` e `faixa_risco` não mudam** (coerente com F.5: dinheiro é impacto, nunca risco).
+  _Tela:_ a fila mostra a pílula de **risco** (faixa) e ordena por **prioridade**; o subtítulo "Ordenada por receita em risco" passa a "Ordenada por prioridade (risco × impacto)". Refletir a fórmula em `docs/motor-matematico.md §4`.
+  _Aceite:_ nos 58 ativos, nenhum "saudável" com risco < 15 aparece no top 5; C080 > C033.
+
+- [x] **Task G.2 — Impacto desconhecido não é R$ 0.** _(2026-09-20: `mrr`, `receitaAnualRisco` e `variacaoMrr` viram `null`; UI mostra "—"; impacto relativo cai para o porte.)_ `lib/painel/clientes.ts:255` faz `mrr = numero(valor_impacto) ?? 0` → a tela mostra **R$ 0** de MRR e **R$ 0** em risco para cliente sem receita mapeada, e `receitaAnualRisco` zera. Não ocorre nesta base (80/80 com receita), mas é o primeiro sintoma na próxima. Regra: `mrr: number | null`; `impacto_rel` cai para `atributos.porte` (Pequeno 0,25 / Médio 0,5 / Grande 0,75) e, sem porte, para 0,5 (mediana); UI mostra "—", nunca "R$ 0". Casa com A.3.
+
+- [ ] **Task G.3 — Nulos que viram score: mapa completo.** Auditado onde um dado ausente vira número. Só dois viram *alarme falso*; o resto vira *silêncio falso*, que é pior para o produto:
+
+  | Onde | O que acontece com o NULL | Efeito | Task que resolve |
+  | --- | --- | --- | --- |
+  | `lib/motor/calcular.ts` omissão → `PADRAO_PONTUACAO_OMISSAO = 70` | ausência vira **70 pontos × peso** | 🔴 alarme falso (cliente sem chamado no mês, NPS trimestral fora do mês) | **A.5** |
+  | `lib/motor/calcular.ts:262` `acionado: normalizado > 0` | z = +0,05 já é "acionado" | 🔴 alarme falso na explicação: 40/80 "SLA acionado", 32/80 "atraso acionado", chips de "Principais sinais" com desvios irrelevantes | **D.2** (`>= 60`) |
+  | `lib/motor/score.ts:33` nenhuma regra avaliável → `pontuacao = 0` | ausência vira **"saudável"** | 🟠 silêncio falso — hoje 60/80 "saudável" com cobertura 0,5 | **C.14** + G.4 |
+  | `calcularMediaMovel` → `null` quando `recentes` vazio | regra some do score sem aviso na tela | 🟠 silêncio falso (é o que A.1 destrava) | **A.1** |
+  | `buscarValorMaisRecentePorEntidade` pega valor de qualquer época | SLA em branco (23 linhas, todas com chamados = 0) usa o mês anterior | 🟡 mascara a omissão em vez de tratá-la | **D.4** |
+  | `lib/painel/clientes.ts:255` `mrr ?? 0` | receita ausente vira R$ 0 | 🟡 impacto falso | **G.2** |
+  | `lib/painel/clientes.ts:265` `variacaoMrr = 0` sem histórico | "0%" indistinguível de "estável" | 🟢 cosmético | mostrar "—" |
+  | `tendenciaScore` compara com a predição anterior (mesmo dia) | 720 linhas em 2026-09-20 → sempre "estável" | 🟡 tendência falsa | **A.4** (dedup por dia) |
+
+  **Confirmado o que NÃO é problema:** a ingestão (`coagirValorMetrica`) descarta vazio em vez de gravar 0 — NPS em branco não vira nota 0 (coerente com o "Não fazer"). Zeros legítimos (`dias_atraso` 623/1295, `chamados_criticos` 647/1295, `reclamacoes` 878/1295) são valores reais, não nulos.
+
+- [x] **Task B.5 — Backfill mensal do motor** _(2026-09-20: `scripts/backfill-motor.mts` (`--limpar` apaga rodadas antigas com referência posterior à última observação). Executado para os 80 clientes: 18 referências mensais, 1.442 predições, nenhuma posterior a jun/2026. KPI de antecedência medido: mediana 1,9 meses, média 2,1, 19 dos 22 desfechos antecipados.)_
+
+> **Clientes de teste do motor novo (2026-09-20) — já removidos.** Serviram para a comparação abaixo; depois o usuário autorizou apagar as predições do motor antigo e recalcular os originais. Histórico: decisão inicial de não apagar as 820 predições antigas (calculadas pelo motor anterior, com `referencia_em` de 2026-09-20/19, 2026-06-30 e 2025-04-15). Em vez disso, cada cliente real foi clonado como `<id>-T` (`atributos.teste_motor = true`, `teste_origem = <id>`), com observações e desfechos, e o motor novo rodou mês a mês só para os clones. A UI marca esses clientes com o badge **Teste**; o painel de Clientes conta "N de teste do motor novo". Para desfazer: `npx tsx scripts/clientes-teste-motor.mts remover`. Enquanto os clones existirem, KPIs de carteira somam 160 clientes e a estatística de carteira do z-score inclui cada valor duas vezes (mesma média; desvio praticamente igual).
+>
+> Medido lado a lado (originais = motor antigo, `-T` = motor novo): C033 50/alerta → **20/saudável**; C080 33/atenção → **46/alerta** (uso ↓ 66,5%); C070 19/saudável → **50/alerta** (uso ↓ 69,7%, NPS 6); C011 25/saudável → 3/saudável. Antecedência (KPI, só clones têm histórico): mediana **2 meses**, média 2,6, **20 dos 22** desfechos antecipados — coerente com a F.2.
+
+- [ ] **Task G.4 — Cobertura mínima na tela.** Enquanto C.14 não existe: com `cobertura < 0,75`, a faixa exibida vira "dados insuficientes" (cinza) em vez de "saudável", e o cliente sai do KPI "clientes em alerta" e do resumo por faixa. Hoje isso pegaria 80/80 — o que é a verdade, e é o motivo para fazer A.1 antes de qualquer demo.
+
+- [x] **Task G.6 — Percentual com denominador pequeno não é sinal forte (caso C033).** _(2026-09-20: `janela_observacoes` (default 3) no `zscore_carteira` — média das últimas N observações. C033 medido: risco 50 "alerta" → 19,7 "saudável"; SLA normalizado 100 → 51.)_ Verificado na planilha e no banco (idênticos): em 2026-06 o C033 abriu **1 chamado**, 0 dentro do SLA → `pct_sla_cumprido = 0` é um **zero real**, não NULL (os 23 NULLs da planilha são todos `chamados_abertos = 0` e a ingestão os descarta corretamente — o C033 em 2025-04 não tem linha de SLA no banco). O problema é o que o motor faz com esse zero: `sla_zscore_carteira` usa **só o último mês**; 0 contra média 75,7 / desvio 22,6 dá z = −3,35 → satura em 100 × peso 2 = **200 pontos**. Com as regras de uso/NPS mortas (A.1), o score vira `(200 + 0) / (2 + 2) = 50` → "alerta". **Um chamado perdido em um mês sustenta sozinho o nº 1 da fila por risco.** O mesmo padrão aparece em 25 linhas da base (SLA = 0 com 1–4 chamados).
+  _O que fazer (agnóstico, sem saber o que é SLA):_ (1) A.1 devolve os outros 53% do peso e o SLA deixa de ser metade do score; (2) a transformação `nivel` (média de 3 períodos, já prevista em C.3) — para o C033 seria (3+2+0)/(3+5+1) = 55,6%, z ≈ −0,9, não −3,35; (3) D.1 persistência: SLA 0 por um mês é ruído, por dois é sinal. Não fazer: regra específica "se chamados < N ignora SLA" — isso é conhecimento de negócio embutido no motor, e quebra o agnosticismo.
+
+- [x] **Task G.5 — Expor `pontuacao_omissao` na tela de modelo** _(2026-09-20: formulário de nova regra + listagem; junto com `janela_observacoes`. O default por família de métrica não foi implementado — seria conhecimento de negócio no motor; fica a cargo de quem cria a regra.)_ (`lib/motor/modelo.ts` / Configurações) com um default por família: métrica de atendimento (`chamados_*`, `sla`, `tempo_*`) → 0; engajamento (`nps`, `respondeu_*`, `uso`) → 70. É a interface de A.5.
+
+---
+
 ## ⛔ Não fazer (medido, e não compensa)
 
 Três mudanças que pareciam certas e que a medição derrubou. Registradas para não serem "corrigidas" por engano depois:
@@ -454,11 +537,12 @@ Três mudanças que pareciam certas e que a medição derrubou. Registradas para
 
 ## 📌 Ordem sugerida de execução
 
-1. **Módulo A** (A.1 → A.4) — 1 dia. Sem isso nada mais importa: A.1 sozinha leva a cobertura de 50% para 100%.
-2. **Módulo B** (B.1 → B.3) — 1 dia. É o que faz a solução passar no teste de completude do PDF.
-3. **Módulo C** (C.1 → C.7, depois C.8 → C.11) — 1 a 1,5 dia. É o que transforma "agnóstico" de propriedade do schema em propriedade do produto, e o principal diferencial defensável numa banca. C.1 é uma migration de duas colunas; o miolo (C.2 → C.5) é o módulo novo de verdade.
-4. **Módulo F** (F.1, F.2) — meio dia. Alinhar o discurso com o que o dado sustenta antes de qualquer apresentação.
-5. **Módulos D e E** — conforme o tempo restante. D.1 (persistência) tem retorno alto e barato; E.1/E.2 têm alto retorno de demonstração (o PDF pede explicitamente o modelo de negócio, pág. 3, e time-to-value de minutos é a resposta).
+1. **Módulo A** (A.1 → A.4 → A.5) — 1 dia. Sem isso nada mais importa: A.1 sozinha leva a cobertura de 50% para 100%. Status em 2026-09-20: A.1 e A.5 ainda abertas, A.2/A.4 pela metade (ver tabela no módulo).
+2. **Módulo G** (G.1 → G.2 → D.2) — meio dia, **logo depois de A.1** (calibrar prioridade com cobertura 0,5 é calibrar no escuro). É o que faz a fila do dia responder "em que ordem" do jeito que o usuário descreveu.
+3. **Módulo B** (B.1 → B.3) — 1 dia. É o que faz a solução passar no teste de completude do PDF.
+4. **Módulo C** (C.1 → C.7, depois C.8 → C.11) — 1 a 1,5 dia. É o que transforma "agnóstico" de propriedade do schema em propriedade do produto, e o principal diferencial defensável numa banca. C.1 é uma migration de duas colunas; o miolo (C.2 → C.5) é o módulo novo de verdade.
+5. **Módulo F** (F.1, F.2) — meio dia. Alinhar o discurso com o que o dado sustenta antes de qualquer apresentação.
+6. **Módulos D e E** — conforme o tempo restante. D.1 (persistência) tem retorno alto e barato; E.1/E.2 têm alto retorno de demonstração (o PDF pede explicitamente o modelo de negócio, pág. 3, e time-to-value de minutos é a resposta).
 
 ### Dependências que importam
 
@@ -470,6 +554,10 @@ A.2 ─────────────────────┘  (cancela
 C.6 ──► C.11 (a tela de pesos passa a ler do banco)
 C.8 ──► A.3 (perda esperada em R$ exige probabilidade E impacto)
 D.1 ──► B.3 (meses_em_risco é a feature de persistência exposta na tela)
+A.1 ──► G.1 (a fórmula de prioridade foi simulada com cobertura 0,5 — revalidar com 100%)
+A.4 ──► tendenciaScore (dedup por dia é o que faz a tendência voltar a existir)
+A.5 ──► G.5 (a tela só expõe o que o motor já lê)
+C.8 ──► G.1 (com probabilidade calibrada, prioridade = P(evento) × impacto vira R$ de verdade — F.3)
 ```
 
 **Atenção em A.2 × C.4:** entidades canceladas saem da **fila** e continuam no **treino**. São usos opostos da mesma tabela — não filtrar no lugar errado.

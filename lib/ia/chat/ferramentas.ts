@@ -36,7 +36,7 @@ function resumirCliente(c: ClientePainel) {
     score_risco: c.scoreRisco,
     tendencia: c.tendenciaScore,
     mrr: c.mrr,
-    score_urgencia: c.scoreUrgencia,
+    score_prioridade: c.scorePrioridade,
     sinais: c.sinais,
     resumo_alerta: c.resumoAlerta,
     silenciado_ate: c.silenciadoAte,
@@ -102,8 +102,8 @@ export function criarFerramentasAssistente(escopo: EscopoFerramentas) {
         let mrrEmRisco = 0;
         for (const c of clientes) {
           porFaixa[c.faixaRisco] += 1;
-          mrrTotal += c.mrr;
-          if (c.faixaRisco === "critico" || c.faixaRisco === "alerta") mrrEmRisco += c.mrr;
+          mrrTotal += c.mrr ?? 0;
+          if (c.faixaRisco === "critico" || c.faixaRisco === "alerta") mrrEmRisco += c.mrr ?? 0;
         }
         return {
           total_clientes: clientes.length,

@@ -11,6 +11,10 @@ import type { ResultadoPredicaoEntidade, ResultadoRegraEntidade } from "./tipos"
  * a MÉDIA PONDERADA — `Σ(valor × peso) / Σ(peso)` — considerando apenas as
  * regras avaliáveis para a entidade; regras "não avaliáveis" (acionado=null)
  * ficam de fora do numerador e do denominador e reduzem a `cobertura`.
+ *
+ * Omissão (métrica ausente) só entra como avaliável quando a regra define
+ * `pontuacao_omissao`; sem isso ela é "não avaliável" e a cobertura cai — o
+ * painel usa a cobertura para distinguir "saudável" de "sem dados".
  */
 export function calcularPredicaoEntidade(params: {
   entidadeId: string;

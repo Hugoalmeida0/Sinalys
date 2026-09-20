@@ -8,7 +8,7 @@ import { MarcarResolvidoModal } from "@/components/MarcarResolvidoModal";
 import { Button } from "@/components/ui/Button";
 import { SoftBadge } from "@/components/ui/Badge";
 import { useAnaliseIA } from "@/lib/ia/hooks/useAnaliseIA";
-import { formatCurrencyBRL, formatDateLongPtBR } from "@/lib/format";
+import { formatCurrencyBRLOuTraco, formatDateLongPtBR } from "@/lib/format";
 import type { ClientePainel } from "@/lib/painel/tipos";
 
 export function CampanhaRecuperacaoLista({ clientes }: { clientes: ClientePainel[] }) {
@@ -85,7 +85,7 @@ function CardCliente({
 
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-500">
             <span>
-              <span className="font-semibold text-brand-ink">{formatCurrencyBRL(cliente.mrr)}</span> de
+              <span className="font-semibold text-brand-ink">{formatCurrencyBRLOuTraco(cliente.mrr)}</span> de
               MRR perdido
             </span>
             {cliente.canceladoEm && (

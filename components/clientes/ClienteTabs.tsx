@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { SoftBadge } from "@/components/ui/Badge";
 import { RegistrarContatoTrigger } from "@/components/RegistrarContatoTrigger";
-import { formatCurrencyBRL, mesAnoPtBR, tempoDesde } from "@/lib/format";
+import { formatCurrencyBRLOuTraco, mesAnoPtBR, tempoDesde } from "@/lib/format";
 import { useAnaliseIA, type PlanoIA } from "@/lib/ia/hooks/useAnaliseIA";
 import { ConteudoAnaliseIA } from "@/components/ia/ConteudoAnaliseIA";
 import type { DetalheClientePainel as DetalheCliente } from "@/lib/painel/detalhe";
@@ -70,8 +70,13 @@ export function ClienteTabs({ detalhe }: { detalhe: DetalheCliente }) {
 }
 
 function StatsRow({ detalhe }: { detalhe: DetalheCliente }) {
-  const multiplo = Math.round(detalhe.receitaAnualRisco / detalhe.mrr);
-  const subiu = detalhe.variacaoMrr >= 0;
+  // MRR desconhecido: o card mostra "—" em vez de R$ 0 e não inventa variação nem múltiplo.
+  const multiplo =
+    detalhe.mrr && detalhe.receitaAnualRisco != null
+      ? Math.round(detalhe.receitaAnualRisco / detalhe.mrr)
+      : null;
+  const variacao = detalhe.variacaoMrr;
+  const subiu = variacao != null && variacao >= 0;
   const pctScore = Math.round((detalhe.scoreRisco / detalhe.scoreMax) * 100);
 
   return (
@@ -80,21 +85,27 @@ function StatsRow({ detalhe }: { detalhe: DetalheCliente }) {
         icone={DollarIcon}
         tom="royal"
         label="Receita mensal (MRR)"
-        valor={formatCurrencyBRL(detalhe.mrr)}
+        valor={formatCurrencyBRLOuTraco(detalhe.mrr)}
         rodape={
-          <span
-            className={`flex items-center gap-1 font-semibold ${
-              subiu ? "text-emerald-600" : "text-red-600"
-            }`}
-          >
-            {subiu ? (
-              <ArrowUpIcon className="h-3.5 w-3.5" />
-            ) : (
-              <ArrowDownIcon className="h-3.5 w-3.5" />
-            )}
-            {subiu ? "+" : ""}
-            {detalhe.variacaoMrr}% vs. mês anterior
-          </span>
+          variacao == null ? (
+            <span className="text-slate-400">
+              {detalhe.mrr == null ? "Receita não mapeada" : "Sem mês anterior para comparar"}
+            </span>
+          ) : (
+            <span
+              className={`flex items-center gap-1 font-semibold ${
+                subiu ? "text-emerald-600" : "text-red-600"
+              }`}
+            >
+              {subiu ? (
+                <ArrowUpIcon className="h-3.5 w-3.5" />
+              ) : (
+                <ArrowDownIcon className="h-3.5 w-3.5" />
+              )}
+              {subiu ? "+" : ""}
+              {variacao}% vs. mês anterior
+            </span>
+          )
         }
       />
 
@@ -102,9 +113,9 @@ function StatsRow({ detalhe }: { detalhe: DetalheCliente }) {
         icone={AlertTriangleIcon}
         tom="vermelho"
         label="Receita em risco (ano)"
-        valor={formatCurrencyBRL(detalhe.receitaAnualRisco)}
+        valor={formatCurrencyBRLOuTraco(detalhe.receitaAnualRisco)}
         valorClasse="text-red-600"
-        rodape={`${multiplo}x o MRR atual`}
+        rodape={multiplo == null ? "Sem receita mapeada" : `${multiplo}x o MRR atual`}
       />
 
       <StatCard

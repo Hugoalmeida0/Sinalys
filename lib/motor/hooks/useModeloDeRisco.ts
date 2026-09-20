@@ -10,6 +10,8 @@ export interface RegraModeloUI {
   tipo: "zscore_carteira" | "media_movel";
   direcao: "maior_pior" | "menor_pior";
   janela_dias: number | null;
+  janela_observacoes: number | null;
+  pontuacao_omissao: number | null;
   peso: number;
 }
 
@@ -34,6 +36,8 @@ export interface NovaRegraPayload {
   direcao: "maior_pior" | "menor_pior";
   peso: number;
   janela_dias?: number;
+  janela_observacoes?: number;
+  pontuacao_omissao?: number;
 }
 
 /**

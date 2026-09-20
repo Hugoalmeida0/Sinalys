@@ -134,6 +134,12 @@ function ListaRegrasEditavel({ regras, state }: { regras: RegraModeloUI[]; state
                 <p className="text-xs text-slate-400">
                   {ROTULOS_TIPO[r.tipo]} · {ROTULOS_DIRECAO[r.direcao]}
                   {r.tipo === "media_movel" && r.janela_dias ? ` · janela de ${r.janela_dias} dias` : ""}
+                  {r.tipo === "zscore_carteira" && r.janela_observacoes && r.janela_observacoes > 1
+                    ? ` · média das últimas ${r.janela_observacoes} observações`
+                    : ""}
+                  {r.pontuacao_omissao == null
+                    ? " · sem dado: não avaliado"
+                    : ` · sem dado: ${r.pontuacao_omissao} pts`}
                 </p>
               </div>
               <span className="shrink-0 text-sm font-bold text-brand-ink">
@@ -198,6 +204,9 @@ function FormularioNovaRegra({
   const [direcao, setDirecao] = useState<RegraModeloUI["direcao"]>("maior_pior");
   const [peso, setPeso] = useState(3);
   const [janelaDias, setJanelaDias] = useState(30);
+  const [janelaObservacoes, setJanelaObservacoes] = useState(3);
+  // "" = omissão não pontua (a regra fica "não avaliável" para quem não tem a métrica).
+  const [pontuacaoOmissao, setPontuacaoOmissao] = useState("");
   const { salvando } = state;
 
   const opcoesMetrica = useMemo(
@@ -209,6 +218,8 @@ function FormularioNovaRegra({
     if (!metricaId) return;
     const payload: NovaRegraPayload = { metrica_id: metricaId, tipo, direcao, peso };
     if (tipo === "media_movel") payload.janela_dias = janelaDias;
+    if (tipo === "zscore_carteira") payload.janela_observacoes = janelaObservacoes;
+    if (pontuacaoOmissao !== "") payload.pontuacao_omissao = Number(pontuacaoOmissao);
     const ok = await state.criarRegra(payload);
     if (ok) onFechar();
   }
@@ -272,6 +283,39 @@ function FormularioNovaRegra({
           />
         </label>
       )}
+
+      {tipo === "zscore_carteira" && (
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-slate-600">Média das últimas N observações</span>
+          <input
+            type="number"
+            min={1}
+            value={janelaObservacoes}
+            onChange={(e) => setJanelaObservacoes(Math.max(1, Number(e.target.value) || 1))}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-brand-royal focus:outline-none"
+          />
+          <span className="text-xs text-slate-400">
+            1 = só a última. 3 evita que um único período atípico dispare o sinal sozinho.
+          </span>
+        </label>
+      )}
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-slate-600">Quando o cliente não tem essa métrica</span>
+        <input
+          type="number"
+          min={0}
+          max={100}
+          value={pontuacaoOmissao}
+          placeholder="Não avaliar (padrão)"
+          onChange={(e) => setPontuacaoOmissao(e.target.value)}
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-royal focus:outline-none"
+        />
+        <span className="text-xs text-slate-400">
+          Vazio = não conta no score. Informe 0–100 se a ausência em si é um sinal (ex.: não respondeu à
+          pesquisa).
+        </span>
+      </label>
 
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-slate-600">

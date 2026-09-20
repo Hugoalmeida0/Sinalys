@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AcoesCliente } from "@/components/AcoesCliente";
 import { ChevronRightIcon } from "@/components/icons";
-import { Badge, SoftBadge } from "@/components/ui/Badge";
+import { Badge, BadgeTeste, SoftBadge } from "@/components/ui/Badge";
 import type { DetalheClientePainel as DetalheCliente } from "@/lib/painel/detalhe";
 import { faixaRiscoClasses, faixaRiscoLabel } from "@/lib/risk";
 
@@ -24,6 +24,7 @@ export function ClienteHeader({ detalhe }: { detalhe: DetalheCliente }) {
           <SoftBadge className="px-3 py-1.5">{detalhe.segmento}</SoftBadge>
           <SoftBadge className="px-3 py-1.5">{detalhe.porte} porte</SoftBadge>
           <SoftBadge className="px-3 py-1.5">{detalhe.tipo}</SoftBadge>
+          {detalhe.teste && <BadgeTeste origem={detalhe.testeOrigem} />}
         </div>
 
         <div className="flex items-center gap-2">
