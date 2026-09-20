@@ -3,9 +3,9 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { EyeIcon } from "@/components/icons";
+import { EyeIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
-import { GlobalsysWordmark } from "@/components/GlobalsysWordmark";
+import { GlobalsysWordmark } from "@/components/ui/GlobalsysWordmark";
 import { marcarRecalculoAoEntrar } from "@/components/dashboard/RecalculoFilaGate";
 
 export default function LoginPage() {
@@ -34,9 +34,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Cookies de sessão já gravados pela rota; o proxy libera o painel.
-      // Sinaliza para a home recalcular o motor de risco ao montar (Módulo 5,
-      // decisão do usuário) — sem bloquear este redirecionamento com o cálculo.
       marcarRecalculoAoEntrar();
       router.push("/");
       router.refresh();
@@ -60,14 +57,11 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
 
       <div className="relative z-10 flex min-h-screen flex-col">
-        {/* Topo */}
         <div className="flex items-center justify-between p-6 sm:p-10">
           <GlobalsysWordmark className="text-xl sm:text-2xl" />
         </div>
 
-        {/* Conteúdo central */}
         <div className="flex flex-1 flex-col items-center justify-center gap-10 px-6 py-6 sm:px-10 lg:flex-row lg:items-center lg:justify-center lg:gap-70 lg:px-20">
-          {/* Branding (somente telas grandes) */}
           <div className="hidden max-w-md flex-col gap-6 lg:flex">
             <Image
               src="/sinalys-logo-horizontal-white.png"
@@ -88,7 +82,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Logo compacto (mobile) */}
           <Image
             src="/sinalys-logo-horizontal-white.png"
             alt="Sinalys"
@@ -97,11 +90,9 @@ export default function LoginPage() {
             className="h-auto w-36 lg:hidden"
           />
 
-          {/* Card de login */}
           <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl sm:p-10">
             <h2 className="text-2xl font-bold text-slate-900">Bem-vindo de volta</h2>
             <p className="mt-1 text-sm text-slate-500">Acesse sua conta para continuar</p>
-
             <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-slate-700">E-mail</span>
@@ -173,7 +164,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Rodapé (somente telas grandes) */}
         <div className="hidden items-end justify-between p-10 lg:flex">
           <div>
             <GlobalsysWordmark className="text-base" />

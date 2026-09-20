@@ -3,16 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
-import { XIcon } from "@/components/icons";
-import { MOTIVOS_CANCELAMENTO, CODIGOS_MOTIVO_CANCELAMENTO } from "@/lib/cancelamento/constantes";
+import { XIcon } from "@/components/ui/icons";
 
-/**
- * "Marcar como cancelado": registra o desfecho de churn com motivo
- * estruturado (POST /api/eventos/cancelar) — fecha o loop com o cliente final
- * capturando *por que* ele saiu, não só *que* ele saiu. Alimenta o dashboard
- * de causa-raiz em /recuperacao.
- */
-export function MarcarCanceladoModal({
+export function MarcarResolvidoModal({
   open,
   onOpenChange,
   clienteId,
@@ -43,19 +36,18 @@ export function MarcarCanceladoModal({
     setErro(null);
     setEnviando(true);
     try {
-      const resposta = await fetch("/api/eventos/cancelar", {
+      const resposta = await fetch("/api/inteligencia/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cliente_id: clienteId,
-          motivo_categoria: form.get("motivo_categoria"),
-          motivo_detalhe: form.get("motivo_detalhe"),
-          acao_realizada: form.get("acao_realizada") || undefined,
+          desfecho: "recuperado",
+          acao_realizada: form.get("acao_realizada"),
         }),
       });
       if (!resposta.ok) {
         const corpo = await resposta.json().catch(() => null);
-        setErro(corpo?.erro ?? "Não foi possível registrar o cancelamento.");
+        setErro(corpo?.erro ?? "Não foi possível registrar o desfecho.");
         setEnviando(false);
         return;
       }
@@ -79,7 +71,7 @@ export function MarcarCanceladoModal({
 
       <div className="relative w-full max-w-md rounded-xl bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <h2 className="text-base font-semibold text-slate-900">Marcar como cancelado</h2>
+          <h2 className="text-base font-semibold text-slate-900">Marcar como resolvido</h2>
           <button
             type="button"
             onClick={handleClose}
@@ -95,47 +87,19 @@ export function MarcarCanceladoModal({
             <span className="font-semibold text-slate-700">
               {clienteId} – {clienteLabel}
             </span>{" "}
-            será registrado como <span className="font-semibold text-red-600">cancelado</span>. O
-            motivo entra no relatório de causas de cancelamento da carteira.
+            será registrado como <span className="font-semibold text-emerald-600">recuperado</span>.
+            Descreva o que foi feito: esse caso passa a orientar as recomendações da IA para
+            clientes parecidos.
           </p>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-slate-600">Motivo principal</span>
-            <select
-              name="motivo_categoria"
-              required
-              defaultValue=""
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-royal focus:outline-none"
-            >
-              <option value="" disabled>
-                Selecione um motivo
-              </option>
-              {CODIGOS_MOTIVO_CANCELAMENTO.map((codigo) => (
-                <option key={codigo} value={codigo}>
-                  {MOTIVOS_CANCELAMENTO[codigo]}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-slate-600">Detalhe (opcional)</span>
-            <textarea
-              name="motivo_detalhe"
-              rows={2}
-              placeholder="Ex.: comparou com concorrente que oferece o mesmo módulo sem custo adicional."
-              className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-royal focus:outline-none"
-            />
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-slate-600">
-              O que foi tentado antes do cancelamento (opcional)
-            </span>
+            <span className="text-xs font-medium text-slate-600">Ação realizada</span>
             <textarea
               name="acao_realizada"
-              rows={2}
-              placeholder="Se algo foi tentado e não foi suficiente, descreva aqui — ajuda a IA a não repetir a mesma recomendação com clientes parecidos."
+              required
+              minLength={10}
+              rows={4}
+              placeholder="Ex.: reunião com o gestor, renegociação de prazo e reonboarding do time..."
               className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-royal focus:outline-none"
             />
           </label>
@@ -147,7 +111,7 @@ export function MarcarCanceladoModal({
           )}
           {enviado && (
             <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
-              Cancelamento registrado.
+              Desfecho registrado. Obrigado pelo feedback!
             </p>
           )}
 

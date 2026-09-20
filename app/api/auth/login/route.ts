@@ -4,14 +4,6 @@ import { criarClienteSupabaseServidor } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-/**
- * Login simplificado (e-mail + senha) via Supabase Auth. Em caso de sucesso a
- * sessão é gravada em cookies httpOnly pelo `@supabase/ssr`; o `proxy.ts`
- * passa a liberar as páginas do painel. Sem cadastro nem recuperação de senha
- * por enquanto — usuários são criados pelo administrador no Supabase.
- *
- * Corpo: { email, senha }
- */
 export async function POST(request: Request) {
   const corpo = await request.json().catch(() => ({}));
   const email: unknown = corpo?.email;
@@ -28,7 +20,6 @@ export async function POST(request: Request) {
   });
 
   if (error || !data.user) {
-    // Mensagem genérica de propósito: não revelar se o e-mail existe.
     return NextResponse.json({ erro: "E-mail ou senha inválidos." }, { status: 401 });
   }
 

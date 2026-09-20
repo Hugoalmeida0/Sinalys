@@ -1,4 +1,3 @@
-/** Projeto padrão usado enquanto não existe autenticação multi-tenant (ver TASKS.md). */
 export function obterProjetoIdPadrao(): string {
   const projetoId = process.env.DEFAULT_PROJETO_ID;
   if (!projetoId) {

@@ -1,7 +1,3 @@
-/**
- * Sugestões de pergunta por tela. O assistente recebe a tela como contexto,
- * então "este cliente" no detalhe resolve para o cliente aberto.
- */
 export function sugestoesParaTela(caminho: string, clienteId?: string): string[] {
   if (clienteId) {
     return [
@@ -39,13 +35,11 @@ export function sugestoesParaTela(caminho: string, clienteId?: string): string[]
   ];
 }
 
-/** Extrai o código do cliente de rotas como "/clientes/C004". */
 export function clienteDaRota(caminho: string): string | undefined {
   const m = caminho.match(/^\/clientes\/([^/?#]+)/);
   return m ? decodeURIComponent(m[1]) : undefined;
 }
 
-/** Rótulo humano de cada ferramenta, exibido enquanto o assistente consulta dados. */
 export const ROTULOS_FERRAMENTAS: Record<string, { andamento: string; concluido: string }> = {
   listar_fila_prioridade: { andamento: "Consultando a fila de prioridade…", concluido: "Fila de prioridade consultada" },
   resumo_carteira: { andamento: "Levantando o resumo da carteira…", concluido: "Resumo da carteira consultado" },

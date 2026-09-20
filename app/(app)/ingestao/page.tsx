@@ -3,7 +3,7 @@ import {
   FileTextIcon,
   InfoIcon,
   SlidersIcon,
-} from "@/components/icons";
+} from "@/components/ui/icons";
 import { HistoricoIngestoes } from "@/components/ingestao/HistoricoIngestoes";
 import { IngestaoWizard } from "@/components/ingestao/IngestaoWizard";
 import { AssistantCard } from "@/components/ui/AssistantCard";
@@ -19,8 +19,6 @@ const dicas = [
 ];
 
 export default function IngestaoPage() {
-  // MVP: feature oculta (lib/config/features.ts). Bloqueia acesso direto
-  // por URL alem de remover do menu — nenhum codigo abaixo foi removido.
   if (!EXIBIR_INGESTAO) redirect("/");
 
   return (

@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { MenuFlutuante } from "@/components/ui/MenuFlutuante";
-import { ChevronDownIcon, MoreIcon } from "@/components/icons";
-import { MarcarResolvidoModal } from "@/components/MarcarResolvidoModal";
-import { MarcarCanceladoModal } from "@/components/MarcarCanceladoModal";
-import { RegistrarContatoModal } from "@/components/RegistrarContatoModal";
+import { ChevronDownIcon, MoreIcon } from "@/components/ui/icons";
+import { MarcarResolvidoModal } from "@/components/clientes/acoes/MarcarResolvidoModal";
+import { MarcarCanceladoModal } from "@/components/clientes/acoes/MarcarCanceladoModal";
+import { RegistrarContatoModal } from "@/components/clientes/acoes/RegistrarContatoModal";
 
 const ITEM = "block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50";
 
@@ -21,7 +21,7 @@ export function AcoesCliente({
   clienteId: string;
   clienteLabel: string;
   showVerDetalhes?: boolean;
-  /** Em listas densas, mostra apenas o menu "..." sem o botão "Ações". */
+
   compacto?: boolean;
 }) {
   const router = useRouter();
@@ -53,7 +53,7 @@ export function AcoesCliente({
         setErro(corpo?.erro ?? "Não foi possível silenciar os alertas.");
         return;
       }
-      // O cliente sai da fila e dos KPIs renderizados no servidor.
+
       router.refresh();
     } catch {
       setErro("Falha de conexão. Tente novamente.");

@@ -1,4 +1,4 @@
-import { BellIcon, SearchIcon } from "@/components/icons";
+import { BellIcon, SearchIcon } from "@/components/ui/icons";
 import type { UsuarioSessao } from "@/lib/auth/usuario";
 import { BotaoSair } from "./BotaoSair";
 

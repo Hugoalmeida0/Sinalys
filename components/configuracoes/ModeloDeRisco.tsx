@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangleIcon, LoaderIcon, PlusCircleIcon, SlidersIcon, XIcon } from "@/components/icons";
+import { AlertTriangleIcon, LoaderIcon, PlusCircleIcon, SlidersIcon, XIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { Painel } from "./ConfiguracoesTabs";
@@ -10,9 +10,8 @@ import type {
   NovaRegraPayload,
   RegraModeloUI,
   UseModeloDeRisco,
-} from "@/lib/motor/hooks/useModeloDeRisco";
+} from "@/hooks/useModeloDeRisco";
 
-/** Teto só de exibição da barra/slider — o banco aceita qualquer peso ≥ 0. */
 const PESO_MAXIMO_UI = 10;
 
 const ROTULOS_TIPO: Record<RegraModeloUI["tipo"], string> = {
@@ -25,11 +24,6 @@ const ROTULOS_DIRECAO: Record<RegraModeloUI["direcao"], string> = {
   menor_pior: "Quanto menor, pior",
 };
 
-/**
- * Aba "Modelo de risco" de /configuracoes (Módulo 5 — CRUD de pesos/regras).
- * `state` vem de `useModeloDeRisco()`, chamado uma vez em `ConfiguracoesTabs`
- * e repassado aqui e para `PesosResumo` — evita duas buscas independentes.
- */
 export function PesosDetalhados({ state }: { state: UseModeloDeRisco }) {
   const { modelo, carregando, erro } = state;
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -105,8 +99,6 @@ function ErroCarregamento({ erro, onTentarNovamente }: { erro: string | null; on
 }
 
 function ListaRegrasEditavel({ regras, state }: { regras: RegraModeloUI[]; state: UseModeloDeRisco }) {
-  // Rascunho local: só vira PATCH ao clicar "Salvar alterações", para não
-  // recalcular o motor a cada arrasto do slider.
   const [rascunho, setRascunho] = useState<Record<string, number>>({});
   const { salvando } = state;
 
@@ -205,7 +197,7 @@ function FormularioNovaRegra({
   const [peso, setPeso] = useState(3);
   const [janelaDias, setJanelaDias] = useState(30);
   const [janelaObservacoes, setJanelaObservacoes] = useState(3);
-  // "" = omissão não pontua (a regra fica "não avaliável" para quem não tem a métrica).
+
   const [pontuacaoOmissao, setPontuacaoOmissao] = useState("");
   const { salvando } = state;
 
@@ -346,7 +338,6 @@ function FormularioNovaRegra({
   );
 }
 
-/** Versão compacta usada na sidebar de /configuracoes, visível em qualquer aba. */
 export function PesosResumo({ state }: { state: UseModeloDeRisco }) {
   const { modelo, carregando } = state;
 

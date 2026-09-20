@@ -1,14 +1,9 @@
 "use client";
 
 import { useAssistente } from "@/components/assistente/AssistenteProvider";
-import { ArrowRightIcon, ChatIcon } from "@/components/icons";
+import { ArrowRightIcon, ChatIcon } from "@/components/ui/icons";
 import { SinalysMascot, type VarianteMascote } from "@/components/ui/SinalysMascot";
 
-/**
- * Bloco escuro de chamada para o assistente da Sinalys.
- * `layout="lado"` posiciona o mascote à esquerda do texto (telas largas);
- * `layout="topo"` empilha o mascote acima, para colunas estreitas.
- */
 export function AssistantCard({
   titulo,
   descricao,
@@ -16,7 +11,7 @@ export function AssistantCard({
   comIconeChat = false,
   layout = "lado",
   variante = "padrao",
-  /** Pergunta que já entra no campo do chat ao abrir por este card. */
+
   assunto,
   className = "",
 }: {
@@ -53,7 +48,6 @@ export function AssistantCard({
         <div className={`min-w-0 flex-1 ${empilhado ? "" : "sm:pr-2"}`}>
           <h2 className="text-lg leading-snug font-bold">{titulo}</h2>
           <p className="mt-2 text-sm leading-relaxed text-blue-100/80">{descricao}</p>
-
           <button
             type="button"
             onClick={() => abrir(assunto)}
@@ -69,7 +63,6 @@ export function AssistantCard({
   );
 }
 
-/** Pontinhos luminosos decorativos do fundo. */
 function Faiscas() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0">

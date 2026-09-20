@@ -3,14 +3,6 @@ import { CausasCancelamento } from "@/components/recuperacao/CausasCancelamento"
 import { PageHeader } from "@/components/ui/PageHeader";
 import { carregarPainel } from "@/lib/painel/servidor";
 
-/**
- * Campanha de recuperação de cancelados (Ponto 3 do usuário): lista os
- * clientes com o evento de desfecho-alvo já registrado (`ClientePainel.cancelado`,
- * já calculado por `montarClientesPainel`) com o mínimo necessário para o
- * analista entender o perfil, a causa provável e um plano de retomada — a
- * mesma Task 4.3 usada no detalhe do cliente ativo, aplicada aqui a quem já
- * saiu.
- */
 export default async function RecuperacaoPage() {
   const painel = await carregarPainel();
   const cancelados = painel.clientes

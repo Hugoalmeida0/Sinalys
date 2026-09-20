@@ -5,11 +5,6 @@ import { processarMapeamentos } from "@/lib/ingestao/normalizar";
 
 export const runtime = "nodejs";
 
-/**
- * Task 2.3 — parser universal: baixa o arquivo bruto arquivado no upload
- * (Task 2.1), aplica os mapeamentos De-Para salvos (Task 2.2) e grava o
- * resultado normalizado em `entidades` / `observacoes` / `eventos_desfecho`.
- */
 export async function POST(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const corpo = await request.json().catch(() => null);

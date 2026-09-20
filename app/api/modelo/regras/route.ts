@@ -11,16 +11,9 @@ import {
 import type { DirecaoRisco, TipoRegra } from "@/lib/motor/tipos";
 
 export const runtime = "nodejs";
-// Recalcula o motor logo após salvar (ver comentário abaixo) — mesmo teto de
-// tempo da rota de recálculo manual.
+
 export const maxDuration = 60;
 
-/**
- * Depois de qualquer alteração no modelo, recalcula o motor de risco na
- * hora: diferente do recálculo automático do login (que não deve bloquear a
- * navegação), aqui é uma ação explícita de "Salvar" — o analista espera ver o
- * efeito da mudança de peso imediatamente, e vale a espera de alguns segundos.
- */
 async function recalcularEDevolverModelo(params: {
   supabase: ReturnType<typeof criarClienteSupabaseAdmin>;
   projetoId: string;
@@ -48,7 +41,6 @@ async function resolverProjetoEModelo(request: Request, corpo: Record<string, un
 
 class NoModeloAtivoError extends Error {}
 
-/** Body: `{ atualizacoes: [{ id, peso }] }` — atualiza pesos de regras existentes. */
 export async function PATCH(request: Request) {
   const corpo = await request.json().catch(() => ({}));
   const atualizacoes = corpo?.atualizacoes;
@@ -75,7 +67,6 @@ export async function PATCH(request: Request) {
   }
 }
 
-/** Body: `{ metrica_id, tipo, direcao, peso, janela_dias?, janela_observacoes?, pontuacao_omissao? }` — cria uma regra nova. */
 export async function POST(request: Request) {
   const corpo = await request.json().catch(() => ({}));
 

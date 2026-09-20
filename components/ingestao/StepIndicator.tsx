@@ -1,4 +1,4 @@
-import { CheckIcon } from "@/components/icons";
+import { CheckIcon } from "@/components/ui/icons";
 
 const steps = [
   { numero: 1, titulo: "Upload do arquivo" },
@@ -18,7 +18,7 @@ export function StepIndicator({ atual }: { atual: 1 | 2 | 3 }) {
         return (
           <li
             key={step.numero}
-            // Só os passos com conector esticam, para as linhas ficarem parelhas.
+
             className={`flex items-center gap-3 sm:gap-5 ${ultimo ? "" : "flex-1"}`}
           >
             <div className="flex items-center gap-3">

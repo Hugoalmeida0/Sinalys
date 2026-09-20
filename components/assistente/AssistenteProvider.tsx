@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 
 type AssistenteContexto = {
   aberto: boolean;
-  /** `assunto` entra como rascunho da pergunta ao abrir por um card. */
+
   abrir: (assunto?: string) => void;
   fechar: () => void;
   alternar: () => void;

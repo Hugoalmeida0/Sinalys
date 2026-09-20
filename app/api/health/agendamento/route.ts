@@ -5,7 +5,7 @@ import {
   montarResumoSolicitacao,
   PROXIMO_PASSO_AGENDAMENTO,
 } from "@/lib/health/agendamento";
-import { resolverEntidadePorToken } from "@/lib/painel/health-publico";
+import { resolverEntidadePorToken } from "@/lib/health/publico";
 import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -18,19 +18,9 @@ function texto(valor: unknown, max: number): string | null {
   return t ? t.slice(0, max) : null;
 }
 
-/**
- * Botão "Agendar call de alinhamento" da página pública (/health/[token])
- * quando o CS não configurou um link externo de agenda. Endpoint PÚBLICO:
- * a única credencial é o token opaco da página; ele identifica a entidade e
- * nada mais é aceito do corpo (nem projeto, nem ids internos).
- *
- * Corpo: { token, nome, email?, preferencia_em?, mensagem?, site? (honeypot) }
- */
 export async function POST(request: Request) {
   const corpo = await request.json().catch(() => ({}));
 
-  // Honeypot: campo invisível no formulário — bot que preenche tudo cai aqui.
-  // Responde 201 mesmo assim para não ensinar o que foi detectado.
   if (typeof corpo?.site === "string" && corpo.site.trim()) {
     return NextResponse.json({ ok: true }, { status: 201 });
   }
@@ -74,8 +64,7 @@ export async function POST(request: Request) {
       resumo: montarResumoSolicitacao(pedido),
       proximo_passo: PROXIMO_PASSO_AGENDAMENTO,
       proximo_passo_em: preferenciaEm,
-      // Sem autor: é o cliente falando, não um CS — e `responsavelCS` no
-      // painel é derivado do autor do contato mais recente.
+
       autor_usuario_id: null,
       autor_nome: null,
     });

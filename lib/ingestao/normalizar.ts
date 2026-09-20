@@ -54,7 +54,6 @@ function parseData(valor: unknown): Date | null {
   return Number.isNaN(isoTentativa.getTime()) ? null : isoTentativa;
 }
 
-/** Quebra um array em lotes — evita payloads gigantes numa única chamada ao PostgREST. */
 function emLotes<T>(itens: T[], tamanho: number): T[][] {
   const lotes: T[][] = [];
   for (let i = 0; i < itens.length; i += tamanho) {
@@ -90,12 +89,6 @@ function coagirValorMetrica(
   return { valor_numero: null, valor_texto: String(valorBruto), valor_booleano: null };
 }
 
-/**
- * Motor de normalização universal (Task 2.3): aplica os mapeamentos De-Para
- * de uma execução de ingestão sobre as linhas brutas do arquivo e grava o
- * resultado nas tabelas padronizadas (entidades/observacoes/eventos_desfecho),
- * tornando o motor matemático agnóstico ao schema de origem (docs/setup.md).
- */
 export async function processarMapeamentos(params: {
   supabase: SupabaseClient;
   projetoId: string;
@@ -146,7 +139,6 @@ export async function processarMapeamentos(params: {
     const dataEventoMap = mapeamentosDaAba.find((m) => m.tipo_destino === "data_evento");
     const statusEventoMaps = mapeamentosDaAba.filter((m) => m.tipo_destino === "status_evento");
 
-    // Passo 1: consolidar entidades únicas referenciadas nesta aba.
     const entidadesPorIdExterno = new Map<
       string,
       { atributos: Record<string, unknown>; iniciadoEm: Date | null }
@@ -169,10 +161,6 @@ export async function processarMapeamentos(params: {
       entidadesPorIdExterno.set(idExterno, atual);
     }
 
-    // Passo 2: upsert de entidades em lote — 1 SELECT + 1 UPSERT por lote,
-    // em vez de 2 round-trips por entidade (gargalo real em arquivos com
-    // muitos clientes: uma consulta sequencial por linha chegava a levar
-    // minutos e estourava o timeout de função serverless na Vercel).
     const idEntidadePorIdExterno = new Map<string, string>();
     const idsExternos = Array.from(entidadesPorIdExterno.keys());
 
@@ -215,7 +203,6 @@ export async function processarMapeamentos(params: {
       }
     }
 
-    // Passo 3: montar observações e eventos linha a linha.
     const observacoesParaGravar: Record<string, unknown>[] = [];
     const eventosParaGravar: Record<string, unknown>[] = [];
 

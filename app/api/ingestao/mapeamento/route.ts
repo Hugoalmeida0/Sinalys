@@ -28,7 +28,6 @@ function validarMapeamento(m: MapeamentoEntrada): string | null {
   return null;
 }
 
-/** Lista os mapeamentos já salvos para uma execução de ingestão. */
 export async function GET(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const { searchParams } = new URL(request.url);
@@ -51,12 +50,6 @@ export async function GET(request: Request) {
   return NextResponse.json({ mapeamentos: data });
 }
 
-/**
- * Task 2.2 — grava o De-Para de uma execução de ingestão: associa cada
- * coluna do arquivo a um destino padronizado (id da entidade, métrica,
- * evento, etc.). Endpoint agnóstico ao schema de origem; a interface de
- * usuário para montar este payload fica pendente (ver TASKS.md).
- */
 export async function POST(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const corpo = await request.json().catch(() => null);

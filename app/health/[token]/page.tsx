@@ -2,7 +2,7 @@ import Image from "next/image";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
-import { buscarHealthPublico, DESTAQUE_PADRAO } from "@/lib/painel/health-publico";
+import { buscarHealthPublico, DESTAQUE_PADRAO } from "@/lib/health/publico";
 import { resolverBaseUrlAbsoluta } from "@/lib/config/base-url";
 import { SinalysMascot } from "@/components/ui/SinalysMascot";
 import { AgendarCall } from "@/components/health/AgendarCall";
@@ -12,18 +12,11 @@ import {
   PlusCircleIcon,
   TargetIcon,
   type IconProps,
-} from "@/components/icons";
+} from "@/components/ui/icons";
 import type { ComponentType } from "react";
 
 export const runtime = "nodejs";
 
-/**
- * QR code apontando pra esta mesma página, gerado como SVG (sem chamada a
- * API externa — offline, grátis, sem rate limit). Pensado para o CS abrir a
- * página em uma call e o cliente escanear com o celular em vez de digitar o
- * link — por isso o QR sempre codifica a URL absoluta correta do ambiente
- * (domínio da Vercel, ou o IP de LAN em dev local — ver lib/config/base-url.ts).
- */
 async function gerarQrCodeSvg(url: string): Promise<string> {
   return QRCode.toString(url, {
     type: "svg",
@@ -32,7 +25,6 @@ async function gerarQrCodeSvg(url: string): Promise<string> {
   });
 }
 
-/** Ícone + cor por posição — a ordem dos benefícios é fixa em `lib/painel/health-config.ts`. */
 const ESTILO_BENEFICIO: { icone: ComponentType<IconProps>; bg: string; icone_cor: string; anel: string }[] = [
   { icone: ClockIcon, bg: "bg-emerald-50", icone_cor: "text-emerald-600", anel: "ring-emerald-100" },
   { icone: TargetIcon, bg: "bg-brand-pale", icone_cor: "text-brand-royal", anel: "ring-brand-royal/10" },
@@ -56,7 +48,6 @@ export default async function HealthScorePublicoPage({
 
   return (
     <main className="min-h-screen bg-slate-50">
-      {/* Hero em tela cheia */}
       <div className="relative overflow-hidden bg-brand-navy">
         <Image
           src="/imagem_fundo_login.png"
@@ -99,7 +90,6 @@ export default async function HealthScorePublicoPage({
         </div>
       </div>
 
-      {/* QR code — sobreposto à base do hero, pra ficar visível em call sem rolar a página */}
       <div className="relative z-10 mx-auto -mt-10 flex max-w-6xl justify-center px-6 sm:-mt-12 sm:justify-end">
         <div className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-xl ring-1 ring-slate-200/80 sm:p-5">
           <div
@@ -115,9 +105,7 @@ export default async function HealthScorePublicoPage({
         </div>
       </div>
 
-      {/* Corpo */}
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 pt-6 pb-12 sm:py-16">
-        {/* Destaques */}
         <section>
           <h2 className="mb-4 text-center text-xl font-bold text-brand-ink lg:text-left">
             O que está funcionando bem
@@ -137,7 +125,6 @@ export default async function HealthScorePublicoPage({
           </div>
         </section>
 
-        {/* Benefícios */}
         <section>
           <h2 className="mb-4 text-center text-xl font-bold text-brand-ink lg:text-left">
             Benefícios exclusivos do seu plano
@@ -163,7 +150,6 @@ export default async function HealthScorePublicoPage({
           </div>
         </section>
 
-        {/* CTA + agendamento */}
         <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-royal to-brand-navy px-6 py-10 text-center shadow-xl sm:px-10">
           <h2 className="text-2xl font-bold text-white">
             Vamos conversar sobre os próximos passos da sua conta?

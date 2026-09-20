@@ -2,26 +2,27 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AcoesCliente } from "@/components/AcoesCliente";
+import { AcoesCliente } from "@/components/clientes/acoes/AcoesCliente";
 import { PrioridadeBadge } from "@/components/dashboard/FilaDoDia";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DownloadIcon,
   SearchIcon,
-} from "@/components/icons";
+} from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
 import { ScorePill } from "@/components/ui/ScorePill";
 import { Select } from "@/components/ui/Select";
 import { BadgeTeste, SoftBadge } from "@/components/ui/Badge";
-import { formatCurrencyBRLOuTraco, formatDateLongPtBR } from "@/lib/format";
+import { formatCurrencyBRLOuTraco, formatDateLongPtBR } from "@/lib/utils/formatacao";
 import { compararPrioridade } from "@/lib/painel/clientes";
-import type { FaixaRisco } from "@/lib/mock-data";
+import type { FaixaRisco } from "@/lib/risco/faixa";
 import type { ClientePainel } from "@/lib/painel/tipos";
-import { faixaRiscoLabelCurto, faixaRiscoSoftClasses } from "@/lib/risk";
+import { faixaRiscoLabelCurto } from "@/lib/risco/faixa";
+import { faixaRiscoSoftClasses } from "@/lib/risco/estilos";
 
 type FiltroRisco = FaixaRisco | "todos";
-/** Ativos = sem desfecho-alvo registrado; inativos = cancelados. */
+
 type FiltroSituacao = "ativos" | "inativos" | "todos";
 export type Ordenacao = "prioridade" | "score" | "receita" | "mrr" | "atualizacao";
 
@@ -54,7 +55,7 @@ export function ClientesTable({
   ordemInicial = "prioridade",
 }: {
   clientes: ClientePainel[];
-  /** Ordenação com que a tabela abre (ex. `/clientes?ordem=prioridade` vindo do "Ver fila completa"). */
+
   ordemInicial?: Ordenacao;
 }) {
   const [busca, setBusca] = useState("");
@@ -101,7 +102,6 @@ export function ClientesTable({
   const inicio = (paginaAtual - 1) * POR_PAGINA;
   const visiveis = lista.slice(inicio, inicio + POR_PAGINA);
 
-  /** Qualquer mudança de filtro volta para a primeira página. */
   function aoFiltrar<T>(setter: (v: T) => void) {
     return (valor: T) => {
       setter(valor);
@@ -155,7 +155,6 @@ export function ClientesTable({
         </div>
       </div>
 
-      {/* Desktop: tabela completa */}
       <div className="scroll-slim hidden overflow-x-auto lg:block">
         <table className="w-full border-collapse text-left">
           <thead>
@@ -234,7 +233,6 @@ export function ClientesTable({
         </table>
       </div>
 
-      {/* Mobile: cartões empilhados */}
       <ul className="divide-y divide-slate-100 border-t border-slate-100 lg:hidden">
         {visiveis.map((cliente) => (
           <li key={cliente.id}>
@@ -335,7 +333,6 @@ export function ClientesTable({
   );
 }
 
-/** Marca clientes com o evento de desfecho-alvo (ex. cancelamento) já registrado. */
 function BadgeCancelado() {
   return (
     <SoftBadge className="shrink-0 bg-slate-200 text-slate-600" title="Cliente cancelou o plano">
@@ -344,7 +341,6 @@ function BadgeCancelado() {
   );
 }
 
-/** Mostra o primeiro sinal e resume os demais em "+N". */
 function ChipsDeSinais({ cliente }: { cliente: ClientePainel }) {
   const [primeiro, ...resto] = cliente.sinais;
   if (!primeiro) return null;

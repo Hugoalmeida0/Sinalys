@@ -9,11 +9,6 @@ export interface ContextoRotaPainel {
   modeloId: string;
 }
 
-/**
- * Passo comum das rotas do painel: cliente admin + projeto (sessão → query →
- * env) + modelo (query `modelo_id` → modelo ativo). Devolve uma resposta
- * pronta (422/500) quando não dá para continuar.
- */
 export async function montarContextoRotaPainel(
   request: Request
 ): Promise<ContextoRotaPainel | NextResponse> {

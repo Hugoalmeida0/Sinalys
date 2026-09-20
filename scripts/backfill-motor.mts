@@ -1,18 +1,3 @@
-/**
- * Task B.5 — Backfill mensal do motor: roda `calcularPredicoesProjeto` no 1º
- * dia de cada mês, da primeira observação do projeto até a última, para que
- * exista série histórica de verdade (tendência, evolução do score, KPI de
- * antecedência) em vez de uma foto única.
- *
- *   npx tsx scripts/backfill-motor.mts            # todas as entidades
- *   npx tsx scripts/backfill-motor.mts --limpar   # antes, apaga predições com
- *                                                 # referência posterior à
- *                                                 # última observação (rodadas
- *                                                 # antigas com "hoje")
- *
- * Idempotente: a chave de dedup é (entidade, dia), então rodar de novo só
- * atualiza.
- */
 import fs from "node:fs";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { calcularPredicoesProjeto, resolverReferenciaPadrao } from "@/lib/motor/calcular";
@@ -45,7 +30,6 @@ export function criarSupabase(env: Record<string, string>): SupabaseClient {
   });
 }
 
-/** Apaga predições (e motivos) com referência posterior à última observação — rodadas antigas com `referencia_em = hoje`. */
 export async function limparPredicoesFuturas(supabase: SupabaseClient, projetoId: string): Promise<number> {
   const ultima = await resolverReferenciaPadrao(supabase, projetoId);
   if (!ultima) return 0;
@@ -70,7 +54,6 @@ export async function limparPredicoesFuturas(supabase: SupabaseClient, projetoId
   return preds.length;
 }
 
-/** Roda o motor no 1º dia de cada mês, da primeira observação até a última; `entidadeIds` restringe quem é calculado. */
 export async function backfill(supabase: SupabaseClient, projetoId: string, entidadeIds?: string[]) {
   const { data: modelo, error } = await supabase
     .from("modelos")
@@ -118,7 +101,6 @@ export async function backfill(supabase: SupabaseClient, projetoId: string, enti
   }
 }
 
-// Só executa quando chamado diretamente (o script dos clones importa as funções).
 if (process.argv[1] && /backfill-motor\.mts$/.test(process.argv[1].replace(/\\/g, "/"))) {
   const env = carregarEnv();
   const supabase = criarSupabase(env);

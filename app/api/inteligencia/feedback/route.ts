@@ -8,14 +8,6 @@ import { indexarCasoHistorico } from "@/lib/ia/indexar";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-/**
- * Feedback loop (docs/inteligencia.md §4): registra o desfecho de um cliente e
- * o vetoriza na base histórica, tornando-o recuperável pela busca lookalike da
- * Task 4.2. Backend do fluxo de feedback humano da Task 5.3 — a UI fica lá.
- *
- * Corpo: { cliente_id, acao_realizada, desfecho, projeto_id?, modelo_id?,
- *          evento_desfecho_id?, contexto_texto? }
- */
 export async function POST(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const corpo = await request.json().catch(() => ({}));

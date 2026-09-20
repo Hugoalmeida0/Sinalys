@@ -3,17 +3,11 @@ import {
   CheckIcon,
   LoaderIcon,
   ReportsIcon,
-} from "@/components/icons";
+} from "@/components/ui/icons";
 import { SinalysMascot } from "@/components/ui/SinalysMascot";
-import { formatDatePtBR, formatTimePtBR } from "@/lib/format";
-import type { UseAnaliseIA } from "@/lib/ia/hooks/useAnaliseIA";
+import { formatDatePtBR, formatTimePtBR } from "@/lib/utils/formatacao";
+import type { UseAnaliseIA } from "@/hooks/useAnaliseIA";
 
-/**
- * Corpo visual do diagnóstico de IA (Task 4.3): estado de progresso, erro,
- * vazio, ou o diagnóstico + "o que o histórico diz" + checklist de ações.
- * Usado dentro da aba "Plano de ação" do cliente e da campanha de recuperação
- * — cada tela monta seu próprio cabeçalho/botão em torno disso.
- */
 export function ConteudoAnaliseIA({
   estado,
   textoVazio,

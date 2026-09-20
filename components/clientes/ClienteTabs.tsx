@@ -13,7 +13,7 @@ import {
   ReportsIcon,
   TargetIcon,
   type IconProps,
-} from "@/components/icons";
+} from "@/components/ui/icons";
 import { ScoreEvolucaoChart } from "@/components/clientes/ScoreEvolucaoChart";
 import { SimuladorCenarios } from "@/components/clientes/SimuladorCenarios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -21,19 +21,13 @@ import { AssistantCard } from "@/components/ui/AssistantCard";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { SoftBadge } from "@/components/ui/Badge";
-import { RegistrarContatoTrigger } from "@/components/RegistrarContatoTrigger";
-import { formatCurrencyBRLOuTraco, mesAnoPtBR, tempoDesde } from "@/lib/format";
-import { useAnaliseIA, type PlanoIA } from "@/lib/ia/hooks/useAnaliseIA";
+import { RegistrarContatoTrigger } from "@/components/clientes/acoes/RegistrarContatoTrigger";
+import { formatCurrencyBRLOuTraco, mesAnoPtBR, tempoDesde } from "@/lib/utils/formatacao";
+import { useAnaliseIA, type PlanoIA } from "@/hooks/useAnaliseIA";
 import { ConteudoAnaliseIA } from "@/components/ia/ConteudoAnaliseIA";
 import type { DetalheClientePainel as DetalheCliente } from "@/lib/painel/detalhe";
-import {
-  faixaRiscoLabel,
-  faixaRiscoTextClasses,
-  severidadeChipClasses,
-  severidadeClasses,
-  severidadeLabel,
-  severidadeNome,
-} from "@/lib/risk";
+import { faixaRiscoLabel, severidadeLabel, severidadeNome } from "@/lib/risco/faixa";
+import { faixaRiscoTextClasses, severidadeChipClasses, severidadeClasses } from "@/lib/risco/estilos";
 
 const tabs = ["Visão geral", "Sinais de risco", "Simulador", "Plano de ação"] as const;
 
@@ -72,7 +66,6 @@ export function ClienteTabs({ detalhe }: { detalhe: DetalheCliente }) {
 }
 
 function StatsRow({ detalhe }: { detalhe: DetalheCliente }) {
-  // MRR desconhecido: o card mostra "—" em vez de R$ 0 e não inventa variação nem múltiplo.
   const multiplo =
     detalhe.mrr && detalhe.receitaAnualRisco != null
       ? Math.round(detalhe.receitaAnualRisco / detalhe.mrr)
@@ -329,16 +322,13 @@ function planoInicial(detalhe: DetalheCliente): PlanoIA | null {
 
 function PlanoDeAcao({ detalhe }: { detalhe: DetalheCliente }) {
   const router = useRouter();
-  // Começa com o último diagnóstico persistido (vindo do servidor); depois de
-  // uma análise, passa a refletir a resposta da rota sem esperar o refresh.
+
   const estado = useAnaliseIA(detalhe.id, planoInicial(detalhe));
   const { plano, analisando, analisar } = estado;
 
   async function analisarERecarregar() {
-    // Reanalisar deve ignorar o cache (o usuário quer uma leitura nova); a
-    // primeira análise pode reaproveitar um diagnóstico recente da mesma predição.
     const ok = await analisar(Boolean(plano));
-    // O diagnóstico foi persistido: sincroniza visão geral e header com o servidor.
+
     if (ok) router.refresh();
   }
 

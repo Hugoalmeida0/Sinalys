@@ -13,11 +13,6 @@ export function formatCurrencyBRL(value: number): string {
   });
 }
 
-/**
- * Uma data só com dia ("2024-03-01") é lida pelo `Date` como meia-noite UTC e,
- * em fusos negativos como o Brasil, vira o dia anterior. Aqui ela é tratada
- * como data local; strings com hora seguem o parse normal.
- */
 export function parseData(iso: string): Date {
   return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T00:00:00`) : new Date(iso);
 }
@@ -30,7 +25,6 @@ export function formatDatePtBR(iso: string): string {
   });
 }
 
-/** Ex.: "12 de set. de 2026" — usado nas colunas de data das tabelas. */
 export function formatDateLongPtBR(iso: string): string {
   return parseData(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -39,7 +33,6 @@ export function formatDateLongPtBR(iso: string): string {
   });
 }
 
-/** Ex.: "14:32" — hora de envio/processamento nas ingestões. */
 export function formatTimePtBR(iso: string): string {
   return new Date(iso).toLocaleTimeString("pt-BR", {
     hour: "2-digit",
@@ -80,7 +73,6 @@ export function mesAnoPtBR(iso: string): string {
     .replace(".", "");
 }
 
-/** Valor monetário desconhecido mostra "—", nunca "R$ 0" — ausência não é zero. */
 export function formatCurrencyBRLOuTraco(value: number | null | undefined): string {
   return value == null ? "—" : formatCurrencyBRL(value);
 }

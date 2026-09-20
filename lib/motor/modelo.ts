@@ -7,19 +7,6 @@ import {
 } from "./constantes";
 import type { DirecaoRisco, TipoRegra } from "./tipos";
 
-/**
- * Task 1 (Módulo 5) — CRUD do modelo de risco (pesos e regras).
- *
- * Escopo deliberadamente contido para o MVP: editar o peso de uma regra
- * existente e adicionar uma regra nova para uma métrica ainda não usada.
- * Sem exclusão de regra — `motivos_predicao.regra_modelo_id` referencia
- * `regras_modelo` sem `ON DELETE CASCADE`, então remover uma regra já usada
- * em alguma predição falha com violação de FK; expor "excluir" sem tratar
- * isso direito confundiria mais do que ajudaria. Sem edição de direção/janela
- * de regras existentes por ora — só peso, que é o pedido explícito do
- * usuário ("definir que atraso tem peso 3").
- */
-
 export class ModeloNaoEncontradoError extends Error {}
 export class RegraInvalidaError extends Error {}
 
@@ -38,11 +25,11 @@ export interface RegraModeloDetalhada {
   metrica_unidade: string | null;
   tipo: TipoRegra;
   direcao: DirecaoRisco;
-  /** Só relevante para tipo "media_movel". */
+
   janela_dias: number | null;
-  /** Só relevante para tipo "zscore_carteira": quantas observações recentes são agregadas (média). */
+
   janela_observacoes: number | null;
-  /** Pontuação (0-100) atribuída quando a métrica está ausente; null = "não avaliável". */
+
   pontuacao_omissao: number | null;
   peso: number;
 }
@@ -58,7 +45,7 @@ export interface ModeloDetalhado {
   modelo_id: string;
   versao: number;
   regras: RegraModeloDetalhada[];
-  /** Métricas numéricas do projeto ainda sem regra neste modelo — candidatas a nova regra. */
+
   metricas_disponiveis: MetricaDisponivel[];
 }
 
@@ -67,7 +54,6 @@ function normalizarRelacao<T>(relacao: T | T[] | null | undefined): T | null {
   return Array.isArray(relacao) ? (relacao[0] ?? null) : relacao;
 }
 
-/** Carrega o modelo ativo do projeto com suas regras (rotuladas) e as métricas ainda disponíveis para novas regras. */
 export async function carregarModeloAtivoDetalhado(
   supabase: SupabaseClient,
   projetoId: string
@@ -94,7 +80,7 @@ export async function carregarModeloAtivoDetalhado(
         .select("id, codigo, rotulo, unidade")
         .eq("projeto_id", projetoId)
         .eq("tipo_valor", "numero")
-        // Receita mensal é o impacto financeiro da Matriz de Urgência, não um sinal de risco.
+
         .neq("codigo", CODIGO_METRICA_RECEITA_MENSAL),
     ]);
   if (erroRegras) throw new Error(`Falha ao buscar regras do modelo: ${erroRegras.message}`);
@@ -141,7 +127,6 @@ export async function carregarModeloAtivoDetalhado(
   return { modelo_id: modelo.id as string, versao: modelo.versao as number, regras, metricas_disponiveis: metricasDisponiveis };
 }
 
-/** Atualiza o peso de uma ou mais regras já existentes no modelo ativo do projeto. */
 export async function atualizarPesosRegras(params: {
   supabase: SupabaseClient;
   projetoId: string;
@@ -156,8 +141,6 @@ export async function atualizarPesosRegras(params: {
     }
   }
 
-  // Poucas regras por modelo (unidades) — sequencial é aceitável aqui; o
-  // tratamento em lote do Módulo 3 é para centenas/milhares de entidades.
   for (const a of atualizacoes) {
     const { data, error } = await supabase
       .from("regras_modelo")
@@ -176,7 +159,6 @@ export async function atualizarPesosRegras(params: {
 const TIPOS_REGRA_VALIDOS: TipoRegra[] = ["zscore_carteira", "media_movel"];
 const DIRECOES_VALIDAS: DirecaoRisco[] = ["maior_pior", "menor_pior"];
 
-/** Cria uma nova regra (sinal de risco) para o modelo ativo, sobre uma métrica ainda não usada nele. */
 export async function criarRegraModelo(params: {
   supabase: SupabaseClient;
   projetoId: string;
@@ -186,9 +168,9 @@ export async function criarRegraModelo(params: {
   direcao: DirecaoRisco;
   peso: number;
   janelaDias?: number;
-  /** zscore_carteira: quantas observações recentes agregar (média). */
+
   janelaObservacoes?: number;
-  /** Pontuação (0-100) quando a métrica está ausente; omitido = "não avaliável". */
+
   pontuacaoOmissao?: number | null;
 }): Promise<string> {
   const { supabase, projetoId, modeloId, metricaId, tipo, direcao, peso, janelaDias } = params;
@@ -254,8 +236,6 @@ export async function criarRegraModelo(params: {
   });
 
   if (error) {
-    // Unique (modelo_id, codigo_sinal) — só pode colidir se a métrica já tiver
-    // uma regra deste mesmo tipo (corrida entre duas abas, por exemplo).
     if (error.code === "23505") {
       throw new RegraInvalidaError("Esta métrica já tem uma regra deste tipo no modelo.");
     }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangleIcon, CheckIcon, LoaderIcon } from "@/components/icons";
+import { AlertTriangleIcon, CheckIcon, LoaderIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
-import { processarIngestao, type ProcessarIngestaoResponse } from "@/lib/ingestao-client";
+import { processarIngestao, type ProcessarIngestaoResponse } from "@/lib/ingestao/api";
 
 export function ProcessamentoStep({
   execucaoIngestaoId,

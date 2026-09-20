@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState, type DragEvent } from "react";
-import { FileSpreadsheetIcon, UploadIcon } from "@/components/icons";
+import { FileSpreadsheetIcon, UploadIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
-import { uploadArquivoIngestao, type UploadIngestaoResponse } from "@/lib/ingestao-client";
+import { uploadArquivoIngestao, type UploadIngestaoResponse } from "@/lib/ingestao/api";
 
 const EXTENSOES_ACEITAS = [".xlsx", ".xls", ".csv"];
 
@@ -112,7 +112,6 @@ export function UploadStep({
       )}
 
       <div className="flex justify-end">
-        {/* Sem arquivo escolhido, o botão abre o seletor em vez de ficar inerte. */}
         <Button
           size="lg"
           onClick={arquivo ? handleEnviar : () => inputRef.current?.click()}

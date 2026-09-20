@@ -2,7 +2,7 @@ import { ClientesTable, type Ordenacao } from "@/components/clientes/ClientesTab
 import { ResumoCarteira, type ResumoFaixa } from "@/components/clientes/ResumoCarteira";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { PageHeader } from "@/components/ui/PageHeader";
-import type { FaixaRisco } from "@/lib/mock-data";
+import type { FaixaRisco } from "@/lib/risco/faixa";
 import { carregarPainel } from "@/lib/painel/servidor";
 
 const ORDEM_FAIXAS: FaixaRisco[] = ["critico", "alerta", "atencao", "saudavel"];
@@ -16,7 +16,6 @@ export default async function ClientesPage({
   const [{ clientes, semPredicao }, { ordem }] = await Promise.all([carregarPainel(), searchParams]);
   const ordemInicial = ordem && ORDENACOES_VALIDAS.has(ordem) ? (ordem as Ordenacao) : undefined;
 
-  // O resumo e a descrição refletem a carteira ativa — a visão padrão da tabela.
   const ativos = clientes.filter((c) => !c.cancelado);
   const inativos = clientes.length - ativos.length;
 

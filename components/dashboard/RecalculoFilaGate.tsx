@@ -2,30 +2,17 @@
 
 import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { LoaderIcon } from "@/components/icons";
+import { LoaderIcon } from "@/components/ui/icons";
 
-/** sessionStorage: sinaliza que a página inicial deve recalcular 1x ao montar. */
 const CHAVE_RECALCULAR = "sinalys:recalcular-ao-entrar";
 
-/** Chamado pela tela de login logo após autenticar, antes de navegar para "/". */
 export function marcarRecalculoAoEntrar() {
   try {
     sessionStorage.setItem(CHAVE_RECALCULAR, "1");
   } catch {
-    // sessionStorage indisponível (modo privado, etc.) — só perde o recálculo automático.
   }
 }
 
-/**
- * Recalcula o motor de risco (Módulo 3) uma vez a cada login e, enquanto
- * roda, cobre o conteúdo real com um skeleton — decisão do usuário: o login
- * em si não deve esperar o cálculo (`lib/motor/calcular.ts`).
- *
- * `children` é o conteúdo já renderizado no servidor com os dados de ANTES do
- * recálculo. Ao terminar, `router.refresh()` busca os dados atualizados; o
- * estado local deste componente sobrevive ao refresh porque ele é o mesmo nó
- * da árvore — só o conteúdo vindo do servidor (children) é trocado.
- */
 export function RecalculoFilaGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [calculando, setCalculando] = useState(false);
@@ -37,24 +24,19 @@ export function RecalculoFilaGate({ children }: { children: ReactNode }) {
       marcado = sessionStorage.getItem(CHAVE_RECALCULAR) === "1";
       if (marcado) sessionStorage.removeItem(CHAVE_RECALCULAR);
     } catch {
-      // Sem sessionStorage, simplesmente não recalcula automaticamente.
     }
     if (!marcado) return;
 
-    // Efeito lê um sinal externo (sessionStorage) e dispara um fetch — não há
-    // como derivar esse "ligar loading" do render, então o setState síncrono
-    // aqui é o próprio propósito do efeito, não um substituto para ele.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCalculando(true);
     fetch("/api/motor/calcular", { method: "POST" })
       .catch(() => {
-        // Falha no recálculo não deve travar o painel — segue com os dados existentes.
       })
       .finally(() => {
         setCalculando(false);
         startTransition(() => router.refresh());
       });
-    // Roda só na montagem: é um gatilho de "acabei de entrar", não de navegação.
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

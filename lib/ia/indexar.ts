@@ -20,16 +20,6 @@ export interface ResultadoIndexacao {
   modelo_embedding: string;
 }
 
-/**
- * Ciclo de aprendizado contínuo (docs/inteligencia.md §4): transforma o
- * desfecho registrado pelo analista de CS num caso vetorizado, alimentando a
- * memória de longo prazo consultada pela Task 4.2.
- *
- * O perfil de risco é derivado da última predição do motor — é o retrato do
- * cliente no momento em que a ação foi tomada. `contextoTextoManual` existe
- * como escape para indexar casos anteriores à adoção do sistema, que nunca
- * passaram pelo motor matemático.
- */
 export async function indexarCasoHistorico(params: {
   supabase: SupabaseClient;
   projetoId: string;

@@ -7,7 +7,6 @@ export const runtime = "nodejs";
 
 const TIPOS_VALOR = ["numero", "texto", "booleano"] as const;
 
-/** Lista as definições de métricas de um projeto (usado pela etapa de mapeamento). */
 export async function GET(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const { searchParams } = new URL(request.url);
@@ -25,11 +24,6 @@ export async function GET(request: Request) {
   return NextResponse.json({ definicoes_metricas: data });
 }
 
-/**
- * Cria uma nova definição de métrica sob demanda — necessário porque o
- * mapeamento De-Para (Task 2.2) permite associar uma coluna arbitrária a uma
- * métrica customizada que ainda não existe no projeto.
- */
 export async function POST(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const corpo = await request.json().catch(() => null);

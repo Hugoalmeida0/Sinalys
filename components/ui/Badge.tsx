@@ -17,7 +17,6 @@ export function Badge({
 
 const TOM_PADRAO = "bg-slate-100 text-slate-600";
 
-/** Marca entidades de teste do motor (cópias de clientes reais, ver scripts/clientes-teste-motor.mts). */
 export function BadgeTeste({ origem }: { origem?: string | null }) {
   return (
     <SoftBadge
@@ -38,8 +37,6 @@ export function SoftBadge({
   children,
   ...props
 }: HTMLAttributes<HTMLSpanElement>) {
-  // Só aplica o tom neutro quando quem chama não define cor própria —
-  // evita depender da ordem das classes do Tailwind para sobrescrever.
   const temTomProprio = className.includes("bg-") || className.includes("text-");
 
   return (

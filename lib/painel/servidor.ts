@@ -8,17 +8,12 @@ import type { ClientePainel } from "./tipos";
 export interface PainelCarregado {
   supabase: SupabaseClient;
   projetoId: string;
-  /** null quando o projeto não tem modelo ativo — o painel mostra estado vazio. */
+
   modeloId: string | null;
   clientes: ClientePainel[];
   semPredicao: number;
 }
 
-/**
- * Carrega a carteira do projeto do usuário logado para Server Components,
- * sem passar por HTTP (evita reenviar cookies para a própria API). Memoizado
- * por requisição via `cache`, então layout e página podem chamar à vontade.
- */
 export const carregarPainel = cache(async (): Promise<PainelCarregado> => {
   const supabase = criarClienteSupabaseAdmin();
   const projetoId = await resolverProjetoId();

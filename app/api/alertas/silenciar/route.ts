@@ -7,10 +7,6 @@ import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
-/**
- * "Silenciar alertas": tira o cliente da fila do dia por `dias` (default 30).
- * Corpo: { cliente_id (UUID ou id_externo), dias?, motivo?, projeto_id? }
- */
 export async function POST(request: Request) {
   const corpo = await request.json().catch(() => ({}));
   const identificador: unknown = corpo?.cliente_id ?? corpo?.entidade_id;
@@ -68,10 +64,6 @@ export async function POST(request: Request) {
   }
 }
 
-/**
- * Reativa os alertas: encerra agora todo silenciamento vigente do cliente.
- * Corpo: { cliente_id, projeto_id? }
- */
 export async function DELETE(request: Request) {
   const corpo = await request.json().catch(() => ({}));
   const identificador: unknown = corpo?.cliente_id ?? corpo?.entidade_id;

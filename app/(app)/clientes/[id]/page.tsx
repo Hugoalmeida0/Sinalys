@@ -13,7 +13,6 @@ export default async function ClienteDetalhePage(
   const [painel, listaHeaders] = await Promise.all([carregarPainel(), headers()]);
   const baseUrl = resolverBaseUrlAbsoluta(listaHeaders);
 
-  // Aceita o código visível (C001) ou o UUID interno.
   const cliente = painel.clientes.find((c) => c.id === id || c.entidadeId === id);
   if (!cliente || !painel.modeloId) notFound();
 

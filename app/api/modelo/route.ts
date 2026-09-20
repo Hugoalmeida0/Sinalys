@@ -5,11 +5,6 @@ import { carregarModeloAtivoDetalhado } from "@/lib/motor/modelo";
 
 export const runtime = "nodejs";
 
-/**
- * Módulo 5 (CRUD do modelo de risco) — devolve o modelo ativo do projeto com
- * suas regras rotuladas (métrica, tipo, direção, peso) e as métricas numéricas
- * ainda sem regra, para a aba "Modelo de risco" em /configuracoes.
- */
 export async function GET(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const { searchParams } = new URL(request.url);

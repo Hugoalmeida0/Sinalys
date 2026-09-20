@@ -7,7 +7,7 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 ## 🚀 Módulo 1: Infraestrutura e Configuração Base
 
 - [X] **Task 1.1:** Inicializar o projeto unificado em Next.js (App Router) configurado para deploy serverless na Vercel. _(deploy em produção ativo em sinalys.vercel.app)_
-- [X] **Task 1.2:** Executar o script SQL (`modelagem.sql`) no Supabase para provisionar o banco relacional e habilitar a extensão `pgvector`.
+- [X] **Task 1.2:** Executar o script SQL (`db/modelagem.sql`) no Supabase para provisionar o banco relacional e habilitar a extensão `pgvector`.
 - [X] **Task 1.3:** Configurar as variáveis de ambiente centrais (`.env.local` e painel Vercel) para conexão com Supabase e chaves de IA.
 
 ## 📥 Módulo 2: Ingestão e Mapeamento Agnóstico
@@ -33,7 +33,7 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 ## ⚙️ Módulo 3: Motor Matemático de Risco e Urgência
 
 - [X] **Task 3.1:** Implementar a rotina de normalização de métricas (cálculo de desvio padrão/Z-score e média móvel temporal). _(`lib/motor/normalizacao.ts`: `calcularZScoreCarteira` — z-score da entidade vs. média/desvio da carteira — e `calcularMediaMovel` — z-score da janela recente vs. o próprio histórico da entidade. Omissão de dado é tratada como sinal de risco (não como zero), ver `lib/motor/calcular.ts`.)_
-- [X] **Task 3.2:** Desenvolver a lógica de cálculo do Score de Risco baseada na aplicação dos pesos configurados nas regras do modelo. _(`lib/motor/score.ts`: `pontuacao = Σ(valor_normalizado × peso) / Σ(peso)` — média ponderada, não soma pura, para respeitar o CHECK 0-100 de `predicoes.pontuacao`. `faixa_risco` reaproveita `faixaRiscoFromScore` de `lib/risk.ts`. `cobertura` = proporção de regras avaliáveis.)_
+- [X] **Task 3.2:** Desenvolver a lógica de cálculo do Score de Risco baseada na aplicação dos pesos configurados nas regras do modelo. _(`lib/motor/score.ts`: `pontuacao = Σ(valor_normalizado × peso) / Σ(peso)` — média ponderada, não soma pura, para respeitar o CHECK 0-100 de `predicoes.pontuacao`. `faixa_risco` reaproveita `faixaRiscoFromScore` de `lib/risco/faixa.ts`. `cobertura` = proporção de regras avaliáveis.)_
 - [X] **Task 3.3:** Criar o cálculo da Matriz de Urgência cruzando a probabilidade de risco com o impacto financeiro (receita) para gerar a ordenação da fila. _(`lib/motor/urgencia.ts`: `score_urgencia = pontuacao × valor_impacto`, calculado sob demanda — não persistido em coluna própria. `valor_impacto` vem da métrica reservada `receita_mensal`. `GET /api/motor/fila` devolve a fila ordenada.)_
 
 **Rotas e biblioteca implementadas:**
@@ -67,7 +67,7 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 - `POST /api/inteligencia/analisar`: orquestração RAG + LLM. `cliente_id` aceita UUID **ou** `id_externo`. Erros: 400 (payload), 404 (entidade), 422 (sem predição).
 - `POST /api/inteligencia/feedback`: vetoriza e indexa o desfecho na base histórica (antecipado do 5.3 por decisão do usuário — sem ele a Task 4.2 não teria dados para existir). A UI do feedback continua na Task 5.3.
 
-**Objetos criados no banco (migration `modulo4_inteligencia_rag`, refletida em `docs/modelagem.sql`):**
+**Objetos criados no banco (migration `modulo4_inteligencia_rag`, refletida em `db/modelagem.sql`):**
 
 - Tabela `diagnosticos_ia` — o `docs/instructions.md` mandava gravar numa "tabela de alertas" que **nunca existiu** no schema. Guarda o diagnóstico, os casos do RAG usados (auditoria), o modelo e o gatilho (`manual`/`cron`).
 - Função `buscar_casos_similares(projeto, embedding, limite, entidade_excluida, similaridade_minima)` — `SECURITY INVOKER` e `search_path = ''`, para respeitar RLS quando ele for habilitado.
@@ -148,12 +148,12 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 - `POST/GET /api/contatos` — backend do `RegistrarContatoModal` (aceita `tipo` por código ou rótulo do modal). Tabela nova `contatos`.
 - `POST/DELETE /api/alertas/silenciar` — "Silenciar alertas" por `dias` (default 30, máx 365) / reativar. Tabela nova `silenciamentos_alerta`.
 - "Marcar como resolvido" → usar `POST /api/inteligencia/feedback` com `desfecho: "recuperado"` (exige `acao_realizada`; o botão do front precisa de um modal para isso).
-- Código em `lib/painel/*` (`clientes.ts` monta a lista uma vez e é reaproveitado por fila/clientes/kpis), `lib/contatos/constantes.ts`. Migration `modulo5_contatos_silenciamentos` refletida em `docs/modelagem.sql`.
+- Código em `lib/painel/*` (`clientes.ts` monta a lista uma vez e é reaproveitado por fila/clientes/kpis), `lib/contatos/constantes.ts`. Migration `modulo5_contatos_silenciamentos` refletida em `db/modelagem.sql`.
 - **Tenant:** `lib/painel/projeto.ts#resolverProjetoId` resolve `projeto_id` por sessão (`app_metadata`) → parâmetro explícito → `DEFAULT_PROJETO_ID`. Aplicado nas rotas do painel, `motor/*` e `inteligencia/*`; **`ingestao/*` e `definicoes-metricas` ainda usam só o fallback**.
 - Validado contra o projeto seed (2 entidades): fila/kpis/clientes, contato (201/400/404), silenciar tira da fila e zera KPIs de alerta, DELETE reativa. Contato de teste em `C004` mantido na base (fictícia).
 - ⚠️ Pendências: RLS continua desabilitado nas 2 tabelas novas (mesma decisão das outras 14); "Agendar reunião" segue sem backend (sem definição de produto — pode virar um `contatos.tipo=reuniao_*` com `proximo_passo_em`); as duas tabelas novas não têm FK para `auth.users` de propósito.
-- 🎨 **Telas ainda em mock** (`lib/mock-data.ts`): `/playbook`, `/relatorios`, `/configuracoes` (perfil/equipe/pesos do modelo) e o histórico em `/ingestao` (`HistoricoIngestoes`). Os tipos `FaixaRisco`/`Evidencia`/`EventoHistorico`/`PontoScore` de `mock-data.ts` continuam sendo a fonte dos tipos do painel.
-- 🐛 **[Corrigido] Datas só com dia recuavam 1 dia** (`lib/format.ts`): `new Date("2024-03-01")` é UTC e no fuso do Brasil virava 29/02. `parseData()` trata `YYYY-MM-DD` como data local; todos os formatadores passaram a usá-lo.
+- 🎨 **Telas ainda em mock** (`lib/mock/dados.ts`): `/playbook`, `/relatorios`, `/configuracoes` (perfil/equipe/pesos do modelo) e o histórico em `/ingestao` (`HistoricoIngestoes`). Os tipos `FaixaRisco`/`Evidencia`/`EventoHistorico`/`PontoScore` de `mock-data.ts` continuam sendo a fonte dos tipos do painel.
+- 🐛 **[Corrigido] Datas só com dia recuavam 1 dia** (`lib/utils/formatacao.ts`): `new Date("2024-03-01")` é UTC e no fuso do Brasil virava 29/02. `parseData()` trata `YYYY-MM-DD` como data local; todos os formatadores passaram a usá-lo.
 
 ### Ajustes desta sessão (5 pedidos pontuais do usuário, fora do roteiro original)
 
@@ -162,7 +162,7 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 - `lib/motor/modelo.ts`: `carregarModeloAtivoDetalhado` (modelo ativo + regras rotuladas com nome/unidade da métrica + métricas numéricas ainda sem regra), `atualizarPesosRegras` (edita peso de regras existentes) e `criarRegraModelo` (nova regra sobre métrica ainda não usada).
 - `GET /api/modelo`, `PATCH /api/modelo/regras` (pesos em lote), `POST /api/modelo/regras` (nova regra) — ambas as mutações recalculam o motor na hora (`calcularPredicoesProjeto`) e devolvem o modelo atualizado; é uma ação explícita de "Salvar", diferente do recálculo do login (ponto 2), que não deve bloquear a navegação.
 - **Escopo deliberadamente sem exclusão de regra:** `motivos_predicao.regra_modelo_id` não tem `ON DELETE CASCADE`; apagar uma regra já usada em alguma predição quebraria por violação de FK. Expor "excluir" sem tratar isso direito confundiria mais do que ajudaria — fica para quando houver essa necessidade real.
-- Front: `components/configuracoes/ModeloDeRisco.tsx` (`PesosDetalhados` com slider editável + rascunho local + "Salvar N alterações"/"Descartar", `PesosResumo` para a sidebar) + `lib/motor/hooks/useModeloDeRisco.ts`, chamado uma vez em `ConfiguracoesTabs` e repassado às duas.
+- Front: `components/configuracoes/ModeloDeRisco.tsx` (`PesosDetalhados` com slider editável + rascunho local + "Salvar N alterações"/"Descartar", `PesosResumo` para a sidebar) + `hooks/useModeloDeRisco.ts`, chamado uma vez em `ConfiguracoesTabs` e repassado às duas.
 - **Validado com dados reais** (usuário de teste temporário, removido ao final): GET devolveu as 3 regras + 10 métricas disponíveis; PATCH de peso (2→2.5→2, revertido) recalculou em 3.5s; POST de regra nova validou tipo/direção/peso/janela, rejeitou peso negativo, regra duplicada (mesma métrica+tipo) e a métrica reservada `receita_mensal`; regras de teste removidas do banco ao final.
 
 **2) Recalcular o motor a cada login, sem bloquear o login.**
@@ -175,7 +175,7 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 **3) Aba "Campanha de recuperação" para clientes já cancelados.**
 
 - `app/(app)/recuperacao/page.tsx` + `components/recuperacao/CampanhaRecuperacaoLista.tsx`: reaproveita `ClientePainel.cancelado`/`canceladoEm` (já calculados por `montarClientesPainel` a partir de `eventos_desfecho` com o `codigo_evento_alvo` do projeto — não precisou de query nova). Cada card mostra o mínimo pedido: perfil (segmento/porte/plano), MRR perdido, data do cancelamento, sinais no momento do desfecho, botão "Analisar perfil" (dispara a mesma Task 4.3 — `POST /api/inteligencia/analisar` — para gerar diagnóstico + "o que o histórico diz" + plano de ação) e "Marcar como recuperado" (reaproveita `MarcarResolvidoModal` já existente do Módulo 5.3, fechando o loop do feedback).
-- **Refatoração de suporte:** a lógica de "analisar cliente" que vivia dentro de `ClienteTabs.tsx` (aba Plano de ação) foi extraída para `lib/ia/hooks/useAnaliseIA.ts` (estado) + `components/ia/ConteudoAnaliseIA.tsx` (corpo visual), para não duplicar ~150 linhas entre o detalhe do cliente ativo e a campanha de recuperação — usados nos dois lugares agora.
+- **Refatoração de suporte:** a lógica de "analisar cliente" que vivia dentro de `ClienteTabs.tsx` (aba Plano de ação) foi extraída para `hooks/useAnaliseIA.ts` (estado) + `components/ia/ConteudoAnaliseIA.tsx` (corpo visual), para não duplicar ~150 linhas entre o detalhe do cliente ativo e a campanha de recuperação — usados nos dois lugares agora.
 - Adicionado à navegação (`components/layout/nav-items.ts`) entre Clientes e Configurações.
 - **Validado com dados reais**: 22 dos 24 clientes cancelados do projeto seed renderizaram (os 2 restantes não têm predição calculada — comportamento esperado, mesma regra que já exclui "sem predição" da fila do dia); análise de IA rodada de ponta a ponta para o C004 (cancelado), devolvendo diagnóstico ancorado no SLA real (40%) e plano citando um caso histórico similar (C047).
 

@@ -1,22 +1,3 @@
--- Habilita Row Level Security em todas as tabelas do schema public.
---
--- Contexto: hoje todas as rotas de API (app/api/**) usam
--- `criarClienteSupabaseAdmin()` (service_role), que ignora RLS — então nada no
--- app quebra com isso. O problema que isto corrige é outro: a chave pública
--- (NEXT_PUBLIC_SUPABASE_ANON_KEY), que fica no bundle do browser, dava acesso
--- de leitura/escrita irrestrito a QUALQUER linha de QUALQUER tabela para
--- qualquer pessoa que a inspecionasse (finding "rls_disabled_in_public",
--- severidade ERROR, nas 16 tabelas do projeto).
---
--- Política adotada para o MVP: só a role `authenticated` (usuário com sessão
--- válida via Supabase Auth) pode ler/escrever, por qualquer meio que não seja
--- o service_role. Não existe hoje uma tabela de vínculo usuário↔organização
--- (login é single-tenant, projeto fixo via DEFAULT_PROJETO_ID), então a
--- policy não filtra por projeto/organização ainda — isso é o próximo passo
--- natural quando o app ganhar multi-tenant real (Task 5.x). O que isto já
--- garante: acesso anônimo (chave pública sem login) fica bloqueado por padrão
--- em toda tabela, o que é a lacuna de segurança que o advisor apontou.
-
 BEGIN;
 
 ALTER TABLE public.organizacoes ENABLE ROW LEVEL SECURITY;
@@ -36,10 +17,6 @@ ALTER TABLE public.diagnosticos_ia ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contatos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.silenciamentos_alerta ENABLE ROW LEVEL SECURITY;
 
--- Uma policy idêntica por tabela: exige sessão autenticada para qualquer
--- operação. `TO authenticated` já nega a role `anon` por padrão (Postgres nega
--- o que não tem policy correspondente), então não é preciso negar `anon`
--- explicitamente.
 DO $$
 DECLARE
   tabela text;

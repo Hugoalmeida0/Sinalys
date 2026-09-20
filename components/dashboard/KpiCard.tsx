@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { IconProps } from "@/components/icons";
+import type { IconProps } from "@/components/ui/icons";
 
 type Tone = "red" | "amber" | "blue" | "emerald";
 

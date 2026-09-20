@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-/** Interruptor de preferência. Visual-only enquanto não há backend. */
 export function Toggle({
   titulo,
   descricao,

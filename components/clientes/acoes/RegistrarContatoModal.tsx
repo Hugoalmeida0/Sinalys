@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
-import { XIcon } from "@/components/icons";
+import { XIcon } from "@/components/ui/icons";
 import { TIPOS_CONTATO } from "@/lib/contatos/constantes";
 
 const proximosPassos = [
@@ -66,7 +66,7 @@ export function RegistrarContatoModal({
         return;
       }
       setEnviado(true);
-      // Atualiza KPIs/histórico renderizados no servidor sem recarregar a página.
+
       router.refresh();
       setTimeout(handleClose, 900);
     } catch {

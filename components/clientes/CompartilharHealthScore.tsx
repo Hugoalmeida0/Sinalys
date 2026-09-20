@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
-import { ArrowUpRightIcon, CheckIcon, XIcon } from "@/components/icons";
+import { ArrowUpRightIcon, CheckIcon, XIcon } from "@/components/ui/icons";
 import {
   BENEFICIOS_PLANO,
   DESTAQUES_AUTOMATICOS,
@@ -11,26 +11,18 @@ import {
   textoDestaque,
   validarLinkAgendamento,
   type ConfigHealthPublico,
-} from "@/lib/painel/health-config";
+} from "@/lib/health/configuracao";
 
 interface Props {
   token: string;
   baseUrl: string;
   clienteId: string;
   clienteLabel: string;
-  /** Sinais dentro do esperado — os únicos que podem virar destaque. */
+
   destaquesDisponiveis: { codigo: string; rotulo: string }[];
   config: ConfigHealthPublico;
 }
 
-/**
- * "Compartilhar com o cliente": antes de copiar o link público de Health
- * Score (app/health/[token]), o CS escolhe o que o cliente vai ver — quais
- * sinais positivos destacar, quais benefícios do plano mostrar e por onde o
- * cliente agenda a call de alinhamento. A escolha é persistida em
- * `entidades.atributos.health_publico` (PUT /api/health/configuracao), então
- * o link continua o mesmo: o que muda é a página.
- */
 export function CompartilharHealthScore(props: Props) {
   const [open, setOpen] = useState(false);
   return (
@@ -55,8 +47,6 @@ function ModalCompartilhar({
   const router = useRouter();
   const url = `${baseUrl}/health/${token}`;
 
-  // Estado inicial = o que a página mostra hoje: escolha gravada, ou o modo
-  // automático (primeiros N sinais / todos os benefícios) quando nunca houve escolha.
   const sugeridos = destaquesDisponiveis.slice(0, DESTAQUES_AUTOMATICOS).map((d) => d.codigo);
   const [destaques, setDestaques] = useState<string[]>(() => {
     if (config.destaques == null) return sugeridos;
@@ -163,7 +153,6 @@ function ModalCompartilhar({
             sinais em alerta — só o que está indo bem e como marcar a próxima conversa.
           </p>
 
-          {/* Destaques positivos */}
           <fieldset className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-3">
               <legend className="text-sm font-semibold text-brand-ink">
@@ -220,7 +209,6 @@ function ModalCompartilhar({
             )}
           </fieldset>
 
-          {/* Benefícios */}
           <fieldset className="flex flex-col gap-2">
             <legend className="text-sm font-semibold text-brand-ink">Benefícios do plano</legend>
             <ul className="flex flex-col gap-2">
@@ -252,7 +240,6 @@ function ModalCompartilhar({
             </ul>
           </fieldset>
 
-          {/* Agendamento */}
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-semibold text-brand-ink">
               Agendamento da call de alinhamento
@@ -272,7 +259,6 @@ function ModalCompartilhar({
             </span>
           </label>
 
-          {/* Link público */}
           <div className="flex flex-col gap-1.5 rounded-lg bg-slate-50 px-3 py-3">
             <span className="text-xs font-medium text-slate-600">Link público</span>
             <div className="flex items-center gap-2">

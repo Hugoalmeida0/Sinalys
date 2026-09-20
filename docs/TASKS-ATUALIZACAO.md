@@ -106,7 +106,7 @@ O critério de aceite do desafio (pág. 2) é: *"ao abrir a solução, alguém q
 
 **Hoje a API responde uma** (a ordem).
 
-- [ ] **Task B.1 — A fila precisa devolver os dados do cliente.** `app/api/motor/fila/route.ts:42` seleciona apenas `id, entidade_id, pontuacao, faixa_risco, cobertura, valor_impacto, referencia_em`. `entidade_id` é **UUID**. Não vem `id_externo` (C080), `nome_exibicao` nem `atributos` (segmento, porte, plano) — a tabela `entidades` tem todos esses campos (`docs/modelagem.sql:22`) e ninguém faz o join.
+- [ ] **Task B.1 — A fila precisa devolver os dados do cliente.** `app/api/motor/fila/route.ts:42` seleciona apenas `id, entidade_id, pontuacao, faixa_risco, cobertura, valor_impacto, referencia_em`. `entidade_id` é **UUID**. Não vem `id_externo` (C080), `nome_exibicao` nem `atributos` (segmento, porte, plano) — a tabela `entidades` tem todos esses campos (`db/modelagem.sql:22`) e ninguém faz o join.
   _Isto é a reclamação original: "o motor não retorna os dados do cliente"._
 
 - [ ] **Task B.2 — A fila precisa devolver os motivos resolvidos.** O motor **persiste** `motivos_predicao` corretamente e a rota da fila **nunca os lê**. E `motivos_predicao` guarda `regra_modelo_id` — para virar texto na tela precisa de join até `definicoes_metricas.rotulo`, mais a `direcao` da regra e o `valor_observado`.
@@ -116,7 +116,7 @@ O critério de aceite do desafio (pág. 2) é: *"ao abrir a solução, alguém q
 
 - [ ] **Task B.4 — `GET /api/motor/cliente/[id]`** com a série histórica de predições e o raio-x das métricas. O componente `components/clientes/ScoreEvolucaoChart.tsx` precisa dessa série e ela não existe em nenhuma rota.
 
-- [ ] **Task B.5 — Backfill mensal do motor.** `predicoes` é particionada por `referencia_em`. Rodar o motor de 2025-07 a 2026-06 faz a série histórica existir de verdade, em vez de gerada no front (`gerarEvolucaoScore` em `lib/mock-data.ts`).
+- [ ] **Task B.5 — Backfill mensal do motor.** `predicoes` é particionada por `referencia_em`. Rodar o motor de 2025-07 a 2026-06 faz a série histórica existir de verdade, em vez de gerada no front (`gerarEvolucaoScore` em `lib/mock/dados.ts`).
 
 ---
 
@@ -168,7 +168,7 @@ E as transformações mapeiam nos tipos de regra que o motor **já executa**:
 
   Nenhuma tabela nova. `origem` é o que permite ao usuário sobrescrever um peso sem que o próximo ajuste apague a decisão dele.
 
-  ⚠️ **Refletir as duas colunas em `docs/modelagem.sql`.** O arquivo é a fonte de verdade do schema no repo; migration aplicada só no Supabase e não refletida ali deixa o schema documentado divergindo do real — e o próximo a rodar o `modelagem.sql` num ambiente limpo perde as colunas.
+  ⚠️ **Refletir as duas colunas em `db/modelagem.sql`.** O arquivo é a fonte de verdade do schema no repo; migration aplicada só no Supabase e não refletida ali deixa o schema documentado divergindo do real — e o próximo a rodar o `db/modelagem.sql` num ambiente limpo perde as colunas.
 
 - [ ] **Task C.2 — Painel: view materializada, uma linha por `(entidade, periodo)`.**
   Hoje o motor lê `observacoes` uma métrica por vez e pivota em memória. Para ajustar pesos é preciso o formato largo. 80 clientes × 18 meses = 1.440 linhas — barato.
@@ -325,7 +325,7 @@ E as transformações mapeiam nos tipos de regra que o motor **já executa**:
 
 - [ ] **Task C.10 — `POST /api/modelo/ajustar`** orquestrando C.2 → C.7, e acionada ao fim de cada ingestão que traga novos desfechos.
 
-- [ ] **Task C.11 — Remover `pesosModeloRisco` de `lib/mock-data.ts:553`.**
+- [ ] **Task C.11 — Remover `pesosModeloRisco` de `lib/mock/dados.ts:553`.**
   A tela de Configurações lê esse array e o motor lê `regras_modelo` — **a tela mostra um conjunto de pesos que não tem relação com o cálculo ao lado**. Passar a ler de `regras_modelo`, exibindo `origem` e `poder`.
 
 - [ ] **Task C.12 — Agrupar sinais correlacionados e limitar a pontuação por grupo.**
@@ -421,9 +421,9 @@ E as transformações mapeiam nos tipos de regra que o motor **já executa**:
 
 ## 🟡 Módulo F: Front — alinhar com o que a base sustenta
 
-- [ ] **Task F.1 — Unificar a escala do score.** O front usa `scoreRisco: 14, scoreMax: 18` (`lib/mock-data.ts:9`); o banco tem `pontuacao numeric(7,3) CHECK BETWEEN 0 AND 100` e o motor chama `faixaRiscoFromScore(pontuacao, 100)`. São duas escalas para a mesma coisa — escolher uma antes de plugar o front no backend.
+- [ ] **Task F.1 — Unificar a escala do score.** O front usa `scoreRisco: 14, scoreMax: 18` (`lib/mock/dados.ts:9`); o banco tem `pontuacao numeric(7,3) CHECK BETWEEN 0 AND 100` e o motor chama `faixaRiscoFromScore(pontuacao, 100)`. São duas escalas para a mesma coisa — escolher uma antes de plugar o front no backend.
 
-- [ ] **Task F.2 — Corrigir os KPIs de antecedência.** `lib/mock-data.ts:205` anuncia `antecedenciaMediaMeses: 4.4` e `antecedenciaMaximaMeses: 8`. O número real desta base é **mediana 2 meses, média 2,4, máximo 11**:
+- [ ] **Task F.2 — Corrigir os KPIs de antecedência.** `lib/mock/dados.ts:205` anuncia `antecedenciaMediaMeses: 4.4` e `antecedenciaMaximaMeses: 8`. O número real desta base é **mediana 2 meses, média 2,4, máximo 11**:
 
   | Limiar | Detectados | Antecedência mediana | Falsos positivos |
   | --- | --- | --- | --- |

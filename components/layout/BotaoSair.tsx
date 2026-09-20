@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-/** Encerra a sessão via POST /api/auth/logout e volta para /login. */
 export function BotaoSair({ className = "" }: { className?: string }) {
   const router = useRouter();
   const [saindo, setSaindo] = useState(false);

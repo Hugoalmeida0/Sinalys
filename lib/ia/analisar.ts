@@ -24,33 +24,19 @@ export interface ResultadoAnalise {
   diagnostico: Diagnostico;
   modelo_ia: string;
   modelo_embedding: string;
-  /**
-   * "cache": diagnóstico reaproveitado de uma análise anterior para a mesma
-   * predição (nada mudou desde então). "fallback": o LLM falhou/estourou o
-   * limite gratuito e a resposta foi montada por regras determinísticas a
-   * partir do motor de risco, sem passar por geração de texto. "ia": geração
-   * normal via LLM.
-   */
+
   origem: "ia" | "cache" | "fallback";
 }
 
-/**
- * Task 4.3 — Orquestração RAG + LLM.
- *
- * Consolida Contexto Atual (raio-x do motor matemático) e Contexto Histórico
- * (lookalike vetorial), gera o diagnóstico estruturado via OpenRouter e persiste
- * em `diagnosticos_ia`. Escrito como função pura de rota para ser reaproveitado
- * pelo Vercel Cron do Módulo 5.4 sem passar por HTTP.
- */
 export async function analisarRiscoEntidade(params: {
   supabase: SupabaseClient;
   projetoId: string;
-  /** UUID interno da entidade ou o `id_externo` vindo da planilha. */
+
   identificadorEntidade: string;
   modeloId?: string;
   origemGatilho?: "manual" | "cron";
   persistir?: boolean;
-  /** Ignora o cache e força uma nova chamada ao LLM mesmo com diagnóstico recente para a mesma predição. */
+
   forcar?: boolean;
 }): Promise<ResultadoAnalise> {
   const {
@@ -70,12 +56,8 @@ export async function analisarRiscoEntidade(params: {
     );
   }
 
-  // 1. Coleta de evidências: raio-x da última predição do motor matemático.
   const contexto = await montarContextoAtual({ supabase, projetoId, entidade, modeloId });
 
-  // Cache: a predição não muda entre corridas do motor, então um diagnóstico já
-  // gerado para ela continua válido. Evita queimar cota do LLM gratuito (50
-  // req/dia) reanalisando um cliente sem nenhum dado novo.
   if (!forcar) {
     const cache = await buscarDiagnosticoEmCache(supabase, projetoId, contexto.predicao_id);
     if (cache) return { ...cache, contexto };
@@ -83,7 +65,6 @@ export async function analisarRiscoEntidade(params: {
 
   const perfilRisco = descreverPerfilRisco(contexto);
 
-  // 2. Busca RAG: casos históricos com comportamento parecido (Task 4.2).
   const casosSimilares = await buscarCasosSimilares({
     supabase,
     projetoId,
@@ -93,8 +74,6 @@ export async function analisarRiscoEntidade(params: {
 
   const modeloEmbedding = obterModeloEmbedding();
 
-  // 3. Prompting e IA: contrato de saída forçado por schema Zod (vira
-  //    `response_format: json_schema` na OpenRouter — verificado no modelo padrão).
   const modeloLlm = obterModeloLlm();
   let diagnostico: Diagnostico;
   let origem: ResultadoAnalise["origem"];
@@ -115,16 +94,12 @@ export async function analisarRiscoEntidade(params: {
     origem = "ia";
     modeloUsado = modeloLlm;
   } catch (erroLlm) {
-    // Fallback: LLM indisponível, sem cota ou timeout. Em vez de quebrar a
-    // experiência do analista, devolve um diagnóstico determinístico montado
-    // direto das regras do motor matemático — sem geração de texto.
     console.error(`[ia/analisar] LLM falhou, usando fallback por regras: ${(erroLlm as Error).message}`);
     diagnostico = gerarDiagnosticoFallback(contexto, casosSimilares);
     origem = "fallback";
     modeloUsado = MODELO_IA_FALLBACK;
   }
 
-  // Quando `persistir: false`, o id é só um identificador de correlação da resposta.
   let diagnosticoId: string = randomUUID();
 
   if (persistir) {
@@ -151,10 +126,6 @@ export async function analisarRiscoEntidade(params: {
   };
 }
 
-/**
- * Reaproveita o diagnóstico mais recente já persistido para esta predição, se
- * existir. Retorna `null` quando não há nada em cache (primeira análise).
- */
 async function buscarDiagnosticoEmCache(
   supabase: SupabaseClient,
   projetoId: string,
@@ -189,8 +160,6 @@ async function buscarDiagnosticoEmCache(
       )
     : [];
 
-  // `contexto` é preenchido pelo chamador com o já calculado acima — o cache
-  // existe para poupar a chamada ao LLM, não a leitura do motor matemático.
   return {
     diagnostico_id: data.id,
     contexto: undefined as unknown as ContextoAtual,
@@ -208,11 +177,6 @@ async function buscarDiagnosticoEmCache(
   };
 }
 
-/**
- * Diagnóstico sem LLM: traduz os sinais já calculados pelo motor matemático
- * (docs/motor-matematico.md) em texto direto. Menos rico que a análise por IA,
- * mas 100% determinístico e disponível mesmo com o LLM fora do ar.
- */
 export function gerarDiagnosticoFallback(
   contexto: ContextoAtual,
   casosSimilares: CasoSimilar[]
@@ -252,15 +216,9 @@ export function gerarDiagnosticoFallback(
   };
 }
 
-/**
- * O modelo tende a numerar os itens do plano ("1. Ligar para...") mesmo
- * instruído a não fazê-lo — a numeração é responsabilidade de quem exibe a
- * lista, e duplica quando vem embutida. Remove prefixos de numeração/marcador e
- * descarta itens que ficaram vazios, mantendo o mínimo de 1 exigido pelo schema.
- */
 export function normalizarDiagnostico(diagnostico: Diagnostico): Diagnostico {
   const plano = diagnostico.plano_acao_imediato
-    // Até 2 dígitos: numeração de lista, nunca um ano ("2026-09-20: ...") ou quantidade.
+
     .map((item) => item.replace(/^\s*(?:\d{1,2}\s*[.)\-–:]|[-*•])\s*/, "").trim())
     .filter((item) => item.length > 0);
 
@@ -290,7 +248,7 @@ async function persistirDiagnostico(params: {
     diagnostico_principal: params.diagnostico.diagnostico_principal,
     analise_lookalike: params.diagnostico.analise_lookalike,
     plano_acao_imediato: params.diagnostico.plano_acao_imediato,
-    // Guarda só o que permite auditar a recomendação depois, sem duplicar o texto do caso.
+
     casos_similares: params.casosSimilares.map((c) => ({
       caso_id: c.id,
       entidade_id: c.entidade_id,

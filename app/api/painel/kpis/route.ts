@@ -5,10 +5,6 @@ import { calcularKpisPainel } from "@/lib/painel/kpis";
 
 export const runtime = "nodejs";
 
-/**
- * KPIs do topo da home: receita em risco (ano), clientes em alerta / carteira,
- * antecedência média/mediana/máxima dos desfechos e clientes contatados em 7d.
- */
 export async function GET(request: Request) {
   const contexto = await montarContextoRotaPainel(request);
   if (ehResposta(contexto)) return contexto;

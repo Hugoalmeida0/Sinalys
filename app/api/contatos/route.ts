@@ -13,13 +13,6 @@ function dataValida(valor: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/**
- * Backend do "Registrar contato" (RegistrarContatoModal) e do KPI "clientes
- * contatados nos últimos 7 dias".
- *
- * Corpo: { cliente_id (UUID ou id_externo), tipo, realizado_em, resumo,
- *          proximo_passo?, proximo_passo_em?, projeto_id? }
- */
 export async function POST(request: Request) {
   const corpo = await request.json().catch(() => ({}));
   const identificador: unknown = corpo?.cliente_id ?? corpo?.entidade_id;
@@ -102,10 +95,6 @@ export async function POST(request: Request) {
   }
 }
 
-/**
- * Histórico de contatos. Query: `cliente_id=` (UUID ou id_externo; opcional —
- * sem ele devolve os mais recentes do projeto), `limite=` (default 50).
- */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const identificador = searchParams.get("cliente_id");

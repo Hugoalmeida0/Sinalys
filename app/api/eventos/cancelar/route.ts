@@ -8,17 +8,6 @@ import { CODIGOS_MOTIVO_CANCELAMENTO } from "@/lib/cancelamento/constantes";
 
 export const runtime = "nodejs";
 
-/**
- * Fecha o loop com o cliente final: registra o desfecho de cancelamento com
- * motivo estruturado (docs/inteligencia.md §4 + analytics de causa-raiz), em
- * vez de só saber "que" o cliente cancelou. Espelha `POST
- * /api/inteligencia/feedback`, mas cria a linha de `eventos_desfecho` — hoje
- * só a ingestão de planilha faz isso.
- *
- * Corpo: { cliente_id, motivo_categoria, motivo_detalhe?, acao_realizada?, projeto_id? }
- * `acao_realizada` é opcional: quando informada, o caso também é vetorizado
- * no histórico lookalike (mesmo fluxo de "Marcar como recuperado").
- */
 export async function POST(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const corpo = await request.json().catch(() => ({}));
@@ -78,10 +67,6 @@ export async function POST(request: Request) {
     });
     if (erroInsert) throw new Error(`Falha ao registrar cancelamento: ${erroInsert.message}`);
 
-    // Se o analista descreveu o que foi tentado antes do cancelamento, o caso
-    // também alimenta a busca lookalike — o mesmo padrão de "o que foi feito
-    // não foi suficiente" ajuda a IA a não repetir a recomendação com o
-    // próximo cliente parecido.
     let indexado = false;
     if (acaoRealizada?.trim()) {
       try {
@@ -95,9 +80,6 @@ export async function POST(request: Request) {
         });
         indexado = true;
       } catch {
-        // Sem predição para essa entidade é um caso legítimo (cliente sem
-        // motor calculado) — o cancelamento já foi registrado, então não
-        // falha a rota inteira por causa da indexação vetorial opcional.
       }
     }
 

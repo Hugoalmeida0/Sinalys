@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { FaixaRisco } from "@/lib/mock-data";
+import type { FaixaRisco } from "@/lib/risco/faixa";
 import { FAIXAS_FILA_PADRAO, montarClientesPainel, montarFilaDoDia } from "@/lib/painel/clientes";
 import { ehResposta, montarContextoRotaPainel } from "@/lib/painel/contexto-rota";
 
@@ -7,14 +7,6 @@ export const runtime = "nodejs";
 
 const FAIXAS_VALIDAS = new Set<string>(["critico", "alerta", "atencao", "saudavel"]);
 
-/**
- * Task 5.1 — "Sua fila do dia": clientes em crítico/alerta (por padrão),
- * sem silenciamento vigente, ordenados por Score de Urgência, já na forma que
- * `components/dashboard/FilaDoDia.tsx` consome.
- *
- * Query: `faixas=critico,alerta|todas`, `incluir_silenciados=1`, `segmento=`,
- *        `projeto_id=`, `modelo_id=`.
- */
 export async function GET(request: Request) {
   const contexto = await montarContextoRotaPainel(request);
   if (ehResposta(contexto)) return contexto;

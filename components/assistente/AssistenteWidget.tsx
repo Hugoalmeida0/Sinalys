@@ -4,22 +4,13 @@ import { useEffect, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, getToolName, isToolUIPart, type UIMessage } from "ai";
-import { ArrowRightIcon, LoaderIcon, PlusIcon, XIcon } from "@/components/icons";
+import { ArrowRightIcon, LoaderIcon, PlusIcon, XIcon } from "@/components/ui/icons";
 import { SinalysMascot } from "@/components/ui/SinalysMascot";
 import { useAssistente } from "./AssistenteProvider";
 import { TextoFormatado } from "./TextoFormatado";
 import { clienteDaRota, ROTULOS_FERRAMENTAS, sugestoesParaTela } from "./sugestoes";
 
-/**
- * Chat da Sinalys, ligado a `POST /api/inteligencia/chat` (streaming via AI
- * SDK). O histórico vive só no estado do componente — fechar o painel
- * mantém a conversa; recarregar a página a perde. É um assistente de apoio,
- * não um registro: o que precisa ficar guardado vai para o histórico de
- * contatos do cliente.
- */
 export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
-  // O rascunho vive no provider: assim um card pode abrir o chat já com a
-  // pergunta preenchida, sem sincronizar estado dentro de efeito.
   const { aberto, abrir, fechar, rascunho, setRascunho } = useAssistente();
   const caminho = usePathname();
   const clienteId = clienteDaRota(caminho);
@@ -38,7 +29,6 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
     }
   }, [aberto, messages, status]);
 
-  // Esc fecha o painel.
   useEffect(() => {
     if (!aberto) return;
     const aoTeclar = (e: KeyboardEvent) => {
@@ -52,7 +42,7 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
     const conteudo = texto.trim();
     if (!conteudo || ocupado) return;
     clearError();
-    // A tela vai a cada mensagem: o analista pode navegar no meio da conversa.
+
     void sendMessage({ text: conteudo }, { body: { tela: { caminho, clienteId } } });
     setRascunho("");
   }
@@ -62,7 +52,7 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
 
   return (
     <>
-      {/* Botão flutuante com o emblema do mascote. */}
+
       <button
         type="button"
         onClick={() => (aberto ? fechar() : abrir())}
@@ -86,7 +76,7 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
 
       {aberto && (
         <>
-          {/* Fundo só no mobile, onde o painel ocupa quase a tela toda. */}
+
           <button
             type="button"
             aria-label="Fechar assistente"
@@ -239,8 +229,6 @@ function Mensagem({ mensagem }: { mensagem: UIMessage }) {
     );
   }
 
-  // Uma mensagem do assistente pode intercalar consultas e texto; cada parte
-  // vira sua própria bolha, na ordem em que aconteceu.
   return (
     <>
       {mensagem.parts.map((parte, i) => {
@@ -276,7 +264,7 @@ function Mensagem({ mensagem }: { mensagem: UIMessage }) {
             </li>
           );
         }
-        // Raciocínio interno do modelo e marcadores de passo não são exibidos.
+
         return null;
       })}
     </>

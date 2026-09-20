@@ -8,7 +8,7 @@ import {
   serializarConfigHealthPublico,
   validarLinkAgendamento,
   type ConfigHealthPublico,
-} from "@/lib/painel/health-config";
+} from "@/lib/health/configuracao";
 import { resolverProjetoId } from "@/lib/painel/projeto";
 import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -16,10 +16,6 @@ export const runtime = "nodejs";
 
 const MAX_TAMANHO_CODIGO = 120;
 
-/**
- * `undefined` = campo não enviado (mantém o valor atual); `null` = voltar ao
- * automático; array = escolha explícita.
- */
 function listaDeCodigos(
   valor: unknown,
   campo: string,
@@ -39,14 +35,6 @@ function listaDeCodigos(
   return { lista };
 }
 
-/**
- * Personalização da página pública de Health Score, gravada em
- * `entidades.atributos.health_publico` (ver lib/painel/health-config.ts).
- *
- * Corpo: { cliente_id (UUID ou id_externo), destaques?: string[] | null,
- *          beneficios?: string[] | null, link_agendamento?: string | null,
- *          projeto_id? }
- */
 export async function PUT(request: Request) {
   const corpo = await request.json().catch(() => ({}));
   const identificador: unknown = corpo?.cliente_id ?? corpo?.entidade_id;
@@ -79,8 +67,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ erro: `Cliente "${identificador}" não encontrado.` }, { status: 404 });
     }
 
-    // Lê e regrava `atributos` inteiro: o jsonb guarda também segmento/porte/
-    // plano da ingestão, que não podem ser perdidos aqui.
     const { data: atual, error: erroLeitura } = await supabase
       .from("entidades")
       .select("atributos")

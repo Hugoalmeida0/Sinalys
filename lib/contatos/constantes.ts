@@ -1,4 +1,3 @@
-/** Tipos de contato aceitos por `contatos.tipo` (CHECK no banco) e seus rótulos de UI. */
 export const TIPOS_CONTATO = {
   ligacao: "Ligação",
   reuniao_presencial: "Reunião presencial",
@@ -10,7 +9,6 @@ export const TIPOS_CONTATO = {
 
 export type TipoContato = keyof typeof TIPOS_CONTATO;
 
-/** Aceita o código ("ligacao") ou o rótulo exibido no modal ("Ligação"). */
 export function normalizarTipoContato(valor: unknown): TipoContato | null {
   if (typeof valor !== "string") return null;
   const v = valor.trim();
@@ -21,6 +19,5 @@ export function normalizarTipoContato(valor: unknown): TipoContato | null {
   return porRotulo ?? null;
 }
 
-/** Janela padrão do "Silenciar alertas" quando o front não informa `dias`. */
 export const PADRAO_DIAS_SILENCIAMENTO = 30;
 export const MAX_DIAS_SILENCIAMENTO = 365;

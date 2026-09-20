@@ -1,4 +1,3 @@
-/** Categorias estruturadas de motivo de cancelamento (eventos_desfecho.motivo_categoria). */
 export const MOTIVOS_CANCELAMENTO = {
   preco: "Preço",
   suporte: "Suporte",

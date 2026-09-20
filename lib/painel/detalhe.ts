@@ -1,47 +1,38 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { montarContextoAtual } from "@/lib/ia/contexto";
 import type { SinalRisco } from "@/lib/ia/tipos";
+import { TIPOS_CONTATO, type TipoContato } from "@/lib/contatos/constantes";
+import { PREFIXO_SOLICITACAO_AGENDAMENTO } from "@/lib/health/agendamento";
+import type { BaseSimulacao } from "@/lib/motor/simulador";
 import type {
+  ClientePainel,
   Evidencia,
   EventoHistorico,
   PontoScore,
   ProximaAcao,
-} from "@/lib/mock-data";
-import { TIPOS_CONTATO, type TipoContato } from "@/lib/contatos/constantes";
-import { PREFIXO_SOLICITACAO_AGENDAMENTO } from "@/lib/health/agendamento";
-import type { BaseSimulacao } from "@/lib/motor/simulador";
-import type { ClientePainel } from "./tipos";
+} from "./tipos";
 
-/** Meses de histórico exibidos no gráfico de evolução do score. */
 const MESES_EVOLUCAO = 12;
 const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-/**
- * Detalhe do cliente na forma que `ClienteHeader`/`ClienteTabs` consomem
- * (mesmos campos do `DetalheCliente` do mock, sobre `ClientePainel`).
- */
 export type DetalheClientePainel = ClientePainel & {
   nomeFantasia: string;
   responsavelCS: string;
   evidencias: Evidencia[];
   proximasAcoes: ProximaAcao[];
   avaliacaoIA: string;
-  /** `analise_lookalike` do último diagnóstico de IA; null sem diagnóstico. */
+
   analiseLookalike: string | null;
-  /** null = ainda não há diagnóstico de IA gerado para este cliente. */
+
   diagnosticoGeradoEm: string | null;
   historico: EventoHistorico[];
   evolucaoScore: PontoScore[];
   resumoCliente: string;
-  /** Explicação em linguagem natural do "porquê" do score, direto das regras do motor (sem IA). */
+
   explicacaoRisco: string;
-  /**
-   * Sinais dentro do esperado (acionado === false), candidatos a "destaque
-   * positivo" na página pública — é entre estes que o CS escolhe no modal
-   * de compartilhamento. Ordem do motor (mais pesados primeiro).
-   */
+
   destaquesDisponiveis: { codigo: string; rotulo: string }[];
-  /** Base do simulador de cenários (lib/motor/simulador.ts). */
+
   simulacao: BaseSimulacao;
 };
 
@@ -53,7 +44,6 @@ const ACOES_PADRAO: ProximaAcao[] = [
   { id: "a2", titulo: "Registrar no CRM", concluida: false },
 ];
 
-/** Severidade pela intensidade do sinal normalizado (0-100) — mesma escala das faixas de risco. */
 function severidadeDoSinal(s: SinalRisco): Evidencia["severidade"] {
   const normalizado = s.peso > 0 ? s.pontos / s.peso : 0;
   if (normalizado >= 70) return "critica";
@@ -71,12 +61,6 @@ function tituloDaEvidencia(s: SinalRisco): string {
   return `${s.metrica} em ${valor.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}${unidade}, fora do padrão da carteira`;
 }
 
-/**
- * Explicabilidade: traduz os sinais acionados pelo motor matemático (peso ×
- * contribuição em pontos, já calculados e persistidos em `motivos_predicao`)
- * em um parágrafo direto sobre por que o score é o que é — sem depender do
- * diagnóstico de IA, que pode não existir ou estar indisponível.
- */
 function montarExplicacaoRisco(contexto: {
   pontuacao: number;
   faixa_risco: string | null;
@@ -168,7 +152,6 @@ export async function montarDetalheCliente(params: {
     if (r.error) throw new Error(`Falha ao montar detalhe do cliente: ${r.error.message}`);
   }
 
-  // Evidências: só sinais acionados, dos mais pesados para os mais leves.
   const acionados = contexto.sinais.filter((s) => s.acionado === true);
   const evidencias: Evidencia[] = acionados.map((s, i) => ({
     id: `e${i + 1}`,
@@ -180,8 +163,6 @@ export async function montarDetalheCliente(params: {
     .filter((s) => s.acionado === false)
     .map((s) => ({ codigo: s.codigo_sinal, rotulo: s.metrica }));
 
-  // Simulador: o CS só "resolve" sinais acionados, mas o denominador do
-  // score é a soma dos pesos de TODAS as regras avaliáveis (score.ts).
   const simulacao: BaseSimulacao = {
     scoreRisco: cliente.scoreRisco,
     somaPesos: contexto.sinais
@@ -198,7 +179,6 @@ export async function montarDetalheCliente(params: {
     })),
   };
 
-  // Evolução: última predição de cada mês da janela.
   const porMes = new Map<string, number>();
   for (const p of predicoesRes.data ?? []) {
     porMes.set(rotuloMes(p.referencia_em), Number(p.pontuacao));
@@ -221,8 +201,7 @@ export async function montarDetalheCliente(params: {
       id: `c-${c.id}`,
       data: String(c.realizado_em).slice(0, 10),
       tipo: c.tipo === "reuniao_presencial" || c.tipo === "videochamada" ? "reuniao" : "contato",
-      // Pedido de call feito pelo próprio cliente na página pública de Health
-      // Score (app/api/health/agendamento) — merece um título próprio na timeline.
+
       titulo: c.resumo.startsWith(PREFIXO_SOLICITACAO_AGENDAMENTO)
         ? "Cliente pediu uma call de alinhamento"
         : rotuloTipoContato(c.tipo),

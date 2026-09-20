@@ -1,8 +1,3 @@
-/**
- * Chave pública do projeto Supabase usada pelos clientes que respeitam RLS
- * (browser e cookies de sessão). Aceita o nome novo (`PUBLISHABLE_KEY`) e o
- * legado (`ANON_KEY`, que é o que está no `.env.local` hoje).
- */
 export function obterConfigSupabasePublica(): { url: string; chave: string } {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const chave =

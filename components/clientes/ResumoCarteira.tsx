@@ -3,13 +3,10 @@ import {
   CircleCheckIcon,
   InfoIcon,
   type IconProps,
-} from "@/components/icons";
-import type { FaixaRisco } from "@/lib/mock-data";
-import {
-  faixaRiscoIconClasses,
-  faixaRiscoLabelCurto,
-  faixaRiscoTextClasses,
-} from "@/lib/risk";
+} from "@/components/ui/icons";
+import type { FaixaRisco } from "@/lib/risco/faixa";
+import { faixaRiscoLabelCurto } from "@/lib/risco/faixa";
+import { faixaRiscoIconClasses, faixaRiscoTextClasses } from "@/lib/risco/estilos";
 import type { ComponentType } from "react";
 
 const icones: Record<FaixaRisco, ComponentType<IconProps>> = {

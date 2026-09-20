@@ -5,12 +5,6 @@ import { ordenarFilaUrgencia } from "@/lib/motor/urgencia";
 
 export const runtime = "nodejs";
 
-/**
- * Task 3.3 — Matriz de Urgência: devolve a última predição de cada entidade
- * do projeto (sob o modelo informado, ou o modelo ativo) ordenada por Score
- * de Urgência (risco × receita mensal), a fila real de priorização de CS.
- * Consumida futuramente pelo painel do Módulo 5.1 (fora do escopo aqui).
- */
 export async function GET(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const { searchParams } = new URL(request.url);

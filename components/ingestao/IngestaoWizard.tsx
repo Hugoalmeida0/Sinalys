@@ -6,7 +6,7 @@ import { MapeamentoStep } from "./MapeamentoStep";
 import { ProcessamentoStep } from "./ProcessamentoStep";
 import { StepIndicator } from "./StepIndicator";
 import { UploadStep } from "./UploadStep";
-import type { UploadIngestaoResponse } from "@/lib/ingestao-client";
+import type { UploadIngestaoResponse } from "@/lib/ingestao/api";
 
 export function IngestaoWizard() {
   const [step, setStep] = useState<1 | 2 | 3>(1);

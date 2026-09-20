@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { AcoesCliente } from "@/components/AcoesCliente";
+import { AcoesCliente } from "@/components/clientes/acoes/AcoesCliente";
 import { CompartilharHealthScore } from "@/components/clientes/CompartilharHealthScore";
-import { ChevronRightIcon } from "@/components/icons";
+import { ChevronRightIcon } from "@/components/ui/icons";
 import { Badge, BadgeTeste, SoftBadge } from "@/components/ui/Badge";
 import type { DetalheClientePainel as DetalheCliente } from "@/lib/painel/detalhe";
-import { faixaRiscoClasses, faixaRiscoLabel } from "@/lib/risk";
+import { faixaRiscoLabel } from "@/lib/risco/faixa";
+import { faixaRiscoClasses } from "@/lib/risco/estilos";
 
 export function ClienteHeader({ detalhe, baseUrl }: { detalhe: DetalheCliente; baseUrl: string }) {
   return (

@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDownIcon, HeartHandshakeIcon, LoaderIcon, TargetIcon } from "@/components/icons";
+import { ChevronDownIcon, HeartHandshakeIcon, LoaderIcon, TargetIcon } from "@/components/ui/icons";
 import { ConteudoAnaliseIA } from "@/components/ia/ConteudoAnaliseIA";
-import { MarcarResolvidoModal } from "@/components/MarcarResolvidoModal";
+import { MarcarResolvidoModal } from "@/components/clientes/acoes/MarcarResolvidoModal";
 import { Button } from "@/components/ui/Button";
 import { SoftBadge } from "@/components/ui/Badge";
-import { useAnaliseIA } from "@/lib/ia/hooks/useAnaliseIA";
-import { formatCurrencyBRLOuTraco, formatDateLongPtBR } from "@/lib/format";
+import { useAnaliseIA } from "@/hooks/useAnaliseIA";
+import { formatCurrencyBRLOuTraco, formatDateLongPtBR } from "@/lib/utils/formatacao";
 import { MOTIVOS_CANCELAMENTO } from "@/lib/cancelamento/constantes";
 import type { ClientePainel } from "@/lib/painel/tipos";
 
@@ -62,7 +62,6 @@ function CardCliente({
 
   async function aoClicarAnalisarOuVer() {
     if (plano) {
-      // Já existe um plano nesta sessão: o botão só abre/fecha a leitura.
       if (expandido) onColapsar();
       else onExpandir();
       return;

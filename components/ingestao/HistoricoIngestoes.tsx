@@ -10,11 +10,11 @@ import {
   FileTextIcon,
   MoreIcon,
   SearchIcon,
-} from "@/components/icons";
+} from "@/components/ui/icons";
 import { SoftBadge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
-import { formatDateLongPtBR, formatTimePtBR } from "@/lib/format";
-import { historicoIngestoes, type IngestaoRegistro, type StatusIngestao } from "@/lib/mock-data";
+import { formatDateLongPtBR, formatTimePtBR } from "@/lib/utils/formatacao";
+import { historicoIngestoes, type IngestaoRegistro, type StatusIngestao } from "@/lib/mock/dados";
 
 const statusVisual: Record<
   StatusIngestao,
@@ -46,8 +46,7 @@ const periodos = [
 export function HistoricoIngestoes() {
   const [busca, setBusca] = useState("");
   const [periodo, setPeriodo] = useState("todos");
-  // A data de corte é calculada no evento de troca do filtro — ler o relógio
-  // durante a renderização tornaria o componente impuro.
+
   const [limite, setLimite] = useState<number | null>(null);
 
   function mudarPeriodo(valor: string) {
@@ -94,7 +93,6 @@ export function HistoricoIngestoes() {
         </div>
       </div>
 
-      {/* Desktop */}
       <div className="scroll-slim hidden overflow-x-auto lg:block">
         <table className="w-full border-collapse text-left">
           <thead>
@@ -155,7 +153,6 @@ export function HistoricoIngestoes() {
         </table>
       </div>
 
-      {/* Mobile */}
       <ul className="divide-y divide-slate-100 border-t border-slate-100 lg:hidden">
         {lista.map((registro) => (
           <li key={registro.id} className="flex flex-col gap-3 px-5 py-4">

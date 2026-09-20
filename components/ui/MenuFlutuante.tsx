@@ -6,12 +6,6 @@ import { createPortal } from "react-dom";
 const MARGEM_VIEWPORT = 8;
 const DISTANCIA_ANCORA = 6;
 
-/**
- * Dropdown renderizado em portal (`document.body`) com posição fixa ancorada
- * no botão que o abre. Necessário porque menus `absolute` dentro de tabelas
- * com `overflow-x-auto` são recortados pelo contêiner (overflow-y vira auto).
- * Abre para cima quando não cabe abaixo; fecha em clique fora ou Esc.
- */
 export function MenuFlutuante({
   open,
   anchorRef,
@@ -27,8 +21,6 @@ export function MenuFlutuante({
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Posiciona escrevendo direto no DOM (sem estado): evita um render extra e
-  // o menu já aparece no lugar certo antes do primeiro paint.
   useLayoutEffect(() => {
     if (!open) return;
 

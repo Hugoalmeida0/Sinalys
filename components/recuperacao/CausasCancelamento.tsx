@@ -1,4 +1,4 @@
-import { formatCurrencyBRL } from "@/lib/format";
+import { formatCurrencyBRL } from "@/lib/utils/formatacao";
 import { MOTIVOS_CANCELAMENTO, type MotivoCancelamento } from "@/lib/cancelamento/constantes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import type { ClientePainel } from "@/lib/painel/tipos";
@@ -23,12 +23,6 @@ function agregarCausas(cancelados: ClientePainel[]): LinhaCausa[] {
   return Array.from(porCategoria.values()).sort((a, b) => b.receitaAnualPerdida - a.receitaAnualPerdida);
 }
 
-/**
- * Causa-raiz agregada dos cancelamentos: fecha o loop com o cliente final
- * transformando "por que ele saiu" (capturado em `eventos_desfecho.motivo_categoria`
- * ao marcar um cliente como cancelado) num retrato acionável para a diretoria —
- * não só um dashboard de quem cancelou, mas de *por quê* a carteira perde receita.
- */
 export function CausasCancelamento({ cancelados }: { cancelados: ClientePainel[] }) {
   if (cancelados.length === 0) return null;
 

@@ -58,20 +58,12 @@ function parseConfigRegra(raw: unknown): ConfigRegra | null {
   return null;
 }
 
-/** Valor recente de uma entidade para uma métrica: média das últimas N observações, mais a última isolada e quantas entraram. */
 export interface ValorRecente {
   valor: number;
   ultimo_valor: number;
   observacoes: number;
 }
 
-/**
- * Busca, por métrica, as `janelaObservacoes` observações mais recentes
- * (respeitando `disponivel_em` — sem look-ahead) de cada entidade até
- * `referenciaEm` e devolve a média delas. Com janela 1 é só a última
- * observação; com 3 (padrão) um período isolado — um percentual sobre 1
- * chamado, um atraso de um mês — deixa de saturar o sinal sozinho.
- */
 async function buscarValorRecentePorEntidade(
   supabase: SupabaseClient,
   projetoId: string,
@@ -112,12 +104,6 @@ async function buscarValorRecentePorEntidade(
   return resultado;
 }
 
-/**
- * Task A.1 — referência padrão do motor: a data da observação mais recente
- * do projeto, não "agora". Com dados mensais que terminam em junho e o
- * relógio em setembro, "agora" deixa a janela recente da média móvel vazia e
- * mata toda regra `media_movel` (cobertura cai pela metade sem aviso).
- */
 export async function resolverReferenciaPadrao(
   supabase: SupabaseClient,
   projetoId: string
@@ -133,7 +119,6 @@ export async function resolverReferenciaPadrao(
   return data ? new Date(data.observado_em) : null;
 }
 
-/** Task A.4 — uma predição por entidade por dia: a chave de dedup é o dia (UTC), não o instante. */
 function truncarAoDia(data: Date): Date {
   return new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth(), data.getUTCDate()));
 }
@@ -142,7 +127,6 @@ function fimDoDia(dia: Date): Date {
   return new Date(dia.getTime() + 86_400_000 - 1);
 }
 
-/** Busca o histórico completo (ordenado) de cada entidade para uma métrica, até `referenciaEm`. */
 async function buscarHistoricoPorEntidade(
   supabase: SupabaseClient,
   projetoId: string,
@@ -180,24 +164,10 @@ async function buscarHistoricoPorEntidade(
 export interface CalcularPredicoesResultado {
   predicoes: ResultadoPredicaoEntidade[];
   avisos: string[];
-  /** Dia de referência efetivamente usado (truncado ao dia, UTC). */
+
   referenciaEm: Date;
 }
 
-/**
- * Orquestra o motor matemático completo (Tasks 3.1-3.3) para todas as
- * entidades de um projeto, sob um modelo e data de referência, e persiste o
- * resultado em `predicoes`/`motivos_predicao`.
- *
- * `referenciaEm` ausente = última observação do projeto (Task A.1). A
- * referência é sempre truncada ao dia: as observações consideradas vão até o
- * fim desse dia e a predição gravada é única por (entidade, dia) — rodar
- * duas vezes no mesmo dia atualiza em vez de duplicar (Task A.4).
- *
- * `somenteEntidades` restringe quais entidades têm predição calculada e
- * gravada; a estatística de carteira (z-score) continua sobre o projeto
- * inteiro, então o resultado é o mesmo que uma rodada completa teria dado.
- */
 export async function calcularPredicoesProjeto(params: {
   supabase: SupabaseClient;
   projetoId: string;
@@ -263,7 +233,6 @@ export async function calcularPredicoesProjeto(params: {
     return { predicoes: [], avisos, referenciaEm };
   }
 
-  // Pré-carrega, por (métrica, janela), os dados necessários (carteira e/ou histórico) antes de iterar por entidade.
   const valoresCarteiraPorChave = new Map<string, Map<string, ValorRecente>>();
   const historicoPorMetrica = new Map<string, Map<string, ObservacaoNumerica[]>>();
   const chaveCarteira = (regra: RegraModeloRegistro) =>
@@ -290,7 +259,6 @@ export async function calcularPredicoesProjeto(params: {
     }
   }
 
-  // Z-score de carteira é o mesmo para todas as entidades de uma regra — calcula uma vez por regra.
   const zscorePorRegra = new Map<string, Map<string, number>>();
   for (const regra of regras) {
     if (regra.config_regra.tipo !== "zscore_carteira") continue;
@@ -303,7 +271,6 @@ export async function calcularPredicoesProjeto(params: {
     );
   }
 
-  // Receita mensal (Task 3.3) — métrica reservada, se definida no projeto. Só a última observação.
   const { data: metricaReceita } = await supabase
     .from("definicoes_metricas")
     .select("id")
@@ -326,10 +293,8 @@ export async function calcularPredicoesProjeto(params: {
     );
   }
 
-  /** Task D.2 — "acionado" exige um desvio real, não qualquer valor acima da média. */
   const limiarAcionado = (clipZ: number) => Math.min(100, (LIMIAR_Z_ACIONADO / clipZ) * 100);
 
-  /** Task A.5 — omissão só pontua quando a regra diz quanto; do contrário é "não avaliável". */
   const motivoOmissao = (regra: RegraModeloRegistro): ResultadoRegraEntidade => {
     const pontuacaoOmissao = regra.config_regra.pontuacao_omissao ?? OMISSAO_SEM_PONTUACAO;
     if (pontuacaoOmissao == null) {
@@ -376,7 +341,6 @@ export async function calcularPredicoesProjeto(params: {
         };
         const normalizado = zscorePorRegra.get(regra.id)!.get(entidadeId);
         if (normalizado === undefined) {
-          // Carteira com menos de 2 valores conhecidos: comparação estatística impossível.
           motivos.push({
             regra_modelo_id: regra.id,
             peso: regra.peso,
@@ -399,7 +363,6 @@ export async function calcularPredicoesProjeto(params: {
         continue;
       }
 
-      // media_movel
       const historicoPorEntidade = historicoPorMetrica.get(regra.metrica_id)!;
       const historicoEntidade = historicoPorEntidade.get(entidadeId) ?? [];
 
@@ -457,7 +420,6 @@ export async function calcularPredicoesProjeto(params: {
   return { predicoes: resultados, avisos, referenciaEm };
 }
 
-/** Tamanho de lote para inserts/upserts em massa (mesmo padrão de `lib/ingestao/normalizar.ts`). */
 const TAMANHO_LOTE_PERSISTENCIA = 500;
 
 function emLotes<T>(itens: T[], tamanho: number): T[][] {
@@ -466,16 +428,6 @@ function emLotes<T>(itens: T[], tamanho: number): T[][] {
   return lotes;
 }
 
-/**
- * Grava `predicoes`/`motivos_predicao` em lote, não por entidade.
- *
- * Antes fazia 4 round-trips sequenciais *por entidade* (SELECT + UPSERT +
- * DELETE + INSERT) — para os ~80 clientes reais do projeto seed isso são 320
- * chamadas sequenciais, inviável para recalcular a cada login (Módulo 5,
- * Task 5.4/decisão do usuário). Reduzido para 1 SELECT em lote (reaproveita o
- * `id` de predições existentes, preservando a referência de `motivos_predicao`)
- * + upserts/deletes/inserts em lotes de 500.
- */
 async function persistirResultados(
   supabase: SupabaseClient,
   params: {
@@ -506,8 +458,6 @@ async function persistirResultados(
   }
   const idExistentePorEntidade = new Map(existentes.map((p) => [p.entidade_id, p.id]));
 
-  // Resolvido aqui (não no upsert) para nunca sobrescrever o id de uma predição
-  // já existente — trocar o id órfãaria os `motivos_predicao` já vinculados a ela.
   const predicaoIdPorEntidade = new Map(
     resultados.map((r) => [r.entidade_id, idExistentePorEntidade.get(r.entidade_id) ?? randomUUID()])
   );

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MoreIcon, PlusIcon } from "@/components/icons";
+import { MoreIcon, PlusIcon } from "@/components/ui/icons";
 import { navItems } from "./nav-items";
 
 const mobileItems = [

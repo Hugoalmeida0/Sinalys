@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { RegistrarContatoModal } from "@/components/RegistrarContatoModal";
+import { RegistrarContatoModal } from "@/components/clientes/acoes/RegistrarContatoModal";
 
 export function RegistrarContatoTrigger({
   clienteId,

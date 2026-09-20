@@ -1,11 +1,5 @@
 import type { ReactNode } from "react";
 
-/**
- * Renderizador mínimo do subconjunto de Markdown que o prompt do assistente
- * autoriza (negrito, listas com "-" e numeradas, parágrafos). Sem dependência
- * de biblioteca: o chat é um painel estreito e o modelo é instruído a não usar
- * títulos, tabelas ou código.
- */
 export function TextoFormatado({ texto }: { texto: string }) {
   const blocos = agruparBlocos(texto);
 
@@ -53,7 +47,6 @@ function agruparBlocos(texto: string): Bloco[] {
   };
 
   for (const linhaBruta of texto.split("\n")) {
-    // Títulos markdown não são permitidos pelo prompt; se vierem, viram texto normal.
     const linha = linhaBruta.replace(/^#{1,6}\s+/, "").trimEnd();
     const itemUl = linha.match(/^\s*[-*•]\s+(.*)$/);
     const itemOl = linha.match(/^\s*\d{1,2}[.)]\s+(.*)$/);
@@ -78,7 +71,6 @@ function agruparBlocos(texto: string): Bloco[] {
   return blocos;
 }
 
-/** `**negrito**` e `código` inline; o resto é texto. */
 function formatarInline(texto: string): ReactNode[] {
   const partes: ReactNode[] = [];
   const regex = /\*\*(.+?)\*\*|`([^`]+)`/g;

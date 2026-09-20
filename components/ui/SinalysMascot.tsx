@@ -1,9 +1,5 @@
 import Image from "next/image";
 
-/**
- * Mascote da Sinalys. As artes ficam em `public/mascote-*.png`, recortadas
- * com fundo transparente para funcionar sobre os cards escuros e claros.
- */
 export type VarianteMascote =
   | "padrao"
   | "flutuando"
@@ -45,7 +41,7 @@ export function SinalysMascot({
   variante = "padrao",
   className = "",
   priority = false,
-  /** Deixe como está quando o mascote for puramente decorativo. */
+
   decorativo = true,
 }: {
   variante?: VarianteMascote;

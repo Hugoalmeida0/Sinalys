@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BellIcon, MenuIcon, XIcon } from "@/components/icons";
+import { BellIcon, MenuIcon, XIcon } from "@/components/ui/icons";
 import type { UsuarioSessao } from "@/lib/auth/usuario";
 import { BotaoSair } from "./BotaoSair";
 import { navItems } from "./nav-items";

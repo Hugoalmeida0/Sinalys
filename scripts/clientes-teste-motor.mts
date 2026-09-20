@@ -1,19 +1,3 @@
-/**
- * Clientes de teste do motor novo (decisão do usuário em 2026-09-20: não
- * apagar as predições antigas; criar clientes novos, sinalizados, para ver o
- * motor novo lado a lado).
- *
- * `criar`  — clona cada entidade do projeto (cadastro + observações + eventos
- *            de desfecho) como `<id_externo>-T` com `atributos.teste_motor =
- *            true` e `atributos.teste_origem = <id_externo>`, e roda o motor
- *            mês a mês (Task B.5, `scripts/backfill-motor.mts`) só para os clones. A estatística de carteira
- *            do z-score continua sobre o projeto inteiro.
- * `remover` — apaga os clones e tudo que depende deles (predições, motivos,
- *            observações, eventos, silenciamentos, contatos).
- *
- *   npx tsx scripts/clientes-teste-motor.mts criar
- *   npx tsx scripts/clientes-teste-motor.mts remover
- */
 import { randomUUID } from "node:crypto";
 import { buscarTodasLinhas } from "@/lib/supabase/paginar";
 import { backfill, carregarEnv, criarSupabase, emLotes } from "./backfill-motor.mjs";
@@ -86,7 +70,7 @@ async function criar() {
       .select("entidade_id, metrica_id, observado_em, disponivel_em, valor_numero, valor_texto, valor_booleano")
       .eq("projeto_id", projetoId)
       .in("entidade_id", originalIds)
-      // Ordem total (a unique é entidade+métrica+data) — senão as páginas se sobrepõem.
+
       .order("entidade_id", { ascending: true })
       .order("metrica_id", { ascending: true })
       .order("observado_em", { ascending: true })
@@ -173,7 +157,7 @@ async function remover() {
   ]) {
     for (const lote of emLotes(ids)) {
       const { error } = await supabase.from(tabela).delete().eq("projeto_id", projetoId).in("entidade_id", lote);
-      // Tabelas opcionais (ex. diagnósticos) podem não existir em todo ambiente.
+
       if (error && !/relation .* does not exist/i.test(error.message)) {
         throw new Error(`${tabela}: ${error.message}`);
       }

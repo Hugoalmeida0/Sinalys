@@ -3,7 +3,6 @@ import { criarClienteSupabaseServidor } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-/** Encerra a sessão atual e limpa os cookies de autenticação. */
 export async function POST() {
   const supabase = await criarClienteSupabaseServidor();
   const { error } = await supabase.auth.signOut();

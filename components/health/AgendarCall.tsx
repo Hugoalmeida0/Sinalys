@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ArrowUpRightIcon, CalendarIcon, CheckIcon } from "@/components/icons";
+import { ArrowUpRightIcon, CalendarIcon, CheckIcon } from "@/components/ui/icons";
 import {
   MAX_TAMANHO_MENSAGEM_SOLICITACAO,
   MAX_TAMANHO_NOME_SOLICITANTE,
@@ -13,12 +13,6 @@ const CLASSE_BOTAO =
 const CLASSE_CAMPO =
   "w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/60 focus:bg-white/15 focus:outline-none";
 
-/**
- * Botão "Agendar call de alinhamento" da página pública. Com um link de
- * agenda configurado pelo CS, abre a agenda externa; sem link, um formulário
- * curto que registra o pedido direto na timeline do cliente no painel
- * (POST /api/health/agendamento).
- */
 export function AgendarCall({ token, linkAgendamento }: { token: string; linkAgendamento: string | null }) {
   if (linkAgendamento) {
     return (
@@ -52,7 +46,7 @@ function FormularioPedido({ token }: { token: string }) {
           token,
           nome: form.get("nome"),
           email: form.get("email") || undefined,
-          // datetime-local vem sem fuso: `new Date` interpreta no fuso do navegador do cliente.
+
           preferencia_em: preferencia ? new Date(String(preferencia)).toISOString() : undefined,
           mensagem: form.get("mensagem") || undefined,
           site: form.get("site") || undefined,
@@ -126,7 +120,7 @@ function FormularioPedido({ token }: { token: string }) {
           placeholder="Ex.: revisar o plano, treinar o time, dúvidas sobre um recurso…"
         />
       </label>
-      {/* Honeypot: invisível para pessoas, preenchido por bots. */}
+
       <input name="site" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
 
       {erro && (

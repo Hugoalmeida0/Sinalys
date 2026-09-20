@@ -1,10 +1,5 @@
-// Dados mockados para visualização do frontend.
-// Estrutura inspirada em `docs/modelagem.sql` (entidades, métricas, predições,
-// motivos de predição) — sem chamadas reais ao backend/Supabase ainda.
-
-export type FaixaRisco = "critico" | "alerta" | "atencao" | "saudavel";
-
-export type TendenciaScore = "subindo" | "descendo" | "estavel";
+import type { FaixaRisco, TendenciaScore } from "@/lib/risco/faixa";
+import type { Evidencia, EventoHistorico, PontoScore, ProximaAcao } from "@/lib/painel/tipos";
 
 export type Cliente = {
   id: string;
@@ -18,13 +13,13 @@ export type Cliente = {
   scoreMax: number;
   faixaRisco: FaixaRisco;
   tendenciaScore: TendenciaScore;
-  clienteDesde: string; // ISO date
+  clienteDesde: string;
   resumoAlerta: string;
-  /** Variação do MRR frente ao mês anterior, em pontos percentuais. */
+
   variacaoMrr: number;
-  /** Chips exibidos na coluna "Principais sinais" da lista de clientes. */
+
   sinais: string[];
-  atualizadoEm: string; // ISO date
+  atualizadoEm: string;
 };
 
 export const clientes: Cliente[] = [
@@ -180,7 +175,6 @@ export function getFilaDoDia(): Cliente[] {
     .sort((a, b) => b.receitaAnualRisco - a.receitaAnualRisco);
 }
 
-/** Contagem e participação de cada faixa de risco na carteira. */
 export function getResumoCarteira(): {
   faixa: FaixaRisco;
   total: number;
@@ -212,32 +206,6 @@ export const kpisDashboard = {
   clientesContatados7d: 12,
 };
 
-export type Evidencia = {
-  id: string;
-  severidade: "critica" | "alta" | "media";
-  titulo: string;
-};
-
-export type ProximaAcao = {
-  id: string;
-  titulo: string;
-  concluida: boolean;
-};
-
-export type EventoHistorico = {
-  id: string;
-  data: string; // ISO date
-  tipo: "contato" | "sinal" | "sistema" | "reuniao";
-  titulo: string;
-  descricao: string;
-  autor?: string;
-};
-
-export type PontoScore = {
-  mes: string;
-  score: number;
-};
-
 export type DetalheCliente = Cliente & {
   nomeFantasia: string;
   responsavelCS: string;
@@ -245,15 +213,11 @@ export type DetalheCliente = Cliente & {
   proximasAcoes: ProximaAcao[];
   avaliacaoIA: string;
   historico: EventoHistorico[];
-  /** Série de 12 meses exibida no gráfico de evolução do score. */
+
   evolucaoScore: PontoScore[];
   resumoCliente: string;
 };
 
-/**
- * Gera uma série plausível de 12 meses terminando no score atual do cliente.
- * Determinística (sem random) para não divergir entre servidor e cliente.
- */
 function gerarEvolucaoScore(atual: number, max: number): PontoScore[] {
   const meses = [
     "out/25",
@@ -472,10 +436,10 @@ export type IngestaoRegistro = {
   id: string;
   arquivo: string;
   tamanho: string;
-  enviadoEm: string; // ISO datetime
+  enviadoEm: string;
   registros: number;
   status: StatusIngestao;
-  processadoEm: string | null; // ISO datetime
+  processadoEm: string | null;
 };
 
 export const historicoIngestoes: IngestaoRegistro[] = [
@@ -522,7 +486,7 @@ export type Integracao = {
   nome: string;
   descricao: string;
   status: "conectado" | "pendente";
-  /** Cor de fundo do quadradinho da marca na lista. */
+
   marca: "supabase" | "gemini" | "vercel";
 };
 

@@ -4,14 +4,8 @@ import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
 import { obterBucketIngestao, obterProjetoIdPadrao } from "@/lib/ingestao/constantes";
 import { detectarTipoOrigem, inspecionarAbas, lerWorkbook } from "@/lib/ingestao/planilha";
 
-// Precisa do runtime Node (Buffer, xlsx) — incompatível com o runtime Edge.
 export const runtime = "nodejs";
 
-/**
- * Task 2.1 — recebe um arquivo Excel/CSV, registra a execução de ingestão,
- * arquiva o arquivo bruto no Supabase Storage (auditoria) e devolve a lista
- * de abas/colunas detectadas para a etapa de mapeamento (Task 2.2).
- */
 export async function POST(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
 

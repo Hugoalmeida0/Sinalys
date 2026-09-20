@@ -2,16 +2,6 @@ import { embed } from "ai";
 import { criarProvedorGoogle } from "./provedor";
 import { DIMENSAO_EMBEDDING, TIPO_TAREFA_EMBEDDING, obterModeloEmbedding } from "./constantes";
 
-/**
- * Gera o embedding de um texto na dimensão esperada pela coluna
- * `casos_historicos_embeddings.embedding` (Task 4.2).
- *
- * O vetor é normalizado para norma 1. Para a distância de cosseno usada hoje
- * (`<=>`) isso é indiferente — cosseno já é invariante a escala —, mas o modelo
- * só devolve vetores normalizados na dimensão nativa (3072), e não na truncada.
- * Normalizar aqui mantém a base consistente e deixa aberta a troca futura para
- * produto interno (`<#>`), que é mais barato e exige vetores unitários.
- */
 export async function gerarEmbedding(texto: string): Promise<number[]> {
   const conteudo = texto.trim();
   if (!conteudo) {
@@ -43,7 +33,7 @@ export async function gerarEmbedding(texto: string): Promise<number[]> {
 
 function normalizar(vetor: number[]): number[] {
   const norma = Math.sqrt(vetor.reduce((acc, v) => acc + v * v, 0));
-  // Vetor nulo não tem direção; devolvê-lo como está evita divisão por zero.
+
   if (norma === 0) return vetor;
   return vetor.map((v) => v / norma);
 }

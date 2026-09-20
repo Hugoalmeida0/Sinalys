@@ -1,21 +1,14 @@
 import { useState } from "react";
 
-/** Plano gerado pela IA (Task 4.3), na forma que as telas exibem. */
 export interface PlanoIA {
   diagnostico: string;
   analiseLookalike: string | null;
   acoes: string[];
   geradoEm: string | null;
-  /** "ia": gerado agora pelo LLM. "cache": reaproveitado de uma análise anterior. "fallback": LLM indisponível, montado por regras. */
+
   origem: "ia" | "cache" | "fallback";
 }
 
-/**
- * Orquestra `POST /api/inteligencia/analisar` para um cliente e o estado da
- * UI (analisando/erro/plano/checklist). Compartilhado entre a aba "Plano de
- * ação" do detalhe do cliente e a campanha de recuperação de cancelados —
- * mesma chamada, dois lugares diferentes de exibir o resultado.
- */
 export function useAnaliseIA(clienteId: string, planoInicial: PlanoIA | null = null) {
   const [plano, setPlano] = useState<PlanoIA | null>(planoInicial);
   const [analisando, setAnalisando] = useState(false);

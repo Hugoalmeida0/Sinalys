@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CheckIcon, ChevronDownIcon } from "@/components/icons";
+import { CheckIcon, ChevronDownIcon } from "@/components/ui/icons";
 
-/** Dropdown leve, sem dependências, usado nas barras de filtro. */
 export function Select<T extends string>({
   value,
   options,

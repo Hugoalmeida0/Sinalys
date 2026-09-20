@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangleIcon, PlusIcon, TrashIcon } from "@/components/icons";
+import { AlertTriangleIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
 import {
   TIPOS_DESTINO_MAPEAMENTO,
@@ -14,7 +14,7 @@ import {
   type MapeamentoEnvio,
   type TipoDestinoMapeamento,
   type UploadIngestaoResponse,
-} from "@/lib/ingestao-client";
+} from "@/lib/ingestao/api";
 
 const NOVA_METRICA = "__nova__";
 const IGNORAR = "";

@@ -1,8 +1,6 @@
 import * as XLSX from "xlsx";
 
 export interface AbaInspecionada {
-  /** Nome da aba de origem. Para CSV (arquivo sem abas), usa-se string vazia
-   *  para casar com o default da coluna `aba_origem` em mapeamentos_importacao. */
   aba_origem: string;
   colunas: string[];
   total_linhas: number;

@@ -5,15 +5,9 @@ import { analisarRiscoEntidade, EntidadeNaoEncontradaError } from "@/lib/ia/anal
 import { SemPredicaoError } from "@/lib/ia/contexto";
 
 export const runtime = "nodejs";
-// LLM (22-31s medidos) + busca vetorial passam do limite padrão de 10s do plano Hobby.
+
 export const maxDuration = 60;
 
-/**
- * Task 4.3 — rota de orquestração RAG + LLM.
- *
- * Corpo: { cliente_id, projeto_id?, modelo_id?, trigger_source?, persistir? }
- * `cliente_id` aceita o UUID da entidade ou o `id_externo` da planilha.
- */
 export async function POST(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const corpo = await request.json().catch(() => ({}));

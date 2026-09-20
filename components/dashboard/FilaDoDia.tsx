@@ -1,20 +1,18 @@
 import Link from "next/link";
-import { AcoesCliente } from "@/components/AcoesCliente";
-import { ArrowRightIcon, ChevronRightIcon } from "@/components/icons";
+import { AcoesCliente } from "@/components/clientes/acoes/AcoesCliente";
+import { ArrowRightIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { BadgeTeste } from "@/components/ui/Badge";
 import { ScorePill } from "@/components/ui/ScorePill";
-import { formatCurrencyBRLOuTraco } from "@/lib/format";
+import { formatCurrencyBRLOuTraco } from "@/lib/utils/formatacao";
 import { TAMANHO_RESUMO_FILA } from "@/lib/painel/clientes";
 import type { ClientePainel } from "@/lib/painel/tipos";
 
-/** Fila completa em /clientes, na mesma ordem do resumo (Score de Prioridade). */
 const HREF_FILA_COMPLETA = "/clientes?ordem=prioridade";
 
 export function FilaDoDia({
   clientes,
   mensagemVazia = "Nenhum cliente na fila hoje.",
 }: {
-  /** Já limitado ao top N (ver `montarResumoFila`). */
   clientes: ClientePainel[];
   mensagemVazia?: string;
 }) {
@@ -46,7 +44,6 @@ export function FilaDoDia({
         </p>
       )}
 
-      {/* Desktop: tabela */}
       <div
         className={`scroll-slim hidden overflow-x-auto ${listaFiltrada.length === 0 ? "" : "lg:block"}`}
       >
@@ -119,7 +116,6 @@ export function FilaDoDia({
         </table>
       </div>
 
-      {/* Mobile: lista compacta */}
       <ul className="divide-y divide-slate-100 border-t border-slate-100 lg:hidden">
         {listaFiltrada.map((cliente, index) => (
           <li key={cliente.id}>
@@ -156,7 +152,6 @@ export function FilaDoDia({
   );
 }
 
-/** Score de Prioridade (0-100): risco modulado pelo impacto financeiro — o critério de ordem da fila. */
 export function PrioridadeBadge({ valor }: { valor: number }) {
   return (
     <span

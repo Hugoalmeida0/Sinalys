@@ -1,9 +1,5 @@
-import type { Integracao } from "@/lib/mock-data";
+import type { Integracao } from "@/lib/mock/dados";
 
-/**
- * Marca simplificada de cada integração — formas geométricas neutras,
- * só para dar identidade visual à linha da lista.
- */
 export function MarcaIntegracao({ marca }: { marca: Integracao["marca"] }) {
   if (marca === "supabase") {
     return (

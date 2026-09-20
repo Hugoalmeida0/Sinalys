@@ -61,7 +61,6 @@ export function Sidebar() {
   );
 }
 
-/** Traços de onda no rodapé da barra — eco do símbolo da marca. */
 function OndaDecorativa() {
   return (
     <svg

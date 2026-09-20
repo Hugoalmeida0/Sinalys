@@ -17,20 +17,11 @@ function arredondar1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
-/**
- * Antecedência (meses) com que o motor sinalizou cada desfecho ocorrido:
- * distância entre o início da sequência contínua de predições em
- * crítico/alerta imediatamente anterior ao evento-alvo e a data do evento.
- * Desfechos sem alerta prévio contínuo não contam (não foram antecipados).
- */
 async function calcularAntecedencias(
   supabase: SupabaseClient,
   projetoId: string,
   modeloId: string
 ): Promise<number[]> {
-  // `projeto` vem do cache de 12h (lib/painel/cache-estatico.ts) — o filtro
-  // por `codigo_evento_alvo` é aplicado aqui em memória, então não precisa
-  // esperar essa leitura pra montar a query de `eventos_desfecho`.
   const [projeto, { data: eventosBrutos, error: erroEventos }] = await Promise.all([
     obterProjetoInfoCache(projetoId),
     supabase.from("eventos_desfecho").select("entidade_id, ocorrido_em, codigo_evento").eq("projeto_id", projetoId),
@@ -81,13 +72,6 @@ async function calcularAntecedencias(
 
 const JANELA_RECEITA_SALVA_DIAS = 30;
 
-/**
- * "Receita salva": clientes que estavam em crítico/alerta e cuja predição mais
- * recente caiu para uma faixa fora de alerta (recuperação), com a transição
- * ocorrendo dentro da janela. Soma a receita anualizada (valor_impacto × 12) no
- * momento da recuperação — é o KPI de negócio mais direto do produto: quanto
- * a operação de CS evitou perder, não só quanto está em risco.
- */
 async function calcularReceitaSalva(
   supabase: SupabaseClient,
   projetoId: string,
@@ -103,9 +87,6 @@ async function calcularReceitaSalva(
   if (error) throw new Error(`Falha ao buscar predições: ${error.message}`);
   if (!predicoes?.length) return { receita: 0, clientes: 0 };
 
-  // A janela conta a partir da referência mais recente do motor (tempo dos
-  // dados), não do relógio: com dados mensais que terminam em junho, "últimos
-  // 30 dias" do calendário nunca conteriam uma predição.
   const ultimaReferencia = predicoes.reduce(
     (max, p) => Math.max(max, new Date(p.referencia_em).getTime()),
     0
@@ -126,8 +107,6 @@ async function calcularReceitaSalva(
   let clientesRecuperados = 0;
 
   for (const [, serie] of porEntidade) {
-    // Última recuperação da série: última predição fora de alerta cuja predição
-    // imediatamente anterior estava em alerta e a transição caiu na janela.
     for (let i = serie.length - 1; i > 0; i -= 1) {
       const atual = serie[i];
       const anterior = serie[i - 1];
@@ -141,7 +120,7 @@ async function calcularReceitaSalva(
         clientesRecuperados += 1;
         break;
       }
-      // Se a predição mais recente já está em alerta de novo, não há recuperação a contar.
+
       if (i === serie.length - 1 && atualEmAlerta) break;
     }
   }
@@ -165,7 +144,6 @@ async function contarContatados(
   return new Set((data ?? []).map((c) => c.entidade_id)).size;
 }
 
-/** KPIs do topo da home, derivados da lista já montada por `montarClientesPainel`. */
 export async function calcularKpisPainel(params: {
   supabase: SupabaseClient;
   projetoId: string;

@@ -7,11 +7,11 @@ import {
   CheckIcon,
   HeartHandshakeIcon,
   UsersIcon,
-} from "@/components/icons";
+} from "@/components/ui/icons";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { obterUsuarioSessao } from "@/lib/auth/usuario";
-import { formatCurrencyBRL } from "@/lib/format";
+import { formatCurrencyBRL } from "@/lib/utils/formatacao";
 import { montarResumoFila } from "@/lib/painel/clientes";
 import { calcularKpisPainel } from "@/lib/painel/kpis";
 import { carregarPainel } from "@/lib/painel/servidor";

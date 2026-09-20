@@ -1,8 +1,3 @@
-// Cliente HTTP (browser) para as rotas reais de ingestão já implementadas no
-// backend (`app/api/ingestao/**`, `app/api/definicoes-metricas`). Contratos
-// espelham exatamente o que essas rotas recebem/retornam — ver TASKS.md
-// (Módulo 2) e o código-fonte das rotas para a fonte da verdade.
-
 export type TipoOrigemIngestao = "excel" | "csv";
 
 export interface AbaDetectada {

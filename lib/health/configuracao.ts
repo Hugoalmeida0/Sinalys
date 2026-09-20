@@ -1,34 +1,15 @@
-/**
- * Personalização da página pública de Health Score (/health/[token]).
- *
- * Persistida em `entidades.atributos.health_publico` (jsonb) em vez de uma
- * coluna própria: não exige migration, e a ingestão faz merge de `atributos`
- * (lib/ingestao/normalizar.ts) — uma reimportação da planilha não apaga a
- * escolha do CS. Este módulo é client-safe (sem Supabase): o modal de
- * personalização e a rota de escrita compartilham as mesmas regras.
- */
-
 export const CHAVE_ATRIBUTO_HEALTH_PUBLICO = "health_publico";
 
-/** Máximo de destaques positivos que a página exibe (chips ficam ilegíveis além disso). */
 export const MAX_DESTAQUES_HEALTH = 6;
-/** Quantos destaques entram no modo automático (sem escolha do CS). */
+
 export const DESTAQUES_AUTOMATICOS = 3;
 export const MAX_TAMANHO_LINK_AGENDAMENTO = 500;
 
 export interface BeneficioPlano {
-  /** Estável entre deploys — é o que fica gravado na escolha do CS. */
   codigo: string;
   texto: string;
 }
 
-/**
- * Perks fixos do plano, exibidos para todo cliente (fictícios — não existe
- * ainda um cadastro real de benefícios por plano). O objetivo não é
- * informativo: é dar ao CS um motivo positivo concreto para abrir a
- * conversa de retenção, em vez de uma lista genérica de "estamos aqui pra
- * ajudar".
- */
 export const BENEFICIOS_PLANO: BeneficioPlano[] = [
   {
     codigo: "suporte_prioritario",
@@ -45,16 +26,10 @@ export const BENEFICIOS_PLANO: BeneficioPlano[] = [
 ];
 
 export interface ConfigHealthPublico {
-  /**
-   * `codigo_sinal` dos sinais que o CS escolheu destacar; `null` = automático
-   * (os primeiros N sinais dentro do esperado, ordem do motor). Um sinal
-   * escolhido que passe a ser acionado depois é omitido na renderização —
-   * nunca vira "destaque" um sinal ruim.
-   */
   destaques: string[] | null;
-  /** Códigos de `BENEFICIOS_PLANO` exibidos; `null` = todos. */
+
   beneficios: string[] | null;
-  /** URL de agendamento externo (Calendly, Google Agenda…); `null` = formulário embutido. */
+
   linkAgendamento: string | null;
   atualizadoEm: string | null;
 }
@@ -71,7 +46,6 @@ function listaDeStrings(valor: unknown): string[] | null {
   return valor.filter((v): v is string => typeof v === "string" && v.trim().length > 0);
 }
 
-/** Lê a config gravada em `atributos`; qualquer forma inesperada cai no padrão. */
 export function lerConfigHealthPublico(atributos: unknown): ConfigHealthPublico {
   if (!atributos || typeof atributos !== "object") return CONFIG_HEALTH_PADRAO;
   const bruto = (atributos as Record<string, unknown>)[CHAVE_ATRIBUTO_HEALTH_PUBLICO];
@@ -86,7 +60,6 @@ export function lerConfigHealthPublico(atributos: unknown): ConfigHealthPublico 
   };
 }
 
-/** Forma gravada no jsonb (snake_case, como o resto de `atributos`). */
 export function serializarConfigHealthPublico(config: ConfigHealthPublico): Record<string, unknown> {
   return {
     destaques: config.destaques,
@@ -96,11 +69,6 @@ export function serializarConfigHealthPublico(config: ConfigHealthPublico): Reco
   };
 }
 
-/**
- * Só http(s): o link vai para um `<a target="_blank">` numa página pública,
- * então `javascript:` ou esquemas exóticos não passam. Retorna `null` para
- * vazio (sem link) e uma mensagem de erro quando inválido.
- */
 export function validarLinkAgendamento(
   valor: unknown
 ): { link: string | null; erro?: undefined } | { link?: undefined; erro: string } {
@@ -123,22 +91,16 @@ export function validarLinkAgendamento(
   return { link: url.toString() };
 }
 
-/** Resolve os benefícios exibidos a partir da escolha gravada (códigos desconhecidos são ignorados). */
 export function resolverBeneficios(config: ConfigHealthPublico): BeneficioPlano[] {
   if (config.beneficios == null) return BENEFICIOS_PLANO;
   const escolhidos = new Set(config.beneficios);
   return BENEFICIOS_PLANO.filter((b) => escolhidos.has(b.codigo));
 }
 
-/** Frase exibida na página pública para um sinal dentro do esperado. */
 export function textoDestaque(rotuloMetrica: string): string {
   return `${rotuloMetrica}: dentro do esperado`;
 }
 
-/**
- * Resolve os destaques exibidos: escolha do CS (na ordem em que escolheu,
- * só entre os sinais que continuam dentro do esperado) ou modo automático.
- */
 export function resolverDestaques(
   config: ConfigHealthPublico,
   candidatos: { codigo: string; rotulo: string }[]

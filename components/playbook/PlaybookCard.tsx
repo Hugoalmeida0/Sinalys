@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { SoftBadge } from "@/components/ui/Badge";
-import { CheckIcon } from "@/components/icons";
-import type { Playbook } from "@/lib/mock-data";
+import { CheckIcon } from "@/components/ui/icons";
+import type { Playbook } from "@/lib/mock/dados";
 
 const categoriaClasses: Record<Playbook["categoria"], string> = {
   SLA: "bg-red-50 text-red-600",

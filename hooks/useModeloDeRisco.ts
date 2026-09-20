@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 
-/** Mesma forma de `RegraModeloDetalhada` (lib/motor/modelo.ts), do lado do cliente. */
 export interface RegraModeloUI {
   id: string;
   metrica_id: string;
@@ -40,11 +39,6 @@ export interface NovaRegraPayload {
   pontuacao_omissao?: number;
 }
 
-/**
- * Estado + ações da aba "Modelo de risco" (Módulo 5 — CRUD de pesos/regras).
- * Compartilhado entre a visão detalhada (aba própria) e o resumo (sidebar de
- * Configurações) para não duplicar a busca — ambas leem do mesmo hook.
- */
 export function useModeloDeRisco() {
   const [modelo, setModelo] = useState<ModeloResposta | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -67,8 +61,6 @@ export function useModeloDeRisco() {
   }, []);
 
   useEffect(() => {
-    // Busca inicial ao montar (sincroniza com o servidor, não deriva de
-    // props/estado) — o setState síncrono é o próprio propósito do efeito.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     carregar();
   }, [carregar]);

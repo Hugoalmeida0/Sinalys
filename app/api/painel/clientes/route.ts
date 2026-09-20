@@ -4,11 +4,6 @@ import { ehResposta, montarContextoRotaPainel } from "@/lib/painel/contexto-rota
 
 export const runtime = "nodejs";
 
-/**
- * Carteira completa na forma do painel (tela /clientes e resumo por faixa):
- * todas as entidades com predição, sem filtro de faixa nem de silenciamento,
- * ordenadas por score de risco.
- */
 export async function GET(request: Request) {
   const contexto = await montarContextoRotaPainel(request);
   if (ehResposta(contexto)) return contexto;

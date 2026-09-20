@@ -1,5 +1,5 @@
 import { ConfiguracoesTabs } from "@/components/configuracoes/ConfiguracoesTabs";
-import { SaveIcon } from "@/components/icons";
+import { SaveIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 

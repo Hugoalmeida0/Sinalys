@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { ArrowRightIcon, ClipboardIcon, InfoIcon, SlidersIcon } from "@/components/icons";
+import { ArrowRightIcon, ClipboardIcon, InfoIcon, SlidersIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { SoftBadge } from "@/components/ui/Badge";
-import { formatCurrencyBRLOuTraco } from "@/lib/format";
+import { formatCurrencyBRLOuTraco } from "@/lib/utils/formatacao";
 import {
   cenarioResolverTudo,
   limitarReducao,
@@ -14,7 +14,8 @@ import {
   type Cenario,
   type ResultadoSimulacao,
 } from "@/lib/motor/simulador";
-import { faixaRiscoLabelCurto, faixaRiscoSoftClasses } from "@/lib/risk";
+import { faixaRiscoLabelCurto } from "@/lib/risco/faixa";
+import { faixaRiscoSoftClasses } from "@/lib/risco/estilos";
 
 const ATALHOS = [
   { rotulo: "Manter", valor: 0 },
@@ -22,13 +23,6 @@ const ATALHOS = [
   { rotulo: "Zerar", valor: 100 },
 ];
 
-/**
- * Simulador "what-if": o analista ajusta quanto pretende reduzir cada sinal
- * acionado e vê, na hora, o score, a faixa e a receita em risco projetados —
- * com uma frase pronta para levar à liderança ("se zerarmos X e reduzirmos Y
- * em 20%, a receita em risco cai de R$ 12.000 para R$ 3.200").
- * A conta é a mesma do motor (lib/motor/simulador.ts), sem chamada à API.
- */
 export function SimuladorCenarios({ base, clienteId }: { base: BaseSimulacao; clienteId: string }) {
   const [cenario, setCenario] = useState<Cenario>({});
   const [copiado, setCopiado] = useState(false);
@@ -69,7 +63,6 @@ export function SimuladorCenarios({ base, clienteId }: { base: BaseSimulacao; cl
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
-      {/* Controles */}
       <Card>
         <CardHeader className="items-start">
           <div className="min-w-0">
@@ -170,7 +163,6 @@ export function SimuladorCenarios({ base, clienteId }: { base: BaseSimulacao; cl
         </CardContent>
       </Card>
 
-      {/* Resultado */}
       <div className="flex flex-col gap-6">
         <Card>
           <CardHeader className="items-center">
@@ -298,7 +290,6 @@ function listarEmPortugues(itens: string[]): string {
   return `${itens.slice(0, -1).join(", ")} e ${itens[itens.length - 1]}`;
 }
 
-/** "Se zerarmos X e reduzirmos Y em 20%, o score cai de 62 para 31 (crítico → atenção) e a receita em risco de R$ 12.000 para R$ 3.200." */
 function montarFrase(r: ResultadoSimulacao, clienteId: string): string {
   if (r.ajustes.length === 0) return "";
   const zerados = r.ajustes.filter((a) => a.reducaoPct === 100).map((a) => a.sinal.metrica.toLowerCase());

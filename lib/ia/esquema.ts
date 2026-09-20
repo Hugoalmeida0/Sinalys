@@ -1,10 +1,5 @@
 import { z } from "zod";
 
-/**
- * Contrato rígido de saída do LLM (docs/instructions.md §1, "Retorno (Output
- * Zod Schema)"). Usado por `generateObject` para forçar o formato — o modelo não
- * pode devolver prosa livre nem campos extras.
- */
 export const esquemaDiagnostico = z.object({
   diagnostico_principal: z
     .string()

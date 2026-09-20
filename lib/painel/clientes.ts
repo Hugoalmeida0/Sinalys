@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buscarTodasLinhas } from "@/lib/supabase/paginar";
-import type { FaixaRisco, TendenciaScore } from "@/lib/mock-data";
+import type { FaixaRisco, TendenciaScore } from "@/lib/risco/faixa";
 import {
   calcularFaixaReceita,
   calcularImpactoRelativo,
@@ -8,19 +8,18 @@ import {
 } from "@/lib/motor/urgencia";
 import type { MotivoCancelamento } from "@/lib/cancelamento/constantes";
 import { obterMetricaReceitaIdCache, obterProjetoInfoCache } from "./cache-estatico";
-import { lerConfigHealthPublico } from "./health-config";
+import { lerConfigHealthPublico } from "@/lib/health/configuracao";
 import type { ClientePainel } from "./tipos";
 
-/** Máximo de chips em "Principais sinais". */
 const MAX_SINAIS = 3;
-/** Variação mínima de score (pontos) para considerar tendência de subida/queda. */
+
 const LIMIAR_TENDENCIA = 3;
 const RESUMO_SEM_SINAIS = "Todos os indicadores dentro do esperado";
 
 export interface ResultadoClientesPainel {
   modeloId: string;
   clientes: ClientePainel[];
-  /** Entidades do projeto ainda sem predição sob o modelo (não entram na lista). */
+
   semPredicao: number;
 }
 
@@ -86,7 +85,6 @@ function formatarValorSinal(valor: number, unidade: string | null): string {
   return n;
 }
 
-/** Texto curto de um motivo acionado, no padrão dos chips do mock ("Uso ↓ 63%"). */
 function descreverSinal(m: MotivoLinha): string {
   const regra = normalizarRelacao(m.regras_modelo);
   const metrica = normalizarRelacao(regra?.definicoes_metricas);
@@ -114,12 +112,6 @@ function tendencia(atual: number, anterior: number | null): TendenciaScore {
   return "estavel";
 }
 
-/**
- * Monta a lista de clientes na forma do painel: última predição de cada
- * entidade sob o modelo + dados cadastrais + principais sinais + tendência +
- * variação de MRR + silenciamento vigente. Não filtra nem ordena — isso é
- * feito por `montarFilaDoDia` e pelas rotas.
- */
 export async function montarClientesPainel(params: {
   supabase: SupabaseClient;
   projetoId: string;
@@ -130,16 +122,6 @@ export async function montarClientesPainel(params: {
   const agora = params.agora ?? new Date();
   const agoraIso = agora.toISOString();
 
-  // Um round-trip ao Supabase custa ~400-500ms de latência de rede, então o
-  // que mais pesa no tempo de carga não é o volume de dados (a base é
-  // pequena) e sim QUANTOS estágios sequenciais de queries a função faz.
-  // Tudo que não depende do resultado de outra query abaixo entra neste
-  // primeiro Promise.all — incluindo `eventos_desfecho` (sem filtrar por
-  // `codigo_evento` ainda, só por `projeto_id`: a tabela tem poucas dezenas
-  // de linhas, filtrar em memória sai mais barato que esperar o `projeto`
-  // resolver pra montar a query certa). `projeto` e `definicoes_metricas` da
-  // receita nem batem no Supabase na maioria das vezes: são lidos do cache de
-  // 12h em lib/painel/cache-estatico.ts (config de tenant, muda raríssimo).
   const [
     { data: entidades, error: erroEnt },
     { data: predicoes, error: erroPred },
@@ -174,8 +156,6 @@ export async function montarClientesPainel(params: {
   if (erroPred) throw new Error(`Falha ao buscar predições: ${erroPred.message}`);
   if (erroEventos) throw new Error(`Falha ao buscar desfechos: ${erroEventos.message}`);
 
-  // Clientes com o evento de desfecho-alvo (ex. "cancelamento") já registrado —
-  // não entram na fila do dia e aparecem marcados na listagem.
   const canceladoEmPorEntidade = new Map<string, string>();
   const motivoPorEntidade = new Map<
     string,
@@ -199,7 +179,6 @@ export async function montarClientesPainel(params: {
     }
   }
 
-  // Última e penúltima predição por entidade (para score atual e tendência).
   const ultima = new Map<string, PredicaoLinha>();
   const anterior = new Map<string, PredicaoLinha>();
   for (const p of (predicoes ?? []) as PredicaoLinha[]) {
@@ -210,9 +189,6 @@ export async function montarClientesPainel(params: {
   const predicaoIds = Array.from(ultima.values()).map((p) => p.id);
   const entidadeIds = Array.from(ultima.keys());
 
-  // Segundo (e último) estágio sequencial: essas três dependem de
-  // `predicaoIds`/`entidadeIds`/`metricaReceita.id`, resolvidos acima — mas
-  // não dependem umas das outras, então continuam paralelas entre si.
   const [motivosRes, silenciamentosRes, obsRes] = await Promise.all([
     predicaoIds.length
       ? supabase
@@ -259,7 +235,6 @@ export async function montarClientesPainel(params: {
     motivosPorPredicao.set(m.predicao_id, lista);
   }
 
-  // Duas últimas observações de receita por entidade → variação de MRR.
   const receitaHistorico = new Map<string, number[]>();
   for (const o of obsRes.data ?? []) {
     const lista = receitaHistorico.get(o.entidade_id) ?? [];
@@ -273,8 +248,6 @@ export async function montarClientesPainel(params: {
     if (!atual || s.silenciado_ate > atual) silenciadoAte.set(s.entidade_id, s.silenciado_ate);
   }
 
-  // Faixa de receita da carteira ATIVA — base da escala log do impacto relativo.
-  // Cancelados ficam de fora para não esticar a escala com contas que já saíram.
   const faixaReceita = calcularFaixaReceita(
     (entidades ?? [])
       .filter((e) => !canceladoEmPorEntidade.has(e.id))
@@ -292,7 +265,7 @@ export async function montarClientesPainel(params: {
     }
 
     const pontuacao = numero(p.pontuacao) ?? 0;
-    // Receita ausente fica null (não 0): "não sei quanto paga" ≠ "não paga nada".
+
     const mrr = numero(p.valor_impacto);
     const porte = atributoTexto(e.atributos, "porte");
     const motivos = (motivosPorPredicao.get(p.id) ?? []).sort(
@@ -343,19 +316,12 @@ export async function montarClientesPainel(params: {
   return { modeloId, clientes, semPredicao };
 }
 
-/** Faixas que entram na fila do dia por padrão. */
 export const FAIXAS_FILA_PADRAO: FaixaRisco[] = ["critico", "alerta"];
 
-/** Ordem da fila: Score de Prioridade desc; empate por risco desc. */
 export function compararPrioridade(a: ClientePainel, b: ClientePainel): number {
   return b.scorePrioridade - a.scorePrioridade || b.scoreRisco - a.scoreRisco;
 }
 
-/**
- * Fila de priorização: só as faixas pedidas, sem silenciados (a menos que
- * solicitado), ordenada por Score de Prioridade (risco modulado pelo impacto
- * financeiro relativo — `lib/motor/urgencia.ts`).
- */
 export function montarFilaDoDia(
   clientes: ClientePainel[],
   opcoes: { faixas?: FaixaRisco[]; incluirSilenciados?: boolean } = {}
@@ -368,17 +334,10 @@ export function montarFilaDoDia(
     .sort(compararPrioridade);
 }
 
-/** Todas as faixas de risco, da mais grave para a mais leve. */
 export const TODAS_FAIXAS: FaixaRisco[] = ["critico", "alerta", "atencao", "saudavel"];
 
-/** Quantos clientes o "Breve resumo da sua fila hoje" da tela inicial mostra. */
 export const TAMANHO_RESUMO_FILA = 5;
 
-/**
- * Top N da fila considerando todas as faixas: quem mais merece atenção pelo
- * Score de Urgência, mesmo que a carteira não tenha ninguém em crítico/alerta.
- * Continua excluindo cancelados e silenciados.
- */
 export function montarResumoFila(
   clientes: ClientePainel[],
   limite = TAMANHO_RESUMO_FILA

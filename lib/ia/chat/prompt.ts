@@ -1,11 +1,6 @@
-/**
- * Contexto de tela enviado pelo front a cada mensagem: onde o analista está
- * e que cliente está vendo. É o que permite "este cliente" resolver sozinho.
- */
 export interface ContextoTelaChat {
-  /** Caminho atual do app, ex: "/clientes/C004". */
   caminho?: string;
-  /** Código do cliente em foco, quando a tela é o detalhe de um cliente. */
+
   clienteId?: string;
 }
 

@@ -8,20 +8,10 @@ import { montarContextoAtual, resolverEntidade } from "@/lib/ia/contexto";
 import { descreverPerfilRisco } from "@/lib/ia/descricao";
 import { buscarCasosSimilares } from "@/lib/ia/lookalike";
 
-/**
- * Ferramentas do assistente conversacional — todas SOMENTE LEITURA (decisão
- * do usuário): o modelo consulta dados reais para fundamentar a resposta, mas
- * não grava nada. Qualquer ação (registrar contato, gerar diagnóstico) fica
- * com o analista, na UI.
- *
- * Cada ferramenta recebe o escopo do projeto pronto; o modelo nunca escolhe o
- * tenant. As saídas são compactadas de propósito: o que volta aqui entra no
- * contexto do modelo, e listas cruas de 80 clientes só custariam tokens.
- */
 export interface EscopoFerramentas {
   supabase: SupabaseClient;
   projetoId: string;
-  /** null quando o projeto não tem modelo ativo — as ferramentas explicam isso ao modelo. */
+
   modeloId: string | null;
 }
 
@@ -146,7 +136,6 @@ export function criarFerramentasAssistente(escopo: EscopoFerramentas) {
             modeloId: escopo.modeloId ?? undefined,
           });
         } catch {
-          // Sem predição: ainda devolvemos cadastro/contatos, e dizemos ao modelo o que falta.
         }
 
         const [diagnosticoRes, contatosRes, desfechosRes] = await Promise.all([

@@ -1,20 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { FaixaRisco } from "@/lib/mock-data";
+import type { FaixaRisco } from "@/lib/risco/faixa";
 import { calcularScoreUrgencia } from "@/lib/motor/urgencia";
 import { obterProjetoInfoCache } from "@/lib/painel/cache-estatico";
 import type { ContextoAtual, SinalRisco } from "./tipos";
 
-/** Lançado quando a entidade ainda não passou pelo motor matemático. */
 export class SemPredicaoError extends Error {}
 
-/** Lançado quando o identificador enviado não corresponde a nenhuma entidade do projeto. */
 export class EntidadeNaoEncontradaError extends Error {}
 
-/**
- * Resolve a entidade por UUID interno ou pelo `id_externo` da planilha de
- * origem (o "C001" dos exemplos de docs/instructions.md). Aceitar os dois evita
- * que o painel precise conhecer os UUIDs do banco.
- */
 export async function resolverEntidade(
   supabase: SupabaseClient,
   projetoId: string,
@@ -36,14 +29,6 @@ export async function resolverEntidade(
   return data ?? null;
 }
 
-/**
- * Monta o Contexto Atual (raio-x) a partir da última predição persistida da
- * entidade, incluindo os motivos traduzidos para o rótulo de negócio da métrica.
- *
- * Não recalcula o motor: o z-score de carteira depende de toda a carteira, então
- * recalcular uma entidade isolada seria caro e inconsistente. Se não existe
- * predição, lança `SemPredicaoError` para a rota responder 422.
- */
 export async function montarContextoAtual(params: {
   supabase: SupabaseClient;
   projetoId: string;
@@ -73,9 +58,6 @@ export async function montarContextoAtual(params: {
     );
   }
 
-  // `projeto` vem do cache de 12h (config de tenant, muda raríssimo — ver
-  // lib/painel/cache-estatico.ts); `motivos` depende só de `predicao`, já
-  // resolvida acima — rodar as duas em paralelo poupa um round-trip.
   const [projeto, { data: motivos, error: erroMotivos }] = await Promise.all([
     obterProjetoInfoCache(projetoId),
     supabase
@@ -89,7 +71,6 @@ export async function montarContextoAtual(params: {
   if (erroMotivos) throw new Error(`Falha ao buscar motivos da predição: ${erroMotivos.message}`);
 
   const sinais: SinalRisco[] = (motivos ?? []).map((m) => {
-    // O PostgREST devolve o relacionamento como objeto ou array conforme a cardinalidade inferida.
     const regra = normalizarRelacao(m.regras_modelo);
     const metrica = normalizarRelacao(regra?.definicoes_metricas);
     return {
@@ -103,7 +84,6 @@ export async function montarContextoAtual(params: {
     };
   });
 
-  // Sinais mais pesados primeiro: é a ordem em que o prompt deve apresentá-los.
   sinais.sort((a, b) => b.pontos - a.pontos);
 
   const pontuacao = Number(predicao.pontuacao);

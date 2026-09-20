@@ -7,11 +7,10 @@ export interface UsuarioSessao {
   nome: string;
   cargo: string | null;
   iniciais: string;
-  /** Projeto do usuário (app_metadata — não editável pelo próprio usuário). */
+
   projetoId: string | null;
 }
 
-/** Monta a forma exibida no painel a partir do registro do Supabase Auth. */
 export function montarUsuarioSessao(user: User): UsuarioSessao {
   const email = user.email ?? "";
   const nome =
@@ -32,10 +31,6 @@ export function montarUsuarioSessao(user: User): UsuarioSessao {
   };
 }
 
-/**
- * Usuário autenticado da requisição atual (Server Components / Route Handlers),
- * ou `null` sem sessão válida. `getUser` valida o token no servidor Auth.
- */
 export async function obterUsuarioSessao(): Promise<UsuarioSessao | null> {
   const supabase = await criarClienteSupabaseServidor();
   const { data, error } = await supabase.auth.getUser();

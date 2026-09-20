@@ -1,5 +1,6 @@
-import type { FaixaRisco } from "@/lib/mock-data";
-import { faixaRiscoFromScore, scoreBadgeClasses } from "@/lib/risk";
+import type { FaixaRisco } from "@/lib/risco/faixa";
+import { faixaRiscoFromScore } from "@/lib/risco/faixa";
+import { scoreBadgeClasses } from "@/lib/risco/estilos";
 
 export function ScorePill({
   score,
@@ -9,7 +10,7 @@ export function ScorePill({
 }: {
   score: number;
   max: number;
-  /** Faixa de risco já calculada (fonte da verdade). Se omitida, é derivada do score. */
+
   faixa?: FaixaRisco;
   size?: "sm" | "md";
 }) {

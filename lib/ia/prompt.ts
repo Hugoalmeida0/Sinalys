@@ -1,12 +1,6 @@
-import { formatCurrencyBRL } from "@/lib/format";
+import { formatCurrencyBRL } from "@/lib/utils/formatacao";
 import type { CasoSimilar, ContextoAtual } from "./tipos";
 
-/**
- * Persona do "Analista Virtual" (docs/inteligencia.md §3). As restrições são
- * deliberadamente duras: o valor do produto está em recomendações específicas e
- * ancoradas nos dados, e um LLM sem essas amarras produz conselho genérico de
- * Customer Success que o analista já sabe.
- */
 export const PROMPT_SISTEMA = `Você é um gestor sênior de Customer Success analisando risco de churn em uma carteira B2B.
 
 Escreva em português do Brasil, em tom direto e profissional, dirigido a um analista que vai agir hoje.
@@ -21,7 +15,6 @@ Regras invioláveis:
 - Em "plano_acao_imediato", cada item é o texto puro de uma ação. Não comece o item com número, marcador ou "1." — a numeração é feita por quem exibe a lista.
 - Ao comparar com casos históricos, descreva cada caso pelo que o texto dele realmente contém. Não atribua a um caso sinais que ele não apresenta, e não extrapole percentuais a partir de dois ou três casos.`;
 
-/** Monta o prompt do usuário cruzando Contexto Atual + Contexto Histórico (docs/inteligencia.md §2). */
 export function montarPromptUsuario(params: {
   contexto: ContextoAtual;
   casosSimilares: CasoSimilar[];

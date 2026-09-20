@@ -1,4 +1,4 @@
-import { formatCurrencyBRL } from "@/lib/format";
+import { formatCurrencyBRL } from "@/lib/utils/formatacao";
 
 export function BarraHorizontal({
   dados,

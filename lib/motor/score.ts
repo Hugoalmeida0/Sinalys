@@ -1,21 +1,6 @@
-import { faixaRiscoFromScore } from "@/lib/risk";
+import { faixaRiscoFromScore } from "@/lib/risco/faixa";
 import type { ResultadoPredicaoEntidade, ResultadoRegraEntidade } from "./tipos";
 
-/**
- * Task 3.2 — Score de Risco: consolida os resultados normalizados (Task 3.1)
- * de todas as regras do modelo em um único termômetro 0-100 por entidade.
- *
- * `docs/motor-matematico.md` descreve `Risco Base = Σ (Valor Normalizado ×
- * Peso)`, mas essa soma pura pode ultrapassar 100 quando há múltiplas regras
- * (violaria o CHECK 0-100 de `predicoes.pontuacao`). Por isso o score final é
- * a MÉDIA PONDERADA — `Σ(valor × peso) / Σ(peso)` — considerando apenas as
- * regras avaliáveis para a entidade; regras "não avaliáveis" (acionado=null)
- * ficam de fora do numerador e do denominador e reduzem a `cobertura`.
- *
- * Omissão (métrica ausente) só entra como avaliável quando a regra define
- * `pontuacao_omissao`; sem isso ela é "não avaliável" e a cobertura cai — o
- * painel usa a cobertura para distinguir "saudável" de "sem dados".
- */
 export function calcularPredicaoEntidade(params: {
   entidadeId: string;
   motivos: ResultadoRegraEntidade[];

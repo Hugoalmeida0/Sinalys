@@ -9,15 +9,15 @@ import {
   PencilIcon,
   PlusCircleIcon,
   XIcon,
-} from "@/components/icons";
+} from "@/components/ui/icons";
 import { MarcaIntegracao } from "@/components/configuracoes/MarcaIntegracao";
 import { PesosDetalhados, PesosResumo } from "@/components/configuracoes/ModeloDeRisco";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { Button } from "@/components/ui/Button";
 import { SoftBadge } from "@/components/ui/Badge";
 import { Toggle } from "@/components/ui/Toggle";
-import { useModeloDeRisco } from "@/lib/motor/hooks/useModeloDeRisco";
-import { equipe, integracoes, usuarioAtual, type Integracao } from "@/lib/mock-data";
+import { useModeloDeRisco } from "@/hooks/useModeloDeRisco";
+import { equipe, integracoes, usuarioAtual, type Integracao } from "@/lib/mock/dados";
 
 const tabs = [
   "Geral",
@@ -31,8 +31,7 @@ type Tab = (typeof tabs)[number];
 
 export function ConfiguracoesTabs() {
   const [tab, setTab] = useState<Tab>("Geral");
-  // Buscado uma vez aqui e repassado para a aba detalhada e o resumo da
-  // sidebar — evita duas chamadas independentes a /api/modelo.
+
   const modeloState = useModeloDeRisco();
 
   return (
