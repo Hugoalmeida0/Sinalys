@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { FAIXAS_FILA_PADRAO } from "./clientes";
+import { obterProjetoInfoCache } from "./cache-estatico";
 import type { ClientePainel, KpisPainel } from "./tipos";
 
 const DIAS_POR_MES = 30.44;
@@ -27,21 +28,18 @@ async function calcularAntecedencias(
   projetoId: string,
   modeloId: string
 ): Promise<number[]> {
-  const { data: projeto, error: erroProjeto } = await supabase
-    .from("projetos")
-    .select("codigo_evento_alvo")
-    .eq("id", projetoId)
-    .maybeSingle();
-  if (erroProjeto) throw new Error(`Falha ao buscar projeto: ${erroProjeto.message}`);
+  // `projeto` vem do cache de 12h (lib/painel/cache-estatico.ts) — o filtro
+  // por `codigo_evento_alvo` é aplicado aqui em memória, então não precisa
+  // esperar essa leitura pra montar a query de `eventos_desfecho`.
+  const [projeto, { data: eventosBrutos, error: erroEventos }] = await Promise.all([
+    obterProjetoInfoCache(projetoId),
+    supabase.from("eventos_desfecho").select("entidade_id, ocorrido_em, codigo_evento").eq("projeto_id", projetoId),
+  ]);
+  if (erroEventos) throw new Error(`Falha ao buscar desfechos: ${erroEventos.message}`);
   if (!projeto) return [];
 
-  const { data: eventos, error: erroEventos } = await supabase
-    .from("eventos_desfecho")
-    .select("entidade_id, ocorrido_em")
-    .eq("projeto_id", projetoId)
-    .eq("codigo_evento", projeto.codigo_evento_alvo);
-  if (erroEventos) throw new Error(`Falha ao buscar desfechos: ${erroEventos.message}`);
-  if (!eventos?.length) return [];
+  const eventos = (eventosBrutos ?? []).filter((e) => e.codigo_evento === projeto.codigo_evento_alvo);
+  if (!eventos.length) return [];
 
   const { data: predicoes, error: erroPred } = await supabase
     .from("predicoes")

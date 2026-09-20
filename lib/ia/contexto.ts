@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FaixaRisco } from "@/lib/mock-data";
 import { calcularScoreUrgencia } from "@/lib/motor/urgencia";
+import { obterProjetoInfoCache } from "@/lib/painel/cache-estatico";
 import type { ContextoAtual, SinalRisco } from "./tipos";
 
 /** Lançado quando a entidade ainda não passou pelo motor matemático. */
@@ -72,18 +73,18 @@ export async function montarContextoAtual(params: {
     );
   }
 
-  const { data: projeto } = await supabase
-    .from("projetos")
-    .select("rotulo_entidade")
-    .eq("id", projetoId)
-    .maybeSingle();
-
-  const { data: motivos, error: erroMotivos } = await supabase
-    .from("motivos_predicao")
-    .select(
-      "acionado, valor_observado, pontos, regras_modelo(codigo_sinal, peso, definicoes_metricas(rotulo, unidade))"
-    )
-    .eq("predicao_id", predicao.id);
+  // `projeto` vem do cache de 12h (config de tenant, muda raríssimo — ver
+  // lib/painel/cache-estatico.ts); `motivos` depende só de `predicao`, já
+  // resolvida acima — rodar as duas em paralelo poupa um round-trip.
+  const [projeto, { data: motivos, error: erroMotivos }] = await Promise.all([
+    obterProjetoInfoCache(projetoId),
+    supabase
+      .from("motivos_predicao")
+      .select(
+        "acionado, valor_observado, pontos, regras_modelo(codigo_sinal, peso, definicoes_metricas(rotulo, unidade))"
+      )
+      .eq("predicao_id", predicao.id),
+  ]);
 
   if (erroMotivos) throw new Error(`Falha ao buscar motivos da predição: ${erroMotivos.message}`);
 

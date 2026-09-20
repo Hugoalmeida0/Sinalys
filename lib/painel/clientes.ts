@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buscarTodasLinhas } from "@/lib/supabase/paginar";
 import type { FaixaRisco, TendenciaScore } from "@/lib/mock-data";
-import { CODIGO_METRICA_RECEITA_MENSAL } from "@/lib/motor/constantes";
 import { calcularScoreUrgencia } from "@/lib/motor/urgencia";
 import type { MotivoCancelamento } from "@/lib/cancelamento/constantes";
+import { obterMetricaReceitaIdCache, obterProjetoInfoCache } from "./cache-estatico";
 import type { ClientePainel } from "./tipos";
 
 /** Máximo de chips em "Principais sinais". */
@@ -120,10 +120,22 @@ export async function montarClientesPainel(params: {
   const agora = params.agora ?? new Date();
   const agoraIso = agora.toISOString();
 
+  // Um round-trip ao Supabase custa ~400-500ms de latência de rede, então o
+  // que mais pesa no tempo de carga não é o volume de dados (a base é
+  // pequena) e sim QUANTOS estágios sequenciais de queries a função faz.
+  // Tudo que não depende do resultado de outra query abaixo entra neste
+  // primeiro Promise.all — incluindo `eventos_desfecho` (sem filtrar por
+  // `codigo_evento` ainda, só por `projeto_id`: a tabela tem poucas dezenas
+  // de linhas, filtrar em memória sai mais barato que esperar o `projeto`
+  // resolver pra montar a query certa). `projeto` e `definicoes_metricas` da
+  // receita nem batem no Supabase na maioria das vezes: são lidos do cache de
+  // 12h em lib/painel/cache-estatico.ts (config de tenant, muda raríssimo).
   const [
     { data: entidades, error: erroEnt },
     { data: predicoes, error: erroPred },
-    { data: projeto, error: erroProjeto },
+    projeto,
+    { data: eventos, error: erroEventos },
+    metricaReceitaId,
   ] = await Promise.all([
     supabase
       .from("entidades")
@@ -138,11 +150,19 @@ export async function montarClientesPainel(params: {
         .order("entidade_id", { ascending: true })
         .order("referencia_em", { ascending: false })
     ),
-    supabase.from("projetos").select("codigo_evento_alvo").eq("id", projetoId).maybeSingle(),
+    obterProjetoInfoCache(projetoId),
+    buscarTodasLinhas(() =>
+      supabase
+        .from("eventos_desfecho")
+        .select("entidade_id, codigo_evento, ocorrido_em, motivo_categoria, motivo_detalhe")
+        .eq("projeto_id", projetoId)
+        .order("entidade_id", { ascending: true })
+    ),
+    obterMetricaReceitaIdCache(projetoId),
   ]);
   if (erroEnt) throw new Error(`Falha ao buscar entidades: ${erroEnt.message}`);
   if (erroPred) throw new Error(`Falha ao buscar predições: ${erroPred.message}`);
-  if (erroProjeto) throw new Error(`Falha ao buscar projeto: ${erroProjeto.message}`);
+  if (erroEventos) throw new Error(`Falha ao buscar desfechos: ${erroEventos.message}`);
 
   // Clientes com o evento de desfecho-alvo (ex. "cancelamento") já registrado —
   // não entram na fila do dia e aparecem marcados na listagem.
@@ -152,16 +172,8 @@ export async function montarClientesPainel(params: {
     { categoria: MotivoCancelamento; detalhe: string | null }
   >();
   if (projeto?.codigo_evento_alvo) {
-    const { data: eventos, error: erroEventos } = await buscarTodasLinhas(() =>
-      supabase
-        .from("eventos_desfecho")
-        .select("entidade_id, ocorrido_em, motivo_categoria, motivo_detalhe")
-        .eq("projeto_id", projetoId)
-        .eq("codigo_evento", projeto.codigo_evento_alvo)
-        .order("entidade_id", { ascending: true })
-    );
-    if (erroEventos) throw new Error(`Falha ao buscar desfechos: ${erroEventos.message}`);
     for (const evento of eventos) {
+      if (evento.codigo_evento !== projeto.codigo_evento_alvo) continue;
       const atual = canceladoEmPorEntidade.get(evento.entidade_id);
       if (!atual || evento.ocorrido_em > atual) {
         canceladoEmPorEntidade.set(evento.entidade_id, evento.ocorrido_em);
@@ -188,7 +200,10 @@ export async function montarClientesPainel(params: {
   const predicaoIds = Array.from(ultima.values()).map((p) => p.id);
   const entidadeIds = Array.from(ultima.keys());
 
-  const [motivosRes, receitaMetricaRes, silenciamentosRes] = await Promise.all([
+  // Segundo (e último) estágio sequencial: essas três dependem de
+  // `predicaoIds`/`entidadeIds`/`metricaReceita.id`, resolvidos acima — mas
+  // não dependem umas das outras, então continuam paralelas entre si.
+  const [motivosRes, silenciamentosRes, obsRes] = await Promise.all([
     predicaoIds.length
       ? supabase
           .from("motivos_predicao")
@@ -198,12 +213,6 @@ export async function montarClientesPainel(params: {
           .in("predicao_id", predicaoIds)
           .eq("acionado", true)
       : Promise.resolve({ data: [], error: null }),
-    supabase
-      .from("definicoes_metricas")
-      .select("id")
-      .eq("projeto_id", projetoId)
-      .eq("codigo", CODIGO_METRICA_RECEITA_MENSAL)
-      .maybeSingle(),
     entidadeIds.length
       ? supabase
           .from("silenciamentos_alerta")
@@ -212,11 +221,26 @@ export async function montarClientesPainel(params: {
           .gt("silenciado_ate", agoraIso)
           .in("entidade_id", entidadeIds)
       : Promise.resolve({ data: [], error: null }),
+    metricaReceitaId && entidadeIds.length
+      ? buscarTodasLinhas(() =>
+          supabase
+            .from("observacoes")
+            .select("entidade_id, valor_numero")
+            .eq("projeto_id", projetoId)
+            .eq("metrica_id", metricaReceitaId)
+            .in("entidade_id", entidadeIds)
+            .not("valor_numero", "is", null)
+            .lte("observado_em", agoraIso)
+            .order("entidade_id", { ascending: true })
+            .order("observado_em", { ascending: false })
+        )
+      : Promise.resolve({ data: [], error: null }),
   ]);
   if (motivosRes.error) throw new Error(`Falha ao buscar motivos: ${motivosRes.error.message}`);
   if (silenciamentosRes.error) {
     throw new Error(`Falha ao buscar silenciamentos: ${silenciamentosRes.error.message}`);
   }
+  if (obsRes.error) throw new Error(`Falha ao buscar receita: ${obsRes.error.message}`);
 
   const motivosPorPredicao = new Map<string, MotivoLinha[]>();
   for (const m of (motivosRes.data ?? []) as unknown as MotivoLinha[]) {
@@ -227,25 +251,10 @@ export async function montarClientesPainel(params: {
 
   // Duas últimas observações de receita por entidade → variação de MRR.
   const receitaHistorico = new Map<string, number[]>();
-  if (receitaMetricaRes.data && entidadeIds.length) {
-    const { data: obs, error } = await buscarTodasLinhas(() =>
-      supabase
-        .from("observacoes")
-        .select("entidade_id, valor_numero")
-        .eq("projeto_id", projetoId)
-        .eq("metrica_id", receitaMetricaRes.data!.id)
-        .in("entidade_id", entidadeIds)
-        .not("valor_numero", "is", null)
-        .lte("observado_em", agoraIso)
-        .order("entidade_id", { ascending: true })
-        .order("observado_em", { ascending: false })
-    );
-    if (error) throw new Error(`Falha ao buscar receita: ${error.message}`);
-    for (const o of obs ?? []) {
-      const lista = receitaHistorico.get(o.entidade_id) ?? [];
-      if (lista.length < 2) lista.push(Number(o.valor_numero));
-      receitaHistorico.set(o.entidade_id, lista);
-    }
+  for (const o of obsRes.data ?? []) {
+    const lista = receitaHistorico.get(o.entidade_id) ?? [];
+    if (lista.length < 2) lista.push(Number(o.valor_numero));
+    receitaHistorico.set(o.entidade_id, lista);
   }
 
   const silenciadoAte = new Map<string, string>();
