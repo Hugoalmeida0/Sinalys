@@ -8,14 +8,45 @@ import {
 } from "@/components/icons";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { formatCurrencyBRL } from "@/lib/format";
 import { obterUsuarioSessao } from "@/lib/auth/usuario";
-import { getFilaDoDia, kpisDashboard } from "@/lib/mock-data";
+import { formatCurrencyBRL } from "@/lib/format";
+import { montarFilaDoDia } from "@/lib/painel/clientes";
+import { calcularKpisPainel } from "@/lib/painel/kpis";
+import { carregarPainel } from "@/lib/painel/servidor";
+import type { KpisPainel } from "@/lib/painel/tipos";
+
+const KPIS_VAZIOS: KpisPainel = {
+  receitaEmRiscoAno: 0,
+  clientesEmAlerta: 0,
+  totalCarteira: 0,
+  antecedenciaMediaMeses: null,
+  antecedenciaMedianaMeses: null,
+  antecedenciaMaximaMeses: null,
+  desfechosAntecipados: 0,
+  clientesContatados7d: 0,
+};
+
+function meses(valor: number | null): string {
+  return valor == null ? "—" : valor.toLocaleString("pt-BR", { minimumFractionDigits: 1 });
+}
 
 export default async function DashboardPage() {
-  const fila = getFilaDoDia();
-  const usuario = await obterUsuarioSessao();
+  const [usuario, painel] = await Promise.all([obterUsuarioSessao(), carregarPainel()]);
   const primeiroNome = usuario?.nome.split(" ")[0] ?? "";
+
+  const kpis = painel.modeloId
+    ? await calcularKpisPainel({
+        supabase: painel.supabase,
+        projetoId: painel.projetoId,
+        modeloId: painel.modeloId,
+        clientes: painel.clientes,
+      })
+    : KPIS_VAZIOS;
+  const fila = montarFilaDoDia(painel.clientes);
+  const segmentos = Array.from(new Set(painel.clientes.map((c) => c.segmento).filter(Boolean))).sort();
+  const percentualAlerta = kpis.totalCarteira
+    ? Math.round((kpis.clientesEmAlerta / kpis.totalCarteira) * 100)
+    : 0;
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
@@ -29,32 +60,36 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <KpiCard
               label="Receita em risco (ano)"
-              value={formatCurrencyBRL(kpisDashboard.receitaEmRiscoAno)}
-              description={`${kpisDashboard.clientesEmAlerta} clientes com risco relevante`}
+              value={formatCurrencyBRL(kpis.receitaEmRiscoAno)}
+              description={`${kpis.clientesEmAlerta} clientes com risco relevante`}
               tone="red"
               icon={ArrowUpRightIcon}
             />
             <KpiCard
               label="Clientes em alerta"
-              value={`${kpisDashboard.clientesEmAlerta}`}
-              description={`de ${kpisDashboard.totalCarteira} na carteira (${Math.round(
-                (kpisDashboard.clientesEmAlerta / kpisDashboard.totalCarteira) * 100,
-              )}%)`}
+              value={`${kpis.clientesEmAlerta}`}
+              description={`de ${kpis.totalCarteira} na carteira (${percentualAlerta}%)`}
               tone="amber"
               icon={UsersIcon}
             />
             <KpiCard
               label="Antecedência média"
-              value={`${kpisDashboard.antecedenciaMediaMeses.toLocaleString("pt-BR", {
-                minimumFractionDigits: 1,
-              })} meses`}
-              description={`(mediana ${kpisDashboard.antecedenciaMedianaMeses} | máx. ${kpisDashboard.antecedenciaMaximaMeses})`}
+              value={
+                kpis.antecedenciaMediaMeses == null
+                  ? "—"
+                  : `${meses(kpis.antecedenciaMediaMeses)} meses`
+              }
+              description={
+                kpis.antecedenciaMediaMeses == null
+                  ? "sem desfechos antecipados ainda"
+                  : `(mediana ${meses(kpis.antecedenciaMedianaMeses)} | máx. ${meses(kpis.antecedenciaMaximaMeses)})`
+              }
               tone="blue"
               icon={CalendarIcon}
             />
             <KpiCard
               label="Clientes contatados"
-              value={`${kpisDashboard.clientesContatados7d}`}
+              value={`${kpis.clientesContatados7d}`}
               description="nos últimos 7 dias"
               tone="emerald"
               icon={CheckIcon}
@@ -75,7 +110,17 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <FilaDoDia clientes={fila} />
+      <FilaDoDia
+        clientes={fila}
+        segmentos={segmentos}
+        mensagemVazia={
+          !painel.modeloId
+            ? "Nenhum modelo de risco ativo no projeto. Ative um modelo para gerar a fila."
+            : painel.clientes.length === 0
+              ? "Nenhuma predição calculada ainda. Rode o motor de risco após a ingestão de dados."
+              : "Nenhum cliente em risco crítico ou alerta hoje."
+        }
+      />
     </div>
   );
 }

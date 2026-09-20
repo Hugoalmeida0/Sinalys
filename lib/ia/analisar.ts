@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { generateObject } from "ai";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { criarProvedorGoogle } from "./provedor";
+import { criarProvedorOpenRouter } from "./provedor";
 import { obterModeloEmbedding, obterModeloLlm } from "./constantes";
 import {
   EntidadeNaoEncontradaError,
@@ -28,7 +28,7 @@ export interface ResultadoAnalise {
  * Task 4.3 — Orquestração RAG + LLM.
  *
  * Consolida Contexto Atual (raio-x do motor matemático) e Contexto Histórico
- * (lookalike vetorial), gera o diagnóstico estruturado com o Gemini e persiste
+ * (lookalike vetorial), gera o diagnóstico estruturado via OpenRouter e persiste
  * em `diagnosticos_ia`. Escrito como função pura de rota para ser reaproveitado
  * pelo Vercel Cron do Módulo 5.4 sem passar por HTTP.
  */
@@ -69,18 +69,20 @@ export async function analisarRiscoEntidade(params: {
     entidadeExcluida: entidade.id,
   });
 
-  // 3. Prompting e IA: contrato de saída forçado por schema Zod.
-  const google = criarProvedorGoogle();
+  // 3. Prompting e IA: contrato de saída forçado por schema Zod (vira
+  //    `response_format: json_schema` na OpenRouter — verificado no modelo padrão).
+  const openrouter = criarProvedorOpenRouter();
   const modeloLlm = obterModeloLlm();
 
-  const { object: diagnostico } = await generateObject({
-    model: google(modeloLlm),
+  const { object: bruto } = await generateObject({
+    model: openrouter.chat(modeloLlm),
     schema: esquemaDiagnostico,
     schemaName: "DiagnosticoChurn",
     schemaDescription: "Diagnóstico de risco de churn e plano de ação prescritivo para Customer Success.",
     system: PROMPT_SISTEMA,
     prompt: montarPromptUsuario({ contexto, casosSimilares }),
   });
+  const diagnostico = normalizarDiagnostico(bruto);
 
   const modeloEmbedding = obterModeloEmbedding();
   // Quando `persistir: false`, o id é só um identificador de correlação da resposta.
@@ -106,6 +108,24 @@ export async function analisarRiscoEntidade(params: {
     diagnostico,
     modelo_ia: modeloLlm,
     modelo_embedding: modeloEmbedding,
+  };
+}
+
+/**
+ * O modelo tende a numerar os itens do plano ("1. Ligar para...") mesmo
+ * instruído a não fazê-lo — a numeração é responsabilidade de quem exibe a
+ * lista, e duplica quando vem embutida. Remove prefixos de numeração/marcador e
+ * descarta itens que ficaram vazios, mantendo o mínimo de 1 exigido pelo schema.
+ */
+export function normalizarDiagnostico(diagnostico: Diagnostico): Diagnostico {
+  const plano = diagnostico.plano_acao_imediato
+    // Até 2 dígitos: numeração de lista, nunca um ano ("2026-09-20: ...") ou quantidade.
+    .map((item) => item.replace(/^\s*(?:\d{1,2}\s*[.)\-–:]|[-*•])\s*/, "").trim())
+    .filter((item) => item.length > 0);
+
+  return {
+    ...diagnostico,
+    plano_acao_imediato: plano.length > 0 ? plano : diagnostico.plano_acao_imediato,
   };
 }
 

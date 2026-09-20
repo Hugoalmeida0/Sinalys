@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
-import { obterProjetoIdPadrao } from "@/lib/ingestao/constantes";
+import { resolverProjetoId } from "@/lib/painel/projeto";
 import { calcularPredicoesProjeto } from "@/lib/motor/calcular";
 
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const corpo = await request.json().catch(() => ({}));
 
-  const projetoId: string = corpo?.projeto_id || obterProjetoIdPadrao();
+  const projetoId = await resolverProjetoId(corpo?.projeto_id);
 
   let referenciaEm: Date;
   if (corpo?.referencia_em) {

@@ -21,7 +21,7 @@ export function AppShell({ usuario, children }: { usuario: UsuarioSessao; childr
         </div>
 
         <MobileNav />
-        <AssistenteWidget />
+        <AssistenteWidget nomeUsuario={usuario.nome} />
       </div>
     </AssistenteProvider>
   );

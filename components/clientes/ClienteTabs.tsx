@@ -26,7 +26,8 @@ import { Select } from "@/components/ui/Select";
 import { SoftBadge } from "@/components/ui/Badge";
 import { RegistrarContatoTrigger } from "@/components/RegistrarContatoTrigger";
 import { formatCurrencyBRL, formatDatePtBR, mesAnoPtBR, tempoDesde } from "@/lib/format";
-import type { DetalheCliente, EventoHistorico } from "@/lib/mock-data";
+import type { EventoHistorico } from "@/lib/mock-data";
+import type { DetalheClientePainel as DetalheCliente } from "@/lib/painel/detalhe";
 import {
   faixaRiscoLabel,
   faixaRiscoTextClasses,

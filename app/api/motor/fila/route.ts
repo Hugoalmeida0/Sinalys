@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
-import { obterProjetoIdPadrao } from "@/lib/ingestao/constantes";
+import { resolverProjetoId } from "@/lib/painel/projeto";
 import { ordenarFilaUrgencia } from "@/lib/motor/urgencia";
 
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const supabase = criarClienteSupabaseAdmin();
   const { searchParams } = new URL(request.url);
-  const projetoId = searchParams.get("projeto_id") || obterProjetoIdPadrao();
+  const projetoId = await resolverProjetoId(searchParams.get("projeto_id"));
 
   let modeloId = searchParams.get("modelo_id");
   if (!modeloId) {

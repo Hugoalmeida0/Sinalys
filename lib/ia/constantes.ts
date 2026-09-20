@@ -1,19 +1,33 @@
 /**
  * Módulo 4 — Inteligência, RAG e Orquestração de IA.
  *
+ * Arquitetura híbrida de provedores (decisão do usuário, ver TASKS.md/Módulo 4):
+ * - Geração (LLM): OpenRouter, com um modelo do tier gratuito. A chave Gemini
+ *   do projeto está com cota zero em `generateContent`.
+ * - Embeddings: Google Gemini, que funciona na chave atual, é gratuito e já
+ *   indexou a base vetorial. A OpenRouter não oferece embedding gratuito.
+ *
  * Os modelos citados em `docs/instructions.md` (`gemini-1.5-flash` e
  * `text-embedding-004`) foram retirados da API do Google e não respondem mais.
- * Os substitutos abaixo foram verificados contra a chave real do projeto.
  */
 
 /**
- * Modelo de geração usado no diagnóstico/plano de ação (Tasks 4.1 e 4.3).
- * Sobrescrevível por env var para trocar de modelo sem alterar código — útil
- * porque a escolha não pôde ser comparada empiricamente (ver TASKS.md/Módulo 4:
- * a chave do projeto está com cota zero em `generateContent`).
+ * Modelo de geração usado no diagnóstico/plano de ação (Tasks 4.1 e 4.3), no
+ * formato `fornecedor/modelo[:variante]` da OpenRouter. O sufixo `:free` importa:
+ * é o que roteia para o tier gratuito (50 requisições/dia por chave).
  */
 export function obterModeloLlm(): string {
-  return process.env.GEMINI_MODELO_LLM ?? "gemini-2.5-flash";
+  return process.env.OPENROUTER_MODELO_LLM ?? "nvidia/nemotron-3-ultra-550b-a55b:free";
+}
+
+/**
+ * Modelo do assistente conversacional (chat do painel). Separado do modelo
+ * do diagnóstico porque o critério é outro: num chat, latência pesa mais do
+ * que profundidade de raciocínio. Medido com tool calling em streaming:
+ * super-120b responde em ~6s; o ultra leva ~35s por turno.
+ */
+export function obterModeloChat(): string {
+  return process.env.OPENROUTER_MODELO_CHAT ?? "nvidia/nemotron-3-super-120b-a12b:free";
 }
 
 /**

@@ -1,16 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { XIcon } from "@/components/icons";
-
-const tiposContato = [
-  "Ligação",
-  "Reunião presencial",
-  "Videochamada",
-  "E-mail",
-  "WhatsApp",
-];
+import { TIPOS_CONTATO } from "@/lib/contatos/constantes";
 
 const proximosPassos = [
   "Agendar reunião de alinhamento",
@@ -31,20 +25,54 @@ export function RegistrarContatoModal({
   clienteId: string;
   clienteLabel: string;
 }) {
+  const router = useRouter();
+  const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   if (!open) return null;
 
   function handleClose() {
     setEnviado(false);
+    setErro(null);
+    setEnviando(false);
     onOpenChange(false);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // Mock: sem persistência real ainda — endpoint previsto na Task 5.3 (feedback loop).
-    setEnviado(true);
-    setTimeout(handleClose, 900);
+    const form = new FormData(event.currentTarget);
+    const proximoPassoEm = form.get("proximo_passo_em");
+
+    setErro(null);
+    setEnviando(true);
+    try {
+      const resposta = await fetch("/api/contatos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cliente_id: clienteId,
+          tipo: form.get("tipo"),
+          realizado_em: form.get("realizado_em"),
+          resumo: form.get("resumo"),
+          proximo_passo: form.get("proximo_passo") || undefined,
+          proximo_passo_em: proximoPassoEm || undefined,
+        }),
+      });
+      if (!resposta.ok) {
+        const corpo = await resposta.json().catch(() => null);
+        setErro(corpo?.erro ?? "Não foi possível registrar o contato.");
+        setEnviando(false);
+        return;
+      }
+      setEnviado(true);
+      // Atualiza KPIs/histórico renderizados no servidor sem recarregar a página.
+      router.refresh();
+      setTimeout(handleClose, 900);
+    } catch {
+      setErro("Falha de conexão. Tente novamente.");
+      setEnviando(false);
+    }
   }
 
   return (
@@ -81,6 +109,7 @@ export function RegistrarContatoModal({
 
           <Field label="Tipo de contato">
             <select
+              name="tipo"
               required
               defaultValue=""
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-brand-royal focus:outline-none"
@@ -88,9 +117,9 @@ export function RegistrarContatoModal({
               <option value="" disabled>
                 Selecione
               </option>
-              {tiposContato.map((tipo) => (
-                <option key={tipo} value={tipo}>
-                  {tipo}
+              {Object.entries(TIPOS_CONTATO).map(([codigo, rotulo]) => (
+                <option key={codigo} value={codigo}>
+                  {rotulo}
                 </option>
               ))}
             </select>
@@ -99,6 +128,7 @@ export function RegistrarContatoModal({
           <Field label="Data">
             <input
               type="date"
+              name="realizado_em"
               required
               defaultValue={new Date().toISOString().slice(0, 10)}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-brand-royal focus:outline-none"
@@ -107,6 +137,7 @@ export function RegistrarContatoModal({
 
           <Field label="Resumo da conversa">
             <textarea
+              name="resumo"
               required
               rows={3}
               placeholder="Descreva os principais pontos..."
@@ -117,12 +148,11 @@ export function RegistrarContatoModal({
           <div className="grid grid-cols-2 gap-3">
             <Field label="Próximo passo">
               <select
+                name="proximo_passo"
                 defaultValue=""
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-brand-royal focus:outline-none"
               >
-                <option value="" disabled>
-                  Selecione
-                </option>
+                <option value="">Nenhum</option>
                 {proximosPassos.map((passo) => (
                   <option key={passo} value={passo}>
                     {passo}
@@ -134,12 +164,18 @@ export function RegistrarContatoModal({
             <Field label="Data prevista">
               <input
                 type="date"
+                name="proximo_passo_em"
                 placeholder="dd/mm/aaaa"
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-brand-royal focus:outline-none"
               />
             </Field>
           </div>
 
+          {erro && (
+            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+              {erro}
+            </p>
+          )}
           {enviado && (
             <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
               Contato registrado com sucesso.
@@ -150,7 +186,9 @@ export function RegistrarContatoModal({
             <Button type="button" variant="secondary" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button type="submit">Salvar</Button>
+            <Button type="submit" disabled={enviando || enviado}>
+              {enviando ? "Salvando..." : "Salvar"}
+            </Button>
           </div>
         </form>
       </div>

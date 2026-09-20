@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AcoesCliente } from "@/components/AcoesCliente";
 import { ChevronRightIcon } from "@/components/icons";
 import { Badge, SoftBadge } from "@/components/ui/Badge";
-import type { DetalheCliente } from "@/lib/mock-data";
+import type { DetalheClientePainel as DetalheCliente } from "@/lib/painel/detalhe";
 import { faixaRiscoClasses, faixaRiscoLabel } from "@/lib/risk";
 
 export function ClienteHeader({ detalhe }: { detalhe: DetalheCliente }) {

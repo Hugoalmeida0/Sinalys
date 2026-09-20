@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
-import { obterProjetoIdPadrao } from "@/lib/ingestao/constantes";
+import { resolverProjetoId } from "@/lib/painel/projeto";
 import { EntidadeNaoEncontradaError } from "@/lib/ia/analisar";
 import { SemPredicaoError } from "@/lib/ia/contexto";
 import { indexarCasoHistorico } from "@/lib/ia/indexar";
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const projetoId: string = corpo?.projeto_id || obterProjetoIdPadrao();
+  const projetoId = await resolverProjetoId(corpo?.projeto_id);
 
   try {
     const resultado = await indexarCasoHistorico({

@@ -13,8 +13,17 @@ export function formatCurrencyBRL(value: number): string {
   });
 }
 
+/**
+ * Uma data só com dia ("2024-03-01") é lida pelo `Date` como meia-noite UTC e,
+ * em fusos negativos como o Brasil, vira o dia anterior. Aqui ela é tratada
+ * como data local; strings com hora seguem o parse normal.
+ */
+export function parseData(iso: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T00:00:00`) : new Date(iso);
+}
+
 export function formatDatePtBR(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", {
+  return parseData(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -23,7 +32,7 @@ export function formatDatePtBR(iso: string): string {
 
 /** Ex.: "12 de set. de 2026" — usado nas colunas de data das tabelas. */
 export function formatDateLongPtBR(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", {
+  return parseData(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -39,14 +48,14 @@ export function formatTimePtBR(iso: string): string {
 }
 
 export function formatDateShortPtBR(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", {
+  return parseData(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
   });
 }
 
 export function tempoDesde(iso: string): string {
-  const inicio = new Date(iso);
+  const inicio = parseData(iso);
   const agora = new Date();
 
   let meses =
@@ -66,7 +75,7 @@ export function tempoDesde(iso: string): string {
 }
 
 export function mesAnoPtBR(iso: string): string {
-  return new Date(iso)
+  return parseData(iso)
     .toLocaleDateString("pt-BR", { month: "short", year: "numeric" })
     .replace(".", "");
 }

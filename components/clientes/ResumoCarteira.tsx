@@ -4,7 +4,6 @@ import {
   InfoIcon,
   type IconProps,
 } from "@/components/icons";
-import { getResumoCarteira } from "@/lib/mock-data";
 import type { FaixaRisco } from "@/lib/mock-data";
 import {
   faixaRiscoIconClasses,
@@ -20,9 +19,9 @@ const icones: Record<FaixaRisco, ComponentType<IconProps>> = {
   saudavel: CircleCheckIcon,
 };
 
-export function ResumoCarteira() {
-  const resumo = getResumoCarteira();
+export type ResumoFaixa = { faixa: FaixaRisco; total: number; percentual: number };
 
+export function ResumoCarteira({ resumo }: { resumo: ResumoFaixa[] }) {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       {resumo.map(({ faixa, total, percentual }) => {

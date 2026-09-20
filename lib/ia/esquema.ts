@@ -23,7 +23,8 @@ export const esquemaDiagnostico = z.object({
     .min(1)
     .max(5)
     .describe(
-      "Ações prescritivas, específicas e executáveis pelo analista de CS nos próximos dias. Sem conselhos genéricos."
+      "Ações prescritivas, específicas e executáveis pelo analista de CS nos próximos dias. Sem conselhos genéricos. " +
+        "Cada item é o texto puro da ação: NÃO prefixar com número, marcador ou '1.', pois a numeração é feita por quem exibe a lista."
     ),
 });
 

@@ -17,7 +17,9 @@ Regras invioláveis:
 - Se um sinal foi acionado por AUSÊNCIA de dado, trate a omissão como o sinal que ela é (cliente parou de reportar ou usar o produto), não como erro de sistema.
 - Se nenhum caso histórico similar foi fornecido, diga isso com todas as letras em "analise_lookalike" e não simule uma comparação.
 - O plano de ação deve conter passos executáveis e específicos (quem contatar, sobre o quê, com que objetivo). Proibido escrever conselhos vagos como "monitorar de perto", "acompanhar o cliente" ou "reforçar o relacionamento".
-- Não prometa resultados nem garanta retenção.`;
+- Não prometa resultados nem garanta retenção.
+- Em "plano_acao_imediato", cada item é o texto puro de uma ação. Não comece o item com número, marcador ou "1." — a numeração é feita por quem exibe a lista.
+- Ao comparar com casos históricos, descreva cada caso pelo que o texto dele realmente contém. Não atribua a um caso sinais que ele não apresenta, e não extrapole percentuais a partir de dois ou três casos.`;
 
 /** Monta o prompt do usuário cruzando Contexto Atual + Contexto Histórico (docs/inteligencia.md §2). */
 export function montarPromptUsuario(params: {

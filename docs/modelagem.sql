@@ -264,4 +264,44 @@ AS $$
   LIMIT greatest(p_limite, 0);
 $$;
 
+-- Registro de contatos humanos com o cliente (Task 5.3 / KPI "clientes contatados").
+-- Alimenta o KPI de contatados nos últimos 7 dias e o histórico da tela de detalhe.
+CREATE TABLE contatos (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  projeto_id uuid NOT NULL,
+  entidade_id uuid NOT NULL,
+  tipo text NOT NULL CHECK (tipo IN (
+    'ligacao', 'reuniao_presencial', 'videochamada', 'email', 'whatsapp', 'outro')),
+  realizado_em timestamptz NOT NULL,
+  resumo text NOT NULL,
+  proximo_passo text,
+  proximo_passo_em timestamptz,
+  -- Quem registrou (auth.users.id). Sem FK para auth: usuário pode ser removido.
+  autor_usuario_id uuid,
+  autor_nome text,
+  criado_em timestamptz NOT NULL DEFAULT now(),
+  FOREIGN KEY (projeto_id, entidade_id) REFERENCES entidades(projeto_id, id)
+);
+
+CREATE INDEX idx_contatos_projeto_data ON contatos(projeto_id, realizado_em DESC);
+CREATE INDEX idx_contatos_entidade_data ON contatos(entidade_id, realizado_em DESC);
+
+-- "Silenciar alertas": tira o cliente da fila do dia até `silenciado_ate`.
+-- Histórico preservado (uma linha por silenciamento); o vigente é o de maior
+-- `silenciado_ate` ainda no futuro.
+CREATE TABLE silenciamentos_alerta (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  projeto_id uuid NOT NULL,
+  entidade_id uuid NOT NULL,
+  silenciado_ate timestamptz NOT NULL,
+  motivo text,
+  autor_usuario_id uuid,
+  criado_em timestamptz NOT NULL DEFAULT now(),
+  FOREIGN KEY (projeto_id, entidade_id) REFERENCES entidades(projeto_id, id)
+);
+
+CREATE INDEX idx_silenciamentos_projeto_vigencia
+  ON silenciamentos_alerta(projeto_id, silenciado_ate DESC);
+CREATE INDEX idx_silenciamentos_entidade ON silenciamentos_alerta(entidade_id);
+
 COMMIT;

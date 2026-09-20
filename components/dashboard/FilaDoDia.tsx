@@ -7,15 +7,25 @@ import { ChevronRightIcon } from "@/components/icons";
 import { Select } from "@/components/ui/Select";
 import { ScorePill } from "@/components/ui/ScorePill";
 import { formatCurrencyBRL } from "@/lib/format";
-import type { Cliente } from "@/lib/mock-data";
+import type { ClientePainel } from "@/lib/painel/tipos";
 
-const segmentos = ["Todos os segmentos", "Varejo", "Saúde", "Educação", "Financeiro"];
+const TODOS_SEGMENTOS = "Todos os segmentos";
 
-export function FilaDoDia({ clientes }: { clientes: Cliente[] }) {
-  const [segmento, setSegmento] = useState(segmentos[0]);
+export function FilaDoDia({
+  clientes,
+  segmentos,
+  mensagemVazia = "Nenhum cliente em risco crítico ou alerta hoje.",
+}: {
+  clientes: ClientePainel[];
+  /** Segmentos existentes na carteira (o filtro é montado a partir deles). */
+  segmentos: string[];
+  mensagemVazia?: string;
+}) {
+  const [segmento, setSegmento] = useState(TODOS_SEGMENTOS);
+  const opcoesSegmento = [TODOS_SEGMENTOS, ...segmentos];
 
   const listaFiltrada =
-    segmento === segmentos[0] ? clientes : clientes.filter((c) => c.segmento === segmento);
+    segmento === TODOS_SEGMENTOS ? clientes : clientes.filter((c) => c.segmento === segmento);
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white shadow-card">
@@ -29,14 +39,22 @@ export function FilaDoDia({ clientes }: { clientes: Cliente[] }) {
 
         <Select
           value={segmento}
-          options={segmentos.map((v) => ({ value: v, label: v }))}
+          options={opcoesSegmento.map((v) => ({ value: v, label: v }))}
           onChange={setSegmento}
           className="w-full shrink-0 sm:w-52"
         />
       </div>
 
+      {listaFiltrada.length === 0 && (
+        <p className="border-t border-slate-100 px-5 py-10 text-center text-sm text-slate-500">
+          {mensagemVazia}
+        </p>
+      )}
+
       {/* Desktop: tabela */}
-      <div className="scroll-slim hidden overflow-x-auto lg:block">
+      <div
+        className={`scroll-slim hidden overflow-x-auto ${listaFiltrada.length === 0 ? "" : "lg:block"}`}
+      >
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-y border-slate-100 text-xs text-slate-500">
@@ -62,7 +80,7 @@ export function FilaDoDia({ clientes }: { clientes: Cliente[] }) {
                   <Link href={`/clientes/${cliente.id}`} className="block">
                     <p className="text-sm font-semibold text-brand-royal">{cliente.nome}</p>
                     <p className="mt-0.5 text-xs text-slate-400">
-                      {cliente.id} · {cliente.segmento} · {cliente.porte}
+                      {[cliente.id, cliente.segmento, cliente.porte].filter(Boolean).join(" · ")}
                     </p>
                   </Link>
                 </td>
@@ -113,7 +131,7 @@ export function FilaDoDia({ clientes }: { clientes: Cliente[] }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-brand-ink">{cliente.nome}</p>
                 <p className="truncate text-xs text-slate-400">
-                  {cliente.id} · {cliente.segmento} · {cliente.porte}
+                  {[cliente.id, cliente.segmento, cliente.porte].filter(Boolean).join(" · ")}
                 </p>
               </div>
               <div className="shrink-0 text-right">
@@ -131,7 +149,7 @@ export function FilaDoDia({ clientes }: { clientes: Cliente[] }) {
   );
 }
 
-function TendenciaIcon({ tendencia }: { tendencia: Cliente["tendenciaScore"] }) {
+function TendenciaIcon({ tendencia }: { tendencia: ClientePainel["tendenciaScore"] }) {
   if (tendencia === "subindo") {
     return (
       <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-50 text-red-500">

@@ -14,7 +14,8 @@ import { ScorePill } from "@/components/ui/ScorePill";
 import { Select } from "@/components/ui/Select";
 import { SoftBadge } from "@/components/ui/Badge";
 import { formatCurrencyBRL, formatDateLongPtBR } from "@/lib/format";
-import type { Cliente, FaixaRisco } from "@/lib/mock-data";
+import type { FaixaRisco } from "@/lib/mock-data";
+import type { ClientePainel } from "@/lib/painel/tipos";
 import { faixaRiscoLabelCurto, faixaRiscoSoftClasses } from "@/lib/risk";
 
 type FiltroRisco = FaixaRisco | "todos";
@@ -37,7 +38,7 @@ const opcoesOrdenacao: { value: Ordenacao; label: string }[] = [
 
 const POR_PAGINA = 8;
 
-export function ClientesTable({ clientes }: { clientes: Cliente[] }) {
+export function ClientesTable({ clientes }: { clientes: ClientePainel[] }) {
   const [busca, setBusca] = useState("");
   const [risco, setRisco] = useState<FiltroRisco>("todos");
   const [segmento, setSegmento] = useState("todos");
@@ -296,7 +297,7 @@ export function ClientesTable({ clientes }: { clientes: Cliente[] }) {
 }
 
 /** Mostra o primeiro sinal e resume os demais em "+N". */
-function ChipsDeSinais({ cliente }: { cliente: Cliente }) {
+function ChipsDeSinais({ cliente }: { cliente: ClientePainel }) {
   const [primeiro, ...resto] = cliente.sinais;
   if (!primeiro) return null;
 

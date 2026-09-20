@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
-import { obterProjetoIdPadrao } from "@/lib/ingestao/constantes";
+import { resolverProjetoId } from "@/lib/painel/projeto";
 import { analisarRiscoEntidade, EntidadeNaoEncontradaError } from "@/lib/ia/analisar";
 import { SemPredicaoError } from "@/lib/ia/contexto";
 
 export const runtime = "nodejs";
-// Uma chamada ao Gemini mais a busca vetorial passam do limite padrão de 10s do plano Hobby.
+// LLM (22-31s medidos) + busca vetorial passam do limite padrão de 10s do plano Hobby.
 export const maxDuration = 60;
 
 /**
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   }
 
   const gatilho = corpo?.trigger_source === "cron" ? "cron" : "manual";
-  const projetoId: string = corpo?.projeto_id || obterProjetoIdPadrao();
+  const projetoId = await resolverProjetoId(corpo?.projeto_id);
 
   try {
     const resultado = await analisarRiscoEntidade({
