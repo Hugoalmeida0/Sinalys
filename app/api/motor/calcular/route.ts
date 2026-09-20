@@ -4,6 +4,9 @@ import { resolverProjetoId } from "@/lib/painel/projeto";
 import { calcularPredicoesProjeto } from "@/lib/motor/calcular";
 
 export const runtime = "nodejs";
+// Chamado a cada login (Módulo 5); dataset real (~80 entidades) mede ~5s após
+// o lote de persistência, mas o default de 10s do plano Hobby é curto demais.
+export const maxDuration = 60;
 
 /**
  * Módulo 3 — Motor Matemático (Tasks 3.1-3.3): calcula Score de Risco e

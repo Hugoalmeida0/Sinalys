@@ -8,22 +8,16 @@ import {
   MoreIcon,
   PencilIcon,
   PlusCircleIcon,
-  SlidersIcon,
   XIcon,
 } from "@/components/icons";
 import { MarcaIntegracao } from "@/components/configuracoes/MarcaIntegracao";
+import { PesosDetalhados, PesosResumo } from "@/components/configuracoes/ModeloDeRisco";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { Button } from "@/components/ui/Button";
 import { SoftBadge } from "@/components/ui/Badge";
 import { Toggle } from "@/components/ui/Toggle";
-import {
-  equipe,
-  integracoes,
-  PESO_MAXIMO,
-  pesosModeloRisco,
-  usuarioAtual,
-  type Integracao,
-} from "@/lib/mock-data";
+import { useModeloDeRisco } from "@/lib/motor/hooks/useModeloDeRisco";
+import { equipe, integracoes, usuarioAtual, type Integracao } from "@/lib/mock-data";
 
 const tabs = [
   "Geral",
@@ -37,6 +31,9 @@ type Tab = (typeof tabs)[number];
 
 export function ConfiguracoesTabs() {
   const [tab, setTab] = useState<Tab>("Geral");
+  // Buscado uma vez aqui e repassado para a aba detalhada e o resumo da
+  // sidebar — evita duas chamadas independentes a /api/modelo.
+  const modeloState = useModeloDeRisco();
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,7 +64,7 @@ export function ConfiguracoesTabs() {
             </>
           )}
           {tab === "Integrações" && <ListaIntegracoes />}
-          {tab === "Modelo de risco" && <PesosDetalhados />}
+          {tab === "Modelo de risco" && <PesosDetalhados state={modeloState} />}
           {tab === "Usuários" && <Usuarios />}
           {tab === "Notificações" && <Preferencias titulo="Notificações" />}
         </div>
@@ -86,7 +83,7 @@ export function ConfiguracoesTabs() {
             assunto="Como devo calibrar os pesos do modelo de risco?"
           />
 
-          <PesosResumo />
+          <PesosResumo state={modeloState} />
           <DicaDaSinalys />
         </aside>
       </div>
@@ -94,7 +91,7 @@ export function ConfiguracoesTabs() {
   );
 }
 
-function Painel({
+export function Painel({
   titulo,
   descricao,
   acao,
@@ -234,78 +231,6 @@ function Preferencias({ titulo = "Preferências" }: { titulo?: string }) {
         ))}
       </div>
     </Painel>
-  );
-}
-
-function PesosDetalhados() {
-  return (
-    <Painel
-      titulo="Pesos do modelo de risco"
-      descricao="Usados no cálculo do Score de Risco. Ajuste conforme a realidade da sua operação."
-      acao={
-        <Button variant="secondary" className="shrink-0">
-          <SlidersIcon className="h-4 w-4" />
-          Editar pesos
-        </Button>
-      }
-    >
-      <ul className="flex flex-col gap-4">
-        {pesosModeloRisco.map((regra) => (
-          <li key={regra.sinal}>
-            <BarraPeso sinal={regra.sinal} peso={regra.peso} />
-          </li>
-        ))}
-      </ul>
-    </Painel>
-  );
-}
-
-function PesosResumo() {
-  return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-card">
-      <h2 className="text-base font-bold text-brand-ink">Pesos do modelo de risco</h2>
-      <p className="mt-1 text-xs leading-relaxed text-slate-500">
-        Usados no cálculo do Score de Risco. Ajuste conforme a realidade da sua operação.
-      </p>
-
-      <ul className="mt-4 flex flex-col gap-3.5">
-        {pesosModeloRisco.slice(0, 4).map((regra) => (
-          <li key={regra.sinal}>
-            <BarraPeso sinal={regra.sinal} peso={regra.peso} compacta />
-          </li>
-        ))}
-      </ul>
-
-      <Button variant="secondary" className="mt-5 w-full">
-        <SlidersIcon className="h-4 w-4" />
-        Editar pesos
-      </Button>
-    </div>
-  );
-}
-
-function BarraPeso({
-  sinal,
-  peso,
-  compacta = false,
-}: {
-  sinal: string;
-  peso: number;
-  compacta?: boolean;
-}) {
-  return (
-    <>
-      <div className="flex items-center justify-between gap-3">
-        <span className={`text-slate-600 ${compacta ? "text-xs" : "text-sm"}`}>{sinal}</span>
-        <span className="text-sm font-bold text-brand-ink">{peso}</span>
-      </div>
-      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-        <div
-          className="h-full rounded-full bg-brand-royal"
-          style={{ width: `${(peso / PESO_MAXIMO) * 100}%` }}
-        />
-      </div>
-    </>
   );
 }
 

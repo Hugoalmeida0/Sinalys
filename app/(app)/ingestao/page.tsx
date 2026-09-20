@@ -8,6 +8,8 @@ import { HistoricoIngestoes } from "@/components/ingestao/HistoricoIngestoes";
 import { IngestaoWizard } from "@/components/ingestao/IngestaoWizard";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { redirect } from "next/navigation";
+import { EXIBIR_INGESTAO } from "@/lib/config/features";
 
 const dicas = [
   { icone: FileSpreadsheetIcon, texto: "Use a nossa planilha modelo" },
@@ -17,6 +19,10 @@ const dicas = [
 ];
 
 export default function IngestaoPage() {
+  // MVP: feature oculta (lib/config/features.ts). Bloqueia acesso direto
+  // por URL alem de remover do menu — nenhum codigo abaixo foi removido.
+  if (!EXIBIR_INGESTAO) redirect("/");
+
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">

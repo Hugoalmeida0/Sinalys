@@ -9,8 +9,14 @@ import {
   kpisDashboard,
   receitaPorSegmento,
 } from "@/lib/mock-data";
+import { redirect } from "next/navigation";
+import { EXIBIR_RELATORIOS } from "@/lib/config/features";
 
 export default function RelatoriosPage() {
+  // MVP: feature oculta (lib/config/features.ts). Bloqueia acesso direto
+  // por URL alem de remover do menu — nenhum codigo abaixo foi removido.
+  if (!EXIBIR_RELATORIOS) redirect("/");
+
   const totalDesfechos =
     desfechos90dias.recuperados + desfechos90dias.cancelados + desfechos90dias.emAndamento;
   const taxaRecuperacao = Math.round(

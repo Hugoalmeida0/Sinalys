@@ -339,6 +339,25 @@ export async function calcularPredicoesProjeto(params: {
   return { predicoes: resultados, avisos };
 }
 
+/** Tamanho de lote para inserts/upserts em massa (mesmo padrão de `lib/ingestao/normalizar.ts`). */
+const TAMANHO_LOTE_PERSISTENCIA = 500;
+
+function emLotes<T>(itens: T[], tamanho: number): T[][] {
+  const lotes: T[][] = [];
+  for (let i = 0; i < itens.length; i += tamanho) lotes.push(itens.slice(i, i + tamanho));
+  return lotes;
+}
+
+/**
+ * Grava `predicoes`/`motivos_predicao` em lote, não por entidade.
+ *
+ * Antes fazia 4 round-trips sequenciais *por entidade* (SELECT + UPSERT +
+ * DELETE + INSERT) — para os ~80 clientes reais do projeto seed isso são 320
+ * chamadas sequenciais, inviável para recalcular a cada login (Módulo 5,
+ * Task 5.4/decisão do usuário). Reduzido para 1 SELECT em lote (reaproveita o
+ * `id` de predições existentes, preservando a referência de `motivos_predicao`)
+ * + upserts/deletes/inserts em lotes de 500.
+ */
 async function persistirResultados(
   supabase: SupabaseClient,
   params: {
@@ -349,49 +368,66 @@ async function persistirResultados(
   }
 ): Promise<void> {
   const { projetoId, modeloId, referenciaEmIso, resultados } = params;
+  if (resultados.length === 0) return;
 
-  for (const resultado of resultados) {
-    const { data: existente, error: erroExistente } = await supabase
+  const entidadeIds = resultados.map((r) => r.entidade_id);
+
+  const { data: existentes, error: erroExistentes } = await buscarTodasLinhas<{
+    id: string;
+    entidade_id: string;
+  }>(() =>
+    supabase
       .from("predicoes")
-      .select("id")
-      .eq("entidade_id", resultado.entidade_id)
+      .select("id, entidade_id")
       .eq("modelo_id", modeloId)
       .eq("referencia_em", referenciaEmIso)
-      .maybeSingle();
-    if (erroExistente) throw new Error(`Falha ao verificar predição existente: ${erroExistente.message}`);
+      .in("entidade_id", entidadeIds)
+  );
+  if (erroExistentes) {
+    throw new Error(`Falha ao buscar predições existentes: ${erroExistentes.message}`);
+  }
+  const idExistentePorEntidade = new Map(existentes.map((p) => [p.entidade_id, p.id]));
 
-    const predicaoId = existente?.id ?? randomUUID();
+  // Resolvido aqui (não no upsert) para nunca sobrescrever o id de uma predição
+  // já existente — trocar o id órfãaria os `motivos_predicao` já vinculados a ela.
+  const predicaoIdPorEntidade = new Map(
+    resultados.map((r) => [r.entidade_id, idExistentePorEntidade.get(r.entidade_id) ?? randomUUID()])
+  );
 
-    const { error: erroUpsert } = await supabase.from("predicoes").upsert({
-      id: predicaoId,
-      projeto_id: projetoId,
-      entidade_id: resultado.entidade_id,
-      modelo_id: modeloId,
-      referencia_em: referenciaEmIso,
-      pontuacao: resultado.pontuacao,
-      faixa_risco: resultado.faixa_risco,
-      cobertura: resultado.cobertura,
-      valor_impacto: resultado.valor_impacto,
-    });
-    if (erroUpsert) throw new Error(`Falha ao gravar predição: ${erroUpsert.message}`);
+  const linhasPredicoes = resultados.map((r) => ({
+    id: predicaoIdPorEntidade.get(r.entidade_id)!,
+    projeto_id: projetoId,
+    entidade_id: r.entidade_id,
+    modelo_id: modeloId,
+    referencia_em: referenciaEmIso,
+    pontuacao: r.pontuacao,
+    faixa_risco: r.faixa_risco,
+    cobertura: r.cobertura,
+    valor_impacto: r.valor_impacto,
+  }));
 
-    const { error: erroDelete } = await supabase
-      .from("motivos_predicao")
-      .delete()
-      .eq("predicao_id", predicaoId);
-    if (erroDelete) throw new Error(`Falha ao limpar motivos da predição: ${erroDelete.message}`);
+  for (const lote of emLotes(linhasPredicoes, TAMANHO_LOTE_PERSISTENCIA)) {
+    const { error } = await supabase.from("predicoes").upsert(lote);
+    if (error) throw new Error(`Falha ao gravar predições: ${error.message}`);
+  }
 
-    if (resultado.motivos.length > 0) {
-      const { error: erroInsert } = await supabase.from("motivos_predicao").insert(
-        resultado.motivos.map((m) => ({
-          predicao_id: predicaoId,
-          regra_modelo_id: m.regra_modelo_id,
-          acionado: m.acionado,
-          valor_observado: m.valor_observado,
-          pontos: m.pontos,
-        }))
-      );
-      if (erroInsert) throw new Error(`Falha ao gravar motivos da predição: ${erroInsert.message}`);
-    }
+  const predicaoIds = Array.from(predicaoIdPorEntidade.values());
+  for (const lote of emLotes(predicaoIds, TAMANHO_LOTE_PERSISTENCIA)) {
+    const { error } = await supabase.from("motivos_predicao").delete().in("predicao_id", lote);
+    if (error) throw new Error(`Falha ao limpar motivos das predições: ${error.message}`);
+  }
+
+  const linhasMotivos = resultados.flatMap((r) =>
+    r.motivos.map((m) => ({
+      predicao_id: predicaoIdPorEntidade.get(r.entidade_id)!,
+      regra_modelo_id: m.regra_modelo_id,
+      acionado: m.acionado,
+      valor_observado: m.valor_observado,
+      pontos: m.pontos,
+    }))
+  );
+  for (const lote of emLotes(linhasMotivos, TAMANHO_LOTE_PERSISTENCIA)) {
+    const { error } = await supabase.from("motivos_predicao").insert(lote);
+    if (error) throw new Error(`Falha ao gravar motivos das predições: ${error.message}`);
   }
 }

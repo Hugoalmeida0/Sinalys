@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { EyeIcon } from "@/components/icons";
 import { Button } from "@/components/ui/Button";
 import { GlobalsysWordmark } from "@/components/GlobalsysWordmark";
+import { marcarRecalculoAoEntrar } from "@/components/dashboard/RecalculoFilaGate";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,6 +35,9 @@ export default function LoginPage() {
       }
 
       // Cookies de sessão já gravados pela rota; o proxy libera o painel.
+      // Sinaliza para a home recalcular o motor de risco ao montar (Módulo 5,
+      // decisão do usuário) — sem bloquear este redirecionamento com o cálculo.
+      marcarRecalculoAoEntrar();
       router.push("/");
       router.refresh();
     } catch {

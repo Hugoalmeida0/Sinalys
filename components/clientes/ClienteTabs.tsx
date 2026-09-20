@@ -8,7 +8,6 @@ import {
   ArrowRightIcon,
   ArrowUpIcon,
   CalendarIcon,
-  CheckIcon,
   DollarIcon,
   FileTextIcon,
   LoaderIcon,
@@ -23,8 +22,9 @@ import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { SoftBadge } from "@/components/ui/Badge";
 import { RegistrarContatoTrigger } from "@/components/RegistrarContatoTrigger";
-import { SinalysMascot } from "@/components/ui/SinalysMascot";
-import { formatCurrencyBRL, formatDatePtBR, formatTimePtBR, mesAnoPtBR, tempoDesde } from "@/lib/format";
+import { formatCurrencyBRL, mesAnoPtBR, tempoDesde } from "@/lib/format";
+import { useAnaliseIA, type PlanoIA } from "@/lib/ia/hooks/useAnaliseIA";
+import { ConteudoAnaliseIA } from "@/components/ia/ConteudoAnaliseIA";
 import type { DetalheClientePainel as DetalheCliente } from "@/lib/painel/detalhe";
 import {
   faixaRiscoLabel,
@@ -301,14 +301,6 @@ function SinaisDeRisco({ detalhe }: { detalhe: DetalheCliente }) {
   );
 }
 
-/** Plano gerado pela IA, na forma que a aba exibe. */
-interface PlanoIA {
-  diagnostico: string;
-  analiseLookalike: string | null;
-  acoes: string[];
-  geradoEm: string | null;
-}
-
 function planoInicial(detalhe: DetalheCliente): PlanoIA | null {
   if (!detalhe.diagnosticoGeradoEm) return null;
   return {
@@ -323,42 +315,17 @@ function PlanoDeAcao({ detalhe }: { detalhe: DetalheCliente }) {
   const router = useRouter();
   // Começa com o último diagnóstico persistido (vindo do servidor); depois de
   // uma análise, passa a refletir a resposta da rota sem esperar o refresh.
-  const [plano, setPlano] = useState<PlanoIA | null>(() => planoInicial(detalhe));
-  const [analisando, setAnalisando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const [concluidas, setConcluidas] = useState<Record<number, boolean>>({});
+  const estado = useAnaliseIA(detalhe.id, planoInicial(detalhe));
+  const { plano, analisando, analisar } = estado;
 
-  async function analisar() {
-    setAnalisando(true);
-    setErro(null);
-    try {
-      const resposta = await fetch("/api/inteligencia/analisar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cliente_id: detalhe.id, trigger_source: "manual" }),
-      });
-      const corpo = await resposta.json().catch(() => ({}));
-      if (!resposta.ok) {
-        throw new Error(corpo?.erro ?? `Falha na análise (HTTP ${resposta.status}).`);
-      }
-      setPlano({
-        diagnostico: corpo.diagnostico_principal,
-        analiseLookalike: corpo.analise_lookalike ?? null,
-        acoes: Array.isArray(corpo.plano_acao_imediato) ? corpo.plano_acao_imediato : [],
-        geradoEm: new Date().toISOString(),
-      });
-      setConcluidas({});
-      // O diagnóstico foi persistido: sincroniza visão geral e header com o servidor.
-      router.refresh();
-    } catch (e) {
-      setErro((e as Error).message);
-    } finally {
-      setAnalisando(false);
-    }
+  async function analisarERecarregar() {
+    const ok = await analisar();
+    // O diagnóstico foi persistido: sincroniza visão geral e header com o servidor.
+    if (ok) router.refresh();
   }
 
   const total = plano?.acoes.length ?? 0;
-  const feitas = plano ? plano.acoes.filter((_, i) => concluidas[i]).length : 0;
+  const feitas = plano ? plano.acoes.filter((_, i) => estado.concluidas[i]).length : 0;
 
   return (
     <Card>
@@ -371,7 +338,7 @@ function PlanoDeAcao({ detalhe }: { detalhe: DetalheCliente }) {
               : "Nenhum plano gerado para este cliente ainda"}
           </p>
         </div>
-        <Button onClick={analisar} disabled={analisando} className="shrink-0" aria-live="polite">
+        <Button onClick={analisarERecarregar} disabled={analisando} className="shrink-0" aria-live="polite">
           {analisando ? (
             <>
               <LoaderIcon className="h-4 w-4 animate-spin" />
@@ -387,101 +354,10 @@ function PlanoDeAcao({ detalhe }: { detalhe: DetalheCliente }) {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-5">
-        {analisando && (
-          <div className="flex items-start gap-3 rounded-xl bg-brand-pale px-4 py-3 text-sm text-brand-navy">
-            <LoaderIcon className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
-            <p>
-              Cruzando os sinais do motor de risco com o histórico de casos parecidos e gerando o
-              plano. Isso leva até um minuto.
-            </p>
-          </div>
-        )}
-
-        {erro && (
-          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>{erro}</p>
-          </div>
-        )}
-
-        {!plano && !analisando && (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <SinalysMascot variante="insight" className="h-24 w-auto" />
-            <p className="max-w-md text-sm leading-relaxed text-slate-500">
-              A IA cruza os sinais de risco deste cliente com casos parecidos do histórico da sua
-              empresa e devolve um diagnóstico e um plano de ação estruturado.
-            </p>
-          </div>
-        )}
-
-        {plano && (
-          <>
-            <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-              <h3 className="flex items-center gap-2 text-sm font-bold text-brand-ink">
-                <AlertTriangleIcon className="h-4 w-4 text-red-500" />
-                Diagnóstico
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{plano.diagnostico}</p>
-            </section>
-
-            {plano.analiseLookalike && (
-              <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-                <h3 className="flex items-center gap-2 text-sm font-bold text-brand-ink">
-                  <ReportsIcon className="h-4 w-4 text-brand-royal" />O que o histórico diz
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  {plano.analiseLookalike}
-                </p>
-              </section>
-            )}
-
-            <div>
-              <h3 className="mb-2 text-sm font-bold text-brand-ink">Ações imediatas</h3>
-              <ul className="flex flex-col gap-2">
-                {plano.acoes.map((acao, index) => {
-                  const feita = Boolean(concluidas[index]);
-                  return (
-                    <li key={index}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setConcluidas((prev) => ({ ...prev, [index]: !prev[index] }))
-                        }
-                        className="flex w-full items-start gap-3 rounded-xl border border-slate-100 px-3.5 py-3 text-left transition-colors hover:bg-slate-50"
-                      >
-                        <span
-                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
-                            feita
-                              ? "border-emerald-500 bg-emerald-500 text-white"
-                              : "border-slate-300 text-transparent"
-                          }`}
-                        >
-                          <CheckIcon className="h-3.5 w-3.5" />
-                        </span>
-                        <span
-                          className={`text-sm leading-relaxed ${
-                            feita ? "text-slate-400 line-through" : "text-slate-700"
-                          }`}
-                        >
-                          {index + 1}. {acao}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-            {plano.geradoEm && (
-              <p className="text-xs text-slate-400">
-                Gerado pela IA em {formatDatePtBR(plano.geradoEm)} às{" "}
-                {formatTimePtBR(plano.geradoEm)}. O conteúdo é uma recomendação: confira os
-                sinais antes de agir.
-              </p>
-            )}
-          </>
-        )}
-
+        <ConteudoAnaliseIA
+          estado={estado}
+          textoVazio="A IA cruza os sinais de risco deste cliente com casos parecidos do histórico da sua empresa e devolve um diagnóstico e um plano de ação estruturado."
+        />
         <RegistrarContatoTrigger clienteId={detalhe.id} clienteLabel={detalhe.nome} fullWidth />
       </CardContent>
     </Card>

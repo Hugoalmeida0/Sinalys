@@ -1,5 +1,6 @@
 import { FilaDoDia } from "@/components/dashboard/FilaDoDia";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { RecalculoFilaGate } from "@/components/dashboard/RecalculoFilaGate";
 import {
   ArrowUpRightIcon,
   CalendarIcon,
@@ -49,78 +50,80 @@ export default async function DashboardPage() {
     : 0;
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="flex flex-col gap-6">
-          <PageHeader
-            titulo={primeiroNome ? `Bom dia, ${primeiroNome}.` : "Bom dia."}
-            descricao="Aqui estão os clientes que precisam da sua atenção hoje."
-          />
+    <RecalculoFilaGate>
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="flex flex-col gap-6">
+            <PageHeader
+              titulo={primeiroNome ? `Bom dia, ${primeiroNome}.` : "Bom dia."}
+              descricao="Aqui estão os clientes que precisam da sua atenção hoje."
+            />
 
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <KpiCard
-              label="Receita em risco (ano)"
-              value={formatCurrencyBRL(kpis.receitaEmRiscoAno)}
-              description={`${kpis.clientesEmAlerta} clientes com risco relevante`}
-              tone="red"
-              icon={ArrowUpRightIcon}
-            />
-            <KpiCard
-              label="Clientes em alerta"
-              value={`${kpis.clientesEmAlerta}`}
-              description={`de ${kpis.totalCarteira} na carteira (${percentualAlerta}%)`}
-              tone="amber"
-              icon={UsersIcon}
-            />
-            <KpiCard
-              label="Antecedência média"
-              value={
-                kpis.antecedenciaMediaMeses == null
-                  ? "—"
-                  : `${meses(kpis.antecedenciaMediaMeses)} meses`
-              }
-              description={
-                kpis.antecedenciaMediaMeses == null
-                  ? "sem desfechos antecipados ainda"
-                  : `(mediana ${meses(kpis.antecedenciaMedianaMeses)} | máx. ${meses(kpis.antecedenciaMaximaMeses)})`
-              }
-              tone="blue"
-              icon={CalendarIcon}
-            />
-            <KpiCard
-              label="Clientes contatados"
-              value={`${kpis.clientesContatados7d}`}
-              description="nos últimos 7 dias"
-              tone="emerald"
-              icon={CheckIcon}
-            />
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <KpiCard
+                label="Receita em risco (ano)"
+                value={formatCurrencyBRL(kpis.receitaEmRiscoAno)}
+                description={`${kpis.clientesEmAlerta} clientes com risco relevante`}
+                tone="red"
+                icon={ArrowUpRightIcon}
+              />
+              <KpiCard
+                label="Clientes em alerta"
+                value={`${kpis.clientesEmAlerta}`}
+                description={`de ${kpis.totalCarteira} na carteira (${percentualAlerta}%)`}
+                tone="amber"
+                icon={UsersIcon}
+              />
+              <KpiCard
+                label="Antecedência média"
+                value={
+                  kpis.antecedenciaMediaMeses == null
+                    ? "—"
+                    : `${meses(kpis.antecedenciaMediaMeses)} meses`
+                }
+                description={
+                  kpis.antecedenciaMediaMeses == null
+                    ? "sem desfechos antecipados ainda"
+                    : `(mediana ${meses(kpis.antecedenciaMedianaMeses)} | máx. ${meses(kpis.antecedenciaMaximaMeses)})`
+                }
+                tone="blue"
+                icon={CalendarIcon}
+              />
+              <KpiCard
+                label="Clientes contatados"
+                value={`${kpis.clientesContatados7d}`}
+                description="nos últimos 7 dias"
+                tone="emerald"
+                icon={CheckIcon}
+              />
+            </div>
           </div>
+
+          <AssistantCard
+            titulo={
+              <>
+                Por onde começar hoje?
+                <br />
+                Pergunte à Sinalys.
+              </>
+            }
+            descricao="Peça um resumo da carteira, priorize contatos ou investigue um cliente específico."
+            assunto="Por onde devo começar hoje?"
+          />
         </div>
 
-        <AssistantCard
-          titulo={
-            <>
-              Por onde começar hoje?
-              <br />
-              Pergunte à Sinalys.
-            </>
+        <FilaDoDia
+          clientes={fila}
+          segmentos={segmentos}
+          mensagemVazia={
+            !painel.modeloId
+              ? "Nenhum modelo de risco ativo no projeto. Ative um modelo para gerar a fila."
+              : painel.clientes.length === 0
+                ? "Nenhuma predição calculada ainda. Rode o motor de risco após a ingestão de dados."
+                : "Nenhum cliente em risco crítico ou alerta hoje."
           }
-          descricao="Peça um resumo da carteira, priorize contatos ou investigue um cliente específico."
-          assunto="Por onde devo começar hoje?"
         />
       </div>
-
-      <FilaDoDia
-        clientes={fila}
-        segmentos={segmentos}
-        mensagemVazia={
-          !painel.modeloId
-            ? "Nenhum modelo de risco ativo no projeto. Ative um modelo para gerar a fila."
-            : painel.clientes.length === 0
-              ? "Nenhuma predição calculada ainda. Rode o motor de risco após a ingestão de dados."
-              : "Nenhum cliente em risco crítico ou alerta hoje."
-        }
-      />
-    </div>
+    </RecalculoFilaGate>
   );
 }

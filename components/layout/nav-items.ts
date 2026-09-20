@@ -1,4 +1,5 @@
 import {
+  HeartHandshakeIcon,
   HomeIcon,
   PlaybookIcon,
   ReportsIcon,
@@ -7,6 +8,7 @@ import {
   UsersIcon,
   type IconProps,
 } from "@/components/icons";
+import { EXIBIR_INGESTAO, EXIBIR_PLAYBOOK, EXIBIR_RELATORIOS } from "@/lib/config/features";
 import type { ComponentType } from "react";
 
 export type NavItem = {
@@ -16,13 +18,15 @@ export type NavItem = {
 };
 
 // Atenção: components/layout/MobileNav.tsx referencia navItems[0..2] por
-// índice (Início, Clientes, Playbook) — inserir novos itens depois do
-// índice 2 para não deslocar a navegação inferior no mobile.
+// índice (Início, Clientes, 3º item) — o 3º item hoje é Recuperação. Ligar
+// Playbook/Ingestão/Relatórios de volta (lib/config/features.ts) desloca essa
+// posição; revisar MobileNav se isso mudar a ordem esperada.
 export const navItems: NavItem[] = [
   { href: "/", label: "Início", icon: HomeIcon },
   { href: "/clientes", label: "Clientes", icon: UsersIcon },
-  { href: "/playbook", label: "Playbook", icon: PlaybookIcon },
-  { href: "/relatorios", label: "Relatórios", icon: ReportsIcon },
-  { href: "/ingestao", label: "Ingestão", icon: UploadIcon },
+  { href: "/recuperacao", label: "Recuperação", icon: HeartHandshakeIcon },
+  ...(EXIBIR_PLAYBOOK ? [{ href: "/playbook", label: "Playbook", icon: PlaybookIcon }] : []),
+  ...(EXIBIR_RELATORIOS ? [{ href: "/relatorios", label: "Relatórios", icon: ReportsIcon }] : []),
+  ...(EXIBIR_INGESTAO ? [{ href: "/ingestao", label: "Ingestão", icon: UploadIcon }] : []),
   { href: "/configuracoes", label: "Configurações", icon: SettingsIcon },
 ];
