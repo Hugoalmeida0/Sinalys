@@ -77,27 +77,28 @@ Crie manualmente um `.env.local` na raiz — o repositório não contém `.env.e
 ### Variáveis de ambiente
 
 ```env
-# Supabase: aplicação e autenticação
-NEXT_PUBLIC_SUPABASE_URL="https://SEU_PROJETO.supabase.co"
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sua_chave_publica"
-# NEXT_PUBLIC_SUPABASE_ANON_KEY="alternativa_legada_a_publishable_key"
-SUPABASE_SERVICE_ROLE_KEY="sua_service_role"
+# Public — exposed to the browser bundle. Must be prefixed with NEXT_PUBLIC_.
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=https://eimlvnmuvazbztozzrtk.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=***REMOVED***
 
-# Projeto usado quando o usuário não tem app_metadata.projeto_id
-DEFAULT_PROJETO_ID="uuid-do-projeto"
+# Private — server-only, never sent to the client. No NEXT_PUBLIC_ prefix.
+SUPABASE_SERVICE_ROLE_KEY=***REMOVED***
+GOOGLE_GENERATIVE_AI_API_KEY=***REMOVED***
+CRON_SECRET=***REMOVED***
 
-# IA generativa: diagnóstico e chat
-OPENROUTER_API_KEY="sk-or-v1-..."
-OPENROUTER_MODELO_LLM="nvidia/nemotron-3-ultra-550b-a55b:free"
-OPENROUTER_MODELO_CHAT="nvidia/nemotron-3-super-120b-a12b:free"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
+# Módulo 2 — Ingestão. DEFAULT_PROJETO_ID é um placeholder até existir autenticação
+# multi-tenant (ver pendência em TASKS.md); todas as rotas de ingestão usam este
+# projeto quando nenhum projeto_id é enviado explicitamente na requisição.
+DEFAULT_PROJETO_ID=8a13faae-c4df-4364-8e20-4d44ac37ff53
+SUPABASE_STORAGE_BUCKET_INGESTAO=ingestao-raw
 
-# Embeddings: lookalikes e feedback
-GOOGLE_GENERATIVE_AI_API_KEY="sua-chave-google-ai"
-GEMINI_MODELO_EMBEDDING="gemini-embedding-001"
-
-# Necessário quando a ingestão for habilitada
-SUPABASE_STORAGE_BUCKET_INGESTAO="ingestao-raw"
+# Módulo 4 — Inteligência/RAG (ver lib/ia/constantes.ts). LLM na OpenRouter,
+# embeddings no Gemini (híbrido).
+OPENROUTER_API_KEY=***REMOVED***
+OPENROUTER_MODELO_LLM=nvidia/nemotron-3-ultra-550b-a55b:free
+OPENROUTER_MODELO_CHAT=nvidia/nemotron-3-super-120b-a12b:free
+GEMINI_MODELO_EMBEDDING=gemini-embedding-001
 ```
 
 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` é preferida; `NEXT_PUBLIC_SUPABASE_ANON_KEY` funciona como fallback. Nunca exponha `SUPABASE_SERVICE_ROLE_KEY` no navegador ou em variáveis `NEXT_PUBLIC_*`.
