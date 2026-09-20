@@ -5,10 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BellIcon, MenuIcon, XIcon } from "@/components/icons";
-import { usuarioAtual } from "@/lib/mock-data";
+import type { UsuarioSessao } from "@/lib/auth/usuario";
+import { BotaoSair } from "./BotaoSair";
 import { navItems } from "./nav-items";
 
-export function MobileHeader() {
+export function MobileHeader({ usuario }: { usuario: UsuarioSessao }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -56,11 +57,13 @@ export function MobileHeader() {
             <div className="flex h-16 items-center justify-between px-4">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-royal text-[11px] font-bold text-white">
-                  {usuarioAtual.iniciais}
+                  {usuario.iniciais}
                 </span>
                 <span className="leading-tight">
-                  <span className="block text-sm font-bold text-white">{usuarioAtual.nome}</span>
-                  <span className="block text-[11px] text-blue-100/60">{usuarioAtual.cargo}</span>
+                  <span className="block text-sm font-bold text-white">{usuario.nome}</span>
+                  <span className="block text-[11px] text-blue-100/60">
+                    {usuario.cargo ?? usuario.email}
+                  </span>
                 </span>
               </div>
               <button
@@ -98,6 +101,10 @@ export function MobileHeader() {
                 );
               })}
             </nav>
+
+            <div className="px-4 pb-2">
+              <BotaoSair className="w-full rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-blue-100/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-60" />
+            </div>
 
             <div className="px-6 pb-7">
               <p className="text-sm font-bold text-white">Sinalys</p>

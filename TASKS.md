@@ -98,6 +98,16 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 - ⚠️ **Casos de teste permanecem na base:** os 3 casos indexados na validação continuam em `casos_historicos_embeddings`. Como todo o banco é fictício de MVP, foram mantidos de propósito — apagar antes de qualquer uso real.
 - 🔐 **`.env.example` continha a chave real do Gemini em texto plano** (não um placeholder). Substituída por placeholder. Verificado: o arquivo **nunca foi commitado** (`.gitignore` cobre `.env*`), então não houve vazamento no histórico do git.
 
+## 🔐 Autenticação (simplificada) — feita antes do Módulo 5
+
+- [X] **Login e-mail/senha via Supabase Auth** (`@supabase/ssr@0.12.7`, pinado). `POST /api/auth/login` (`{ email, senha }` → cookies httpOnly de sessão; 401 genérico em falha) e `POST /api/auth/logout`. `proxy.ts` na raiz (convenção do Next 16, substitui `middleware.ts`) renova o token a cada request e faz o guard: sem sessão → `/login`; com sessão em `/login` → `/`. `app/(app)/layout.tsx` repete a checagem (`getUser`) e injeta o usuário em Topbar/MobileHeader/saudação da home (`lib/auth/usuario.ts`). Sem cadastro nem "esqueci a senha".
+- **Usuário seed** criado no Supabase Auth: `ana.souza@globalsys.com` / `sinalys123` (os defaults da tela de login), com `app_metadata.projeto_id = DEFAULT_PROJETO_ID` — é por aí que as rotas devem resolver o tenant quando abandonarem o fallback por env var. **Trocar a senha antes de qualquer uso real.**
+
+**Pendências registradas nesta etapa:**
+
+- ⚠️ **`/api/*` continua sem autenticação** (matcher do `proxy.ts` exclui `api` de propósito): as rotas usam `service_role` e são chamadas por scripts/cron sem cookie. Próximo passo: nas rotas do painel, ler `projeto_id` de `app_metadata` via `obterUsuarioSessao()` em vez de `DEFAULT_PROJETO_ID`, e proteger as rotas que não forem de cron (`CRON_SECRET`).
+- ⚠️ **RLS segue desabilitado** — o cliente de sessão (`lib/supabase/server.ts`) usa a chave pública e já respeitará policies quando existirem.
+
 ## 🖥️ Módulo 5: Painel de Atendimento e Feedback Loop
 
 - [ ] **Task 5.1:** Desenvolver o painel no frontend Next.js exibindo a fila de priorização de Customer Success ordenada por urgência.

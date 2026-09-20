@@ -9,18 +9,20 @@ import {
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { formatCurrencyBRL } from "@/lib/format";
-import { getFilaDoDia, kpisDashboard, usuarioAtual } from "@/lib/mock-data";
+import { obterUsuarioSessao } from "@/lib/auth/usuario";
+import { getFilaDoDia, kpisDashboard } from "@/lib/mock-data";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   const fila = getFilaDoDia();
-  const primeiroNome = usuarioAtual.nome.split(" ")[0];
+  const usuario = await obterUsuarioSessao();
+  const primeiroNome = usuario?.nome.split(" ")[0] ?? "";
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="flex flex-col gap-6">
           <PageHeader
-            titulo={`Bom dia, ${primeiroNome}.`}
+            titulo={primeiroNome ? `Bom dia, ${primeiroNome}.` : "Bom dia."}
             descricao="Aqui estão os clientes que precisam da sua atenção hoje."
           />
 

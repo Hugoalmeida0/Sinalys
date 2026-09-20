@@ -1,7 +1,8 @@
-import { BellIcon, ChevronDownIcon, SearchIcon } from "@/components/icons";
-import { usuarioAtual } from "@/lib/mock-data";
+import { BellIcon, SearchIcon } from "@/components/icons";
+import type { UsuarioSessao } from "@/lib/auth/usuario";
+import { BotaoSair } from "./BotaoSair";
 
-export function Topbar() {
+export function Topbar({ usuario }: { usuario: UsuarioSessao }) {
   return (
     <header className="hidden h-18 shrink-0 items-center gap-6 border-b border-slate-200/70 bg-white px-6 lg:flex">
       <div className="relative w-full max-w-lg">
@@ -23,19 +24,16 @@ export function Topbar() {
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
         </button>
 
-        <button
-          type="button"
-          className="flex items-center gap-3 rounded-xl py-1.5 pr-2 pl-1.5 transition-colors hover:bg-slate-50"
-        >
+        <div className="flex items-center gap-3 rounded-xl py-1.5 pr-2 pl-1.5">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-navy text-xs font-bold text-white">
-            {usuarioAtual.iniciais}
+            {usuario.iniciais}
           </span>
           <span className="text-left leading-tight">
-            <span className="block text-sm font-bold text-brand-ink">{usuarioAtual.nome}</span>
-            <span className="block text-xs text-slate-500">{usuarioAtual.cargo}</span>
+            <span className="block text-sm font-bold text-brand-ink">{usuario.nome}</span>
+            <span className="block text-xs text-slate-500">{usuario.cargo ?? usuario.email}</span>
           </span>
-          <ChevronDownIcon className="h-4 w-4 text-slate-400" />
-        </button>
+          <BotaoSair className="ml-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-brand-ink disabled:opacity-60" />
+        </div>
       </div>
     </header>
   );

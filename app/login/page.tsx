@@ -11,12 +11,35 @@ export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // Mock: autenticação real ainda não implementada no backend.
+    const form = new FormData(event.currentTarget);
+    setErro(null);
     setLoading(true);
-    setTimeout(() => router.push("/"), 500);
+
+    try {
+      const resposta = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.get("email"), senha: form.get("senha") }),
+      });
+
+      if (!resposta.ok) {
+        const corpo = await resposta.json().catch(() => null);
+        setErro(corpo?.erro ?? "Não foi possível entrar. Tente novamente.");
+        setLoading(false);
+        return;
+      }
+
+      // Cookies de sessão já gravados pela rota; o proxy libera o painel.
+      router.push("/");
+      router.refresh();
+    } catch {
+      setErro("Falha de conexão. Verifique sua internet e tente novamente.");
+      setLoading(false);
+    }
   }
 
   return (
@@ -80,6 +103,8 @@ export default function LoginPage() {
                 <span className="text-sm font-medium text-slate-700">E-mail</span>
                 <input
                   type="email"
+                  name="email"
+                  autoComplete="email"
                   required
                   defaultValue="ana.souza@globalsys.com"
                   placeholder="seuemail@globalsys.com"
@@ -92,6 +117,8 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
+                    name="senha"
+                    autoComplete="current-password"
                     required
                     defaultValue="sinalys123"
                     className="w-full rounded-lg border border-slate-200 py-2.5 pr-10 pl-3 text-sm text-slate-800 focus:border-brand-royal focus:outline-none"
@@ -120,6 +147,15 @@ export default function LoginPage() {
                   Esqueceu a senha?
                 </button>
               </div>
+
+              {erro && (
+                <p
+                  role="alert"
+                  className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600"
+                >
+                  {erro}
+                </p>
+              )}
 
               <Button type="submit" disabled={loading} className="w-full py-2.5">
                 {loading ? "Entrando..." : "Entrar"}
