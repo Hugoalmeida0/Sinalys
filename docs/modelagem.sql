@@ -175,9 +175,11 @@ CREATE TABLE motivos_predicao (
 
 -- Histórico vetorizado de casos (RAG / busca lookalike). Cada linha consolida o
 -- contexto textual de um cliente em um dado momento + a ação tomada + o desfecho
--- observado, embutido em `embedding` para recuperação por similaridade (Rota
--- POST /app/api/feedback e POST /app/api/analyze-churn, ver docs/instructions.md).
--- Dimensão 768 corresponde ao modelo de embeddings do Google (text-embedding-004).
+-- observado, embutido em `embedding` para recuperação por similaridade (rotas
+-- POST /api/inteligencia/feedback e POST /api/inteligencia/analisar).
+-- Dimensão 768: `gemini-embedding-001` é nativamente 3072-D e é truncado via
+-- `outputDimensionality` (o `text-embedding-004` original foi retirado da API).
+-- Os vetores são gravados normalizados (norma 1) por lib/ia/embeddings.ts.
 CREATE TABLE casos_historicos_embeddings (
   id uuid PRIMARY KEY,
   projeto_id uuid NOT NULL,
@@ -200,5 +202,66 @@ CREATE INDEX idx_observacoes_asof ON observacoes(entidade_id, metrica_id, observ
 CREATE INDEX idx_eventos_projeto_data ON eventos_desfecho(projeto_id, codigo_evento, ocorrido_em);
 CREATE INDEX idx_predicoes_projeto_data ON predicoes(projeto_id, referencia_em DESC, pontuacao DESC);
 CREATE INDEX idx_ingestoes_projeto ON execucoes_ingestao(projeto_id, recebido_em DESC);
+
+-- Destino do diagnóstico/plano de ação gerado pelo LLM (Módulo 4, Task 4.3).
+-- Mantém histórico: N diagnósticos por predição, para o painel ler sem
+-- re-chamar o Gemini e para o Vercel Cron (Task 5.4) gravar suas varreduras.
+CREATE TABLE diagnosticos_ia (
+  id uuid PRIMARY KEY,
+  projeto_id uuid NOT NULL,
+  entidade_id uuid NOT NULL,
+  predicao_id uuid NOT NULL REFERENCES predicoes(id) ON DELETE CASCADE,
+  diagnostico_principal text NOT NULL,
+  analise_lookalike text NOT NULL,
+  plano_acao_imediato jsonb NOT NULL,
+  -- Rastreabilidade do RAG: quais casos alimentaram este diagnóstico e com que
+  -- similaridade, para auditar a recomendação depois.
+  casos_similares jsonb NOT NULL DEFAULT '[]'::jsonb,
+  modelo_ia text NOT NULL,
+  modelo_embedding text NOT NULL,
+  origem_gatilho text NOT NULL DEFAULT 'manual'
+    CHECK (origem_gatilho IN ('manual', 'cron')),
+  criado_em timestamptz NOT NULL DEFAULT now(),
+  FOREIGN KEY (projeto_id, entidade_id) REFERENCES entidades(projeto_id, id),
+  CONSTRAINT plano_acao_e_lista CHECK (jsonb_typeof(plano_acao_imediato) = 'array')
+);
+
+CREATE INDEX idx_diagnosticos_ia_entidade
+  ON diagnosticos_ia(projeto_id, entidade_id, criado_em DESC);
+CREATE INDEX idx_diagnosticos_ia_predicao ON diagnosticos_ia(predicao_id);
+
+-- Busca lookalike por distância de cosseno (Task 4.2), consumida por
+-- lib/ia/lookalike.ts via `supabase.rpc`. Ordenação e corte acontecem aqui para
+-- que o índice HNSW seja usado em vez de trazer a base para a aplicação.
+CREATE OR REPLACE FUNCTION buscar_casos_similares(
+  p_projeto_id uuid,
+  p_embedding vector(768),
+  p_limite integer DEFAULT 3,
+  p_entidade_excluida uuid DEFAULT NULL,
+  p_similaridade_minima double precision DEFAULT 0
+)
+RETURNS TABLE (
+  id uuid, entidade_id uuid, nome_exibicao text, contexto_texto text,
+  acao_realizada text, desfecho text, similaridade double precision,
+  criado_em timestamptz
+)
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  SELECT c.id, c.entidade_id, e.nome_exibicao, c.contexto_texto,
+         c.acao_realizada, c.desfecho,
+         -- <=> é distância cosseno (0 = idêntico); 1 - distância = similaridade.
+         1 - (c.embedding OPERATOR(public.<=>) p_embedding) AS similaridade,
+         c.criado_em
+  FROM public.casos_historicos_embeddings c
+  JOIN public.entidades e
+    ON e.projeto_id = c.projeto_id AND e.id = c.entidade_id
+  WHERE c.projeto_id = p_projeto_id
+    AND (p_entidade_excluida IS NULL OR c.entidade_id <> p_entidade_excluida)
+    AND 1 - (c.embedding OPERATOR(public.<=>) p_embedding) >= p_similaridade_minima
+  ORDER BY c.embedding OPERATOR(public.<=>) p_embedding
+  LIMIT greatest(p_limite, 0);
+$$;
 
 COMMIT;

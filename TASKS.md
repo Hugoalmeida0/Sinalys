@@ -57,9 +57,46 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 
 ## 🧠 Módulo 4: Inteligência, RAG e Orquestração de IA
 
-- [ ] **Task 4.1:** Configurar a integração com a API do Gemini utilizando o Vercel AI SDK (`@ai-sdk/google`).
-- [ ] **Task 4.2:** Implementar a busca semântica por similaridade via `pgvector` no Supabase para resgatar o histórico de desfechos (lookalike).
-- [ ] **Task 4.3:** Criar a rota de orquestração que consolida o contexto atual e histórico para gerar o diagnóstico e plano de ação estruturado (JSON).
+- [X] **Task 4.1:** Configurar a integração com a API do Gemini utilizando o Vercel AI SDK (`@ai-sdk/google`). _(`lib/ia/provedor.ts` + `lib/ia/constantes.ts`. Instalados `ai@7`, `@ai-sdk/google@4`, `zod@4`. Modelos configuráveis por env var — os do doc original foram retirados da API, ver pendência abaixo.)_
+- [X] **Task 4.2:** Implementar a busca semântica por similaridade via `pgvector` no Supabase para resgatar o histórico de desfechos (lookalike). _(`lib/ia/lookalike.ts` + RPC `buscar_casos_similares` no Postgres. Ordenação/corte no banco para usar o índice HNSW. **Validada com dados reais**, ver números abaixo.)_
+- [X] **Task 4.3:** Criar a rota de orquestração que consolida o contexto atual e histórico para gerar o diagnóstico e plano de ação estruturado (JSON). _(`POST /api/inteligencia/analisar` + `lib/ia/analisar.ts`. Saída forçada por schema Zod via `generateObject`, persistida em `diagnosticos_ia`. **Não validada contra o LLM real** — cota zerada, ver pendência.)_
+
+**Rotas e biblioteca implementadas:**
+
+- `lib/ia/*.ts`: `provedor` (cliente Gemini), `embeddings` (vetor 768-D normalizado), `descricao` (texto canônico do perfil), `contexto` (raio-x da última predição), `lookalike` (Task 4.2), `esquema`/`prompt` (contrato e persona), `analisar` (Task 4.3), `indexar` (feedback loop). As funções são exportadas para o Vercel Cron do Módulo 5.4 chamar sem passar por HTTP.
+- `POST /api/inteligencia/analisar`: orquestração RAG + LLM. `cliente_id` aceita UUID **ou** `id_externo`. Erros: 400 (payload), 404 (entidade), 422 (sem predição).
+- `POST /api/inteligencia/feedback`: vetoriza e indexa o desfecho na base histórica (antecipado do 5.3 por decisão do usuário — sem ele a Task 4.2 não teria dados para existir). A UI do feedback continua na Task 5.3.
+
+**Objetos criados no banco (migration `modulo4_inteligencia_rag`, refletida em `docs/modelagem.sql`):**
+
+- Tabela `diagnosticos_ia` — o `docs/instructions.md` mandava gravar numa "tabela de alertas" que **nunca existiu** no schema. Guarda o diagnóstico, os casos do RAG usados (auditoria), o modelo e o gatilho (`manual`/`cron`).
+- Função `buscar_casos_similares(projeto, embedding, limite, entidade_excluida, similaridade_minima)` — `SECURITY INVOKER` e `search_path = ''`, para respeitar RLS quando ele for habilitado.
+
+**Decisões de arquitetura tomadas nesta etapa (validadas com o usuário via perguntas diretas):**
+
+- **Modelos:** `gemini-2.5-flash` (LLM) e `gemini-embedding-001` truncado em 768-D (embeddings), ambos em env vars (`GEMINI_MODELO_LLM`/`GEMINI_MODELO_EMBEDDING`). Os do doc original (`gemini-1.5-flash`, `text-embedding-004`) **não existem mais na API**. O truncamento em 768-D foi verificado na API real e preserva a coluna `vector(768)` e o índice HNSW sem migration.
+- **Contexto atual** vem da **última predição persistida**, nunca de recálculo: o z-score de carteira depende de toda a carteira, então recalcular uma entidade isolada seria caro e inconsistente. Sem predição → 422.
+- **Nomes de rota em português**, acompanhando `/api/motor/*` e `/api/ingestao/*`, divergindo da letra do `docs/instructions.md` (doc atualizado).
+- **Texto canônico do perfil** (`lib/ia/descricao.ts`) é compartilhado entre indexação e consulta — essa simetria é o que faz a similaridade funcionar. Ele omite nome do cliente e valores em reais de propósito: o que deve aproximar dois casos é o padrão de comportamento, não quem é o cliente. **Alterar o formato exige reindexar a base.**
+- **Embeddings gravados normalizados** (norma 1). Indiferente para cosseno, mas deixa aberta a troca futura para produto interno (`<#>`), mais barato.
+
+**Validação executada (Task 4.2, dados reais do projeto seed):**
+
+- 3 casos indexados via `POST /api/inteligencia/feedback` (dados fictícios de MVP, autorizados pelo usuário). Vetores conferidos no banco: **768 dimensões, norma 1.0000**.
+- Busca com o embedding de um caso contra ele mesmo: **similaridade 1.0000 exata** (prova de que normalização e cosseno estão corretos).
+- Ranking decrescente correto (0.8946 / 0.8721), exclusão da própria entidade e limiar mínimo funcionando.
+- Observação honesta: com textos tão estruturados, as similaridades se concentram em faixa alta (>0.85 entre casos de perfis bem diferentes). O piso padrão de `0.5` (`PADRAO_SIMILARIDADE_MINIMA`) é, na prática, permissivo demais para discriminar — **recalibrar quando a base tiver volume real**.
+- `POST /api/inteligencia/analisar` percorreu todo o pipeline (entidade → contexto → embedding → RPC) e só parou na chamada ao Gemini, por cota. Erros 400/404 conferidos.
+
+**Pendências registradas durante a execução do Módulo 4:**
+
+- 🚨 **Cota do Gemini zerada — Tasks 4.1/4.3 não validadas ponta a ponta.** A chave atual retorna `429` com `quota_limit_value: "0"` em **`generateContent`**, para todos os modelos e em `v1` e `v1beta`; `embedContent` funciona normalmente (por isso a 4.2 pôde ser validada). Não é excesso de uso: é ausência de cota no projeto GCP `779681085062`. **Ação necessária:** gerar uma chave nova no Google AI Studio em um projeto novo, ou habilitar billing no projeto atual. Depois disso, validar com `POST /api/inteligencia/analisar` — nenhuma mudança de código deve ser necessária.
+- ⚠️ **Env vars não propagadas para a Vercel:** o MCP da Vercel retornou `403 forbidden` no scope `hugo-almeidas-projects-6d9d1f54` (token precisa ser reautenticado). Registrar manualmente no painel ou via `vercel env add GEMINI_MODELO_LLM` / `GEMINI_MODELO_EMBEDDING`. **Não é bloqueante:** ambas têm default no código.
+- ⚠️ **RLS ainda desabilitado** nas agora **14** tabelas (herdado dos Módulos 2 e 3). `diagnosticos_ia` nasceu sem RLS pelo mesmo motivo; `buscar_casos_similares` já foi escrita como `SECURITY INVOKER` para respeitar policies quando existirem.
+- ⚠️ **Autenticação/multi-tenant:** as duas rotas novas seguem o mesmo padrão (`DEFAULT_PROJETO_ID` como fallback). Revisitar junto com as demais.
+- ⚠️ **Sem rota HTTP dedicada para a Task 4.2:** a busca lookalike existe como função (`buscarCasosSimilares`) consumida pela 4.3, mas não como endpoint próprio. Se o painel do Módulo 5.2 precisar exibir "clientes parecidos" sem gerar um diagnóstico, criar um `GET /api/inteligencia/lookalike`.
+- ⚠️ **Casos de teste permanecem na base:** os 3 casos indexados na validação continuam em `casos_historicos_embeddings`. Como todo o banco é fictício de MVP, foram mantidos de propósito — apagar antes de qualquer uso real.
+- 🔐 **`.env.example` continha a chave real do Gemini em texto plano** (não um placeholder). Substituída por placeholder. Verificado: o arquivo **nunca foi commitado** (`.gitignore` cobre `.env*`), então não houve vazamento no histórico do git.
 
 ## 🖥️ Módulo 5: Painel de Atendimento e Feedback Loop
 
