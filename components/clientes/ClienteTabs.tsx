@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ComponentType, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangleIcon,
   ArrowDownIcon,
@@ -8,12 +9,9 @@ import {
   ArrowUpIcon,
   CalendarIcon,
   CheckIcon,
-  ClipboardIcon,
   DollarIcon,
   FileTextIcon,
-  HeartHandshakeIcon,
-  MailIcon,
-  PhoneIcon,
+  LoaderIcon,
   ReportsIcon,
   TargetIcon,
   type IconProps,
@@ -25,8 +23,8 @@ import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { SoftBadge } from "@/components/ui/Badge";
 import { RegistrarContatoTrigger } from "@/components/RegistrarContatoTrigger";
-import { formatCurrencyBRL, formatDatePtBR, mesAnoPtBR, tempoDesde } from "@/lib/format";
-import type { EventoHistorico } from "@/lib/mock-data";
+import { SinalysMascot } from "@/components/ui/SinalysMascot";
+import { formatCurrencyBRL, formatDatePtBR, formatTimePtBR, mesAnoPtBR, tempoDesde } from "@/lib/format";
 import type { DetalheClientePainel as DetalheCliente } from "@/lib/painel/detalhe";
 import {
   faixaRiscoLabel,
@@ -37,13 +35,7 @@ import {
   severidadeNome,
 } from "@/lib/risk";
 
-const tabs = [
-  "Visão geral",
-  "Sinais de risco",
-  "Histórico",
-  "Relacionamento",
-  "Plano de ação",
-] as const;
+const tabs = ["Visão geral", "Sinais de risco", "Plano de ação"] as const;
 
 type Tab = (typeof tabs)[number];
 
@@ -73,8 +65,6 @@ export function ClienteTabs({ detalhe }: { detalhe: DetalheCliente }) {
 
       {tab === "Visão geral" && <VisaoGeral detalhe={detalhe} />}
       {tab === "Sinais de risco" && <SinaisDeRisco detalhe={detalhe} />}
-      {tab === "Histórico" && <Historico detalhe={detalhe} />}
-      {tab === "Relacionamento" && <Relacionamento detalhe={detalhe} />}
       {tab === "Plano de ação" && <PlanoDeAcao detalhe={detalhe} />}
     </div>
   );
@@ -265,10 +255,6 @@ function VisaoGeral({ detalhe }: { detalhe: DetalheCliente }) {
                 {detalhe.resumoCliente}
               </p>
             </div>
-            <Button variant="secondary" className="shrink-0">
-              Ver histórico
-              <ArrowRightIcon className="h-4 w-4" />
-            </Button>
           </CardContent>
         </Card>
 
@@ -315,198 +301,188 @@ function SinaisDeRisco({ detalhe }: { detalhe: DetalheCliente }) {
   );
 }
 
-const historicoIcons: Record<EventoHistorico["tipo"], ComponentType<IconProps>> = {
-  contato: PhoneIcon,
-  sinal: AlertTriangleIcon,
-  sistema: ClipboardIcon,
-  reuniao: CalendarIcon,
-};
-
-function Historico({ detalhe }: { detalhe: DetalheCliente }) {
-  if (detalhe.historico.length === 0) {
-    return (
-      <Card>
-        <CardContent className="pt-5 text-sm text-slate-400">
-          Ainda não há histórico registrado para este cliente.
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Linha do tempo</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ol className="flex flex-col gap-5">
-          {detalhe.historico.map((evento) => {
-            const Icon = historicoIcons[evento.tipo];
-            return (
-              <li key={evento.id} className="flex gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-pale text-brand-royal">
-                  <Icon className="h-4.5 w-4.5" />
-                </span>
-                <div className="min-w-0 flex-1 border-b border-slate-100 pb-5 last:border-0 last:pb-0">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-sm font-semibold text-brand-ink">{evento.titulo}</p>
-                    <span className="text-xs text-slate-400">{formatDatePtBR(evento.data)}</span>
-                  </div>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-500">
-                    {evento.descricao}
-                  </p>
-                  {evento.autor && (
-                    <p className="mt-1 text-xs text-slate-400">Por {evento.autor}</p>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      </CardContent>
-    </Card>
-  );
+/** Plano gerado pela IA, na forma que a aba exibe. */
+interface PlanoIA {
+  diagnostico: string;
+  analiseLookalike: string | null;
+  acoes: string[];
+  geradoEm: string | null;
 }
 
-const contatosChave = [
-  { iniciais: "MC", nome: "Marina Costa", papel: "Decisora · Diretoria de Operações" },
-  { iniciais: "RT", nome: "Rafael Torres", papel: "Ponto focal · TI" },
-];
-
-function Relacionamento({ detalhe }: { detalhe: DetalheCliente }) {
-  const ultimoContato = detalhe.historico.find((h) => h.tipo === "contato");
-
-  return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="text-lg">Contatos-chave</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="flex flex-col divide-y divide-slate-100">
-            {contatosChave.map((contato) => (
-              <li key={contato.iniciais} className="flex items-center gap-3 py-3.5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-pale text-xs font-bold text-brand-navy">
-                  {contato.iniciais}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-brand-ink">{contato.nome}</p>
-                  <p className="text-xs text-slate-400">{contato.papel}</p>
-                </div>
-                <div className="flex gap-1.5">
-                  <button
-                    type="button"
-                    aria-label={`Enviar e-mail para ${contato.nome}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                  >
-                    <MailIcon className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Ligar para ${contato.nome}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                  >
-                    <PhoneIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Resumo do relacionamento</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="flex flex-col gap-3 text-sm">
-            <LinhaResumo rotulo="Gestor de conta" valor={detalhe.responsavelCS} />
-            <LinhaResumo rotulo="Canal preferido" valor="E-mail" />
-            <LinhaResumo
-              rotulo="Último contato"
-              valor={ultimoContato ? formatDatePtBR(ultimoContato.data) : "—"}
-            />
-            <LinhaResumo rotulo="Cliente desde" valor={mesAnoPtBR(detalhe.clienteDesde)} />
-          </dl>
-
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-brand-pale px-3.5 py-3 text-xs font-medium text-brand-navy">
-            <HeartHandshakeIcon className="h-4 w-4 shrink-0" />
-            Relacionamento ativo há {tempoDesde(detalhe.clienteDesde)}.
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function LinhaResumo({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="text-slate-500">{rotulo}</dt>
-      <dd className="font-semibold text-brand-ink">{valor}</dd>
-    </div>
-  );
+function planoInicial(detalhe: DetalheCliente): PlanoIA | null {
+  if (!detalhe.diagnosticoGeradoEm) return null;
+  return {
+    diagnostico: detalhe.avaliacaoIA,
+    analiseLookalike: detalhe.analiseLookalike,
+    acoes: detalhe.proximasAcoes.map((a) => a.titulo),
+    geradoEm: detalhe.diagnosticoGeradoEm,
+  };
 }
 
 function PlanoDeAcao({ detalhe }: { detalhe: DetalheCliente }) {
-  const [concluidas, setConcluidas] = useState<Record<string, boolean>>({});
+  const router = useRouter();
+  // Começa com o último diagnóstico persistido (vindo do servidor); depois de
+  // uma análise, passa a refletir a resposta da rota sem esperar o refresh.
+  const [plano, setPlano] = useState<PlanoIA | null>(() => planoInicial(detalhe));
+  const [analisando, setAnalisando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [concluidas, setConcluidas] = useState<Record<number, boolean>>({});
 
-  const total = detalhe.proximasAcoes.length;
-  const feitas = detalhe.proximasAcoes.filter((a) => concluidas[a.id]).length;
+  async function analisar() {
+    setAnalisando(true);
+    setErro(null);
+    try {
+      const resposta = await fetch("/api/inteligencia/analisar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: detalhe.id, trigger_source: "manual" }),
+      });
+      const corpo = await resposta.json().catch(() => ({}));
+      if (!resposta.ok) {
+        throw new Error(corpo?.erro ?? `Falha na análise (HTTP ${resposta.status}).`);
+      }
+      setPlano({
+        diagnostico: corpo.diagnostico_principal,
+        analiseLookalike: corpo.analise_lookalike ?? null,
+        acoes: Array.isArray(corpo.plano_acao_imediato) ? corpo.plano_acao_imediato : [],
+        geradoEm: new Date().toISOString(),
+      });
+      setConcluidas({});
+      // O diagnóstico foi persistido: sincroniza visão geral e header com o servidor.
+      router.refresh();
+    } catch (e) {
+      setErro((e as Error).message);
+    } finally {
+      setAnalisando(false);
+    }
+  }
+
+  const total = plano?.acoes.length ?? 0;
+  const feitas = plano ? plano.acoes.filter((_, i) => concluidas[i]).length : 0;
 
   return (
     <Card>
       <CardHeader>
-        <div>
+        <div className="min-w-0">
           <CardTitle className="text-lg">Plano de ação recomendado</CardTitle>
           <p className="mt-1 text-sm text-slate-500">
-            {feitas} de {total} ações concluídas
+            {plano
+              ? `${feitas} de ${total} ações concluídas`
+              : "Nenhum plano gerado para este cliente ainda"}
           </p>
         </div>
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-pale text-brand-royal">
-          <TargetIcon className="h-5 w-5" />
-        </span>
+        <Button onClick={analisar} disabled={analisando} className="shrink-0" aria-live="polite">
+          {analisando ? (
+            <>
+              <LoaderIcon className="h-4 w-4 animate-spin" />
+              Analisando…
+            </>
+          ) : (
+            <>
+              <TargetIcon className="h-4 w-4" />
+              {plano ? "Reanalisar cliente" : "Analisar cliente"}
+            </>
+          )}
+        </Button>
       </CardHeader>
-      <CardContent>
-        <ul className="flex flex-col gap-2">
-          {detalhe.proximasAcoes.map((acao, index) => {
-            const feita = Boolean(concluidas[acao.id]);
-            return (
-              <li key={acao.id}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setConcluidas((prev) => ({ ...prev, [acao.id]: !prev[acao.id] }))
-                  }
-                  className="flex w-full items-center gap-3 rounded-xl border border-slate-100 px-3.5 py-3 text-left transition-colors hover:bg-slate-50"
-                >
-                  <span
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
-                      feita
-                        ? "border-emerald-500 bg-emerald-500 text-white"
-                        : "border-slate-300 text-transparent"
-                    }`}
-                  >
-                    <CheckIcon className="h-3.5 w-3.5" />
-                  </span>
-                  <span
-                    className={`text-sm ${feita ? "text-slate-400 line-through" : "text-slate-700"}`}
-                  >
-                    {index + 1}. {acao.titulo}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
 
-        <RegistrarContatoTrigger
-          clienteId={detalhe.id}
-          clienteLabel={detalhe.nome}
-          className="mt-4"
-          fullWidth
-        />
+      <CardContent className="flex flex-col gap-5">
+        {analisando && (
+          <div className="flex items-start gap-3 rounded-xl bg-brand-pale px-4 py-3 text-sm text-brand-navy">
+            <LoaderIcon className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+            <p>
+              Cruzando os sinais do motor de risco com o histórico de casos parecidos e gerando o
+              plano. Isso leva até um minuto.
+            </p>
+          </div>
+        )}
+
+        {erro && (
+          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>{erro}</p>
+          </div>
+        )}
+
+        {!plano && !analisando && (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <SinalysMascot variante="insight" className="h-24 w-auto" />
+            <p className="max-w-md text-sm leading-relaxed text-slate-500">
+              A IA cruza os sinais de risco deste cliente com casos parecidos do histórico da sua
+              empresa e devolve um diagnóstico e um plano de ação estruturado.
+            </p>
+          </div>
+        )}
+
+        {plano && (
+          <>
+            <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+              <h3 className="flex items-center gap-2 text-sm font-bold text-brand-ink">
+                <AlertTriangleIcon className="h-4 w-4 text-red-500" />
+                Diagnóstico
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{plano.diagnostico}</p>
+            </section>
+
+            {plano.analiseLookalike && (
+              <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-brand-ink">
+                  <ReportsIcon className="h-4 w-4 text-brand-royal" />O que o histórico diz
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  {plano.analiseLookalike}
+                </p>
+              </section>
+            )}
+
+            <div>
+              <h3 className="mb-2 text-sm font-bold text-brand-ink">Ações imediatas</h3>
+              <ul className="flex flex-col gap-2">
+                {plano.acoes.map((acao, index) => {
+                  const feita = Boolean(concluidas[index]);
+                  return (
+                    <li key={index}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConcluidas((prev) => ({ ...prev, [index]: !prev[index] }))
+                        }
+                        className="flex w-full items-start gap-3 rounded-xl border border-slate-100 px-3.5 py-3 text-left transition-colors hover:bg-slate-50"
+                      >
+                        <span
+                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                            feita
+                              ? "border-emerald-500 bg-emerald-500 text-white"
+                              : "border-slate-300 text-transparent"
+                          }`}
+                        >
+                          <CheckIcon className="h-3.5 w-3.5" />
+                        </span>
+                        <span
+                          className={`text-sm leading-relaxed ${
+                            feita ? "text-slate-400 line-through" : "text-slate-700"
+                          }`}
+                        >
+                          {index + 1}. {acao}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {plano.geradoEm && (
+              <p className="text-xs text-slate-400">
+                Gerado pela IA em {formatDatePtBR(plano.geradoEm)} às{" "}
+                {formatTimePtBR(plano.geradoEm)}. O conteúdo é uma recomendação: confira os
+                sinais antes de agir.
+              </p>
+            )}
+          </>
+        )}
+
+        <RegistrarContatoTrigger clienteId={detalhe.id} clienteLabel={detalhe.nome} fullWidth />
       </CardContent>
     </Card>
   );

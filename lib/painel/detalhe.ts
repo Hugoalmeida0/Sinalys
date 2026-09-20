@@ -24,6 +24,8 @@ export type DetalheClientePainel = ClientePainel & {
   evidencias: Evidencia[];
   proximasAcoes: ProximaAcao[];
   avaliacaoIA: string;
+  /** `analise_lookalike` do último diagnóstico de IA; null sem diagnóstico. */
+  analiseLookalike: string | null;
   /** null = ainda não há diagnóstico de IA gerado para este cliente. */
   diagnosticoGeradoEm: string | null;
   historico: EventoHistorico[];
@@ -178,6 +180,7 @@ export async function montarDetalheCliente(params: {
     evidencias,
     proximasAcoes,
     avaliacaoIA: diagnostico?.diagnostico_principal ?? AVALIACAO_SEM_DIAGNOSTICO,
+    analiseLookalike: diagnostico?.analise_lookalike ?? null,
     diagnosticoGeradoEm: diagnostico?.criado_em ?? null,
     historico,
     evolucaoScore,

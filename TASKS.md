@@ -104,6 +104,13 @@ Este documento define as tarefas de desenvolvimento macro e genéricas necessár
 - Limitações observadas do modelo gratuito: numa rodada apresentou o Score de Urgência (adimensional) como "R$ 35 mil" e transcreveu "15 min" como "15 h" — regras adicionadas ao prompt, mas o texto do assistente é apoio, não fonte de verdade. O upstream gratuito também devolveu "Service temporarily overloaded" uma vez; o erro chega legível ao chat e basta reenviar.
 - Histórico do chat vive só no estado do componente (some ao recarregar a página) — decisão consciente: o assistente é apoio, o registro fica no histórico de contatos.
 
+**Aba "Plano de ação" do detalhe do cliente ligada à Task 4.3 (a pedido do usuário):**
+
+- `components/clientes/ClienteTabs.tsx`: abas **Histórico** e **Relacionamento** removidas (junto com `contatosChave` — contatos fictícios em hardcode — e o botão "Ver histórico" da visão geral, que apontava para a aba removida). Restam Visão geral, Sinais de risco e Plano de ação.
+- Plano de ação: botão **"Analisar cliente"** (ou "Reanalisar", quando já existe diagnóstico) chama `POST /api/inteligencia/analisar` com o `id_externo` do cliente, mostra estado de progresso (a análise leva 20–30s), exibe Diagnóstico + "O que o histórico diz" + checklist de ações imediatas, e faz `router.refresh()` para o restante da tela refletir o diagnóstico persistido. Erros da rota (422 sem predição, cota, upstream) aparecem inline.
+- `lib/painel/detalhe.ts` passou a expor `analiseLookalike` (antes só o `diagnostico_principal` chegava ao front).
+- Não validado visualmente no navegador (página exige sessão); a rota chamada pelo botão foi validada com sessão real na etapa anterior.
+
 **Pendências registradas durante a execução do Módulo 4:**
 
 - ⚠️ **Limite de 50 requisições/dia no LLM gratuito — compartilhado entre diagnóstico e chat.** Cada turno do chat gasta 2–3 requisições (uma por passo de ferramenta). Na validação desta sessão foram usadas ~25. Suficiente para uso manual leve, mas o Vercel Cron do 5.4 (varredura diária da carteira) esgota isso rápido em bases reais. Ao implementar o 5.4, analisar só entidades acima de um limiar de urgência, ou trocar `OPENROUTER_MODELO_LLM` por um modelo pago (sem mudar código).
