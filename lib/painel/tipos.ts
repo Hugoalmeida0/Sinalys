@@ -1,4 +1,5 @@
 import type { FaixaRisco, TendenciaScore } from "@/lib/mock-data";
+import type { MotivoCancelamento } from "@/lib/cancelamento/constantes";
 
 /**
  * Cliente na forma que o painel consome (mesmos campos do `Cliente` de
@@ -44,6 +45,8 @@ export interface ClientePainel {
   cancelado: boolean;
   /** ISO date do desfecho mais recente, ou null se o cliente segue ativo. */
   canceladoEm: string | null;
+  /** Motivo estruturado do cancelamento mais recente, ou null se não capturado / cliente ativo. */
+  motivoCancelamento: { categoria: MotivoCancelamento; detalhe: string | null } | null;
 }
 
 export interface KpisPainel {

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { MenuFlutuante } from "@/components/ui/MenuFlutuante";
 import { ChevronDownIcon, MoreIcon } from "@/components/icons";
 import { MarcarResolvidoModal } from "@/components/MarcarResolvidoModal";
+import { MarcarCanceladoModal } from "@/components/MarcarCanceladoModal";
 import { RegistrarContatoModal } from "@/components/RegistrarContatoModal";
 
 const ITEM = "block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50";
@@ -30,6 +31,7 @@ export function AcoesCliente({
   const [moreOpen, setMoreOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [resolvidoOpen, setResolvidoOpen] = useState(false);
+  const [canceladoOpen, setCanceladoOpen] = useState(false);
   const [silenciando, setSilenciando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -133,6 +135,16 @@ export function AcoesCliente({
         </button>
         <button
           type="button"
+          onClick={() => {
+            setCanceladoOpen(true);
+            setMoreOpen(false);
+          }}
+          className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+        >
+          Marcar como cancelado
+        </button>
+        <button
+          type="button"
           onClick={silenciarAlertas}
           className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
         >
@@ -158,6 +170,12 @@ export function AcoesCliente({
       <MarcarResolvidoModal
         open={resolvidoOpen}
         onOpenChange={setResolvidoOpen}
+        clienteId={clienteId}
+        clienteLabel={clienteLabel}
+      />
+      <MarcarCanceladoModal
+        open={canceladoOpen}
+        onOpenChange={setCanceladoOpen}
         clienteId={clienteId}
         clienteLabel={clienteLabel}
       />

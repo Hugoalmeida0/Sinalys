@@ -3,6 +3,7 @@ import { buscarTodasLinhas } from "@/lib/supabase/paginar";
 import type { FaixaRisco, TendenciaScore } from "@/lib/mock-data";
 import { CODIGO_METRICA_RECEITA_MENSAL } from "@/lib/motor/constantes";
 import { calcularScoreUrgencia } from "@/lib/motor/urgencia";
+import type { MotivoCancelamento } from "@/lib/cancelamento/constantes";
 import type { ClientePainel } from "./tipos";
 
 /** Máximo de chips em "Principais sinais". */
@@ -146,11 +147,15 @@ export async function montarClientesPainel(params: {
   // Clientes com o evento de desfecho-alvo (ex. "cancelamento") já registrado —
   // não entram na fila do dia e aparecem marcados na listagem.
   const canceladoEmPorEntidade = new Map<string, string>();
+  const motivoPorEntidade = new Map<
+    string,
+    { categoria: MotivoCancelamento; detalhe: string | null }
+  >();
   if (projeto?.codigo_evento_alvo) {
     const { data: eventos, error: erroEventos } = await buscarTodasLinhas(() =>
       supabase
         .from("eventos_desfecho")
-        .select("entidade_id, ocorrido_em")
+        .select("entidade_id, ocorrido_em, motivo_categoria, motivo_detalhe")
         .eq("projeto_id", projetoId)
         .eq("codigo_evento", projeto.codigo_evento_alvo)
         .order("entidade_id", { ascending: true })
@@ -160,6 +165,14 @@ export async function montarClientesPainel(params: {
       const atual = canceladoEmPorEntidade.get(evento.entidade_id);
       if (!atual || evento.ocorrido_em > atual) {
         canceladoEmPorEntidade.set(evento.entidade_id, evento.ocorrido_em);
+        if (evento.motivo_categoria) {
+          motivoPorEntidade.set(evento.entidade_id, {
+            categoria: evento.motivo_categoria as MotivoCancelamento,
+            detalhe: evento.motivo_detalhe,
+          });
+        } else {
+          motivoPorEntidade.delete(evento.entidade_id);
+        }
       }
     }
   }
@@ -287,6 +300,7 @@ export async function montarClientesPainel(params: {
       silenciadoAte: silenciadoAte.get(e.id) ?? null,
       cancelado: canceladoEmPorEntidade.has(e.id),
       canceladoEm: canceladoEmPorEntidade.get(e.id) ?? null,
+      motivoCancelamento: motivoPorEntidade.get(e.id) ?? null,
     });
   }
 
