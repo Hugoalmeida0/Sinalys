@@ -123,6 +123,33 @@ export function registrar(projeto: string, achados: Achado[]) {
   fs.appendFileSync(arquivo, linhas + "\n", "utf8");
 }
 
+/**
+ * Vigia erros de runtime da página.
+ *
+ * Violações de fronteira servidor/cliente (passar função como prop para um
+ * client component, por exemplo) não aparecem no tsc nem no ESLint: só
+ * estouram ao renderizar. Sem isso, a suíte passava com a tela quebrada.
+ */
+export function vigiarErros(page: Page) {
+  const erros: string[] = [];
+
+  page.on("pageerror", (e) => erros.push(`pageerror: ${e.message.slice(0, 300)}`));
+
+  page.on("console", (m) => {
+    if (m.type() !== "error") return;
+    const texto = m.text();
+    // Ruído de rede de terceiros não diz nada sobre a saúde da aplicação.
+    if (/favicon|net::ERR_|Failed to load resource/i.test(texto)) return;
+    erros.push(`console: ${texto.slice(0, 300)}`);
+  });
+
+  page.on("response", (r) => {
+    if (r.status() >= 500) erros.push(`HTTP ${r.status()} em ${r.url()}`);
+  });
+
+  return () => Array.from(new Set(erros));
+}
+
 export async function logar(page: Page) {
   await page.goto("/login", { waitUntil: "domcontentloaded" });
   // Os campos já vêm preenchidos com as credenciais de demonstração.

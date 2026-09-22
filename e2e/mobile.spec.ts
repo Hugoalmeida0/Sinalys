@@ -1,5 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
-import { auditarLayout, bloqueantes, registrar, screenshot, assentar, type Achado } from "./auditoria";
+import {
+  auditarLayout,
+  bloqueantes,
+  registrar,
+  screenshot,
+  assentar,
+  vigiarErros,
+  type Achado,
+} from "./auditoria";
 
 /**
  * A suíte roda contra produção (E2E_BASE_URL). Por isso nada aqui pode gravar
@@ -66,6 +74,7 @@ test.describe("responsividade mobile", () => {
   test("rotas principais", async ({ page }, info) => {
     const projeto = info.project.name;
     const todos: Achado[] = [];
+    const erros = vigiarErros(page);
 
     for (const rota of ROTAS_BASE) {
       await irPara(page, rota.caminho);
@@ -79,8 +88,10 @@ test.describe("responsividade mobile", () => {
     await irPara(page, href!);
     await auditar(page, projeto, "rota-cliente-detalhe", todos);
 
-    const erros = bloqueantes(todos);
-    expect(erros, formatar(erros)).toHaveLength(0);
+    expect(erros(), "erros de runtime:\n  " + erros().join("\n  ")).toHaveLength(0);
+
+    const problemas = bloqueantes(todos);
+    expect(problemas, formatar(problemas)).toHaveLength(0);
   });
 
   test("assistente virtual", async ({ page }, info) => {
