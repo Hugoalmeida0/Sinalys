@@ -69,8 +69,8 @@ export function MarcarResolvidoModal({
         onClick={handleClose}
       />
 
-      <div className="relative w-full max-w-md rounded-xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+      <div className="relative flex max-h-[90dvh] w-full max-w-md flex-col rounded-xl bg-white shadow-xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
           <h2 className="text-base font-semibold text-slate-900">Marcar como resolvido</h2>
           <button
             type="button"
@@ -82,7 +82,7 @@ export function MarcarResolvidoModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-5">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">
           <p className="text-sm text-slate-500">
             <span className="font-semibold text-slate-700">
               {clienteId} – {clienteLabel}

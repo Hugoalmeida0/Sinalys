@@ -29,7 +29,7 @@ export function ClienteHeader({ detalhe, baseUrl }: { detalhe: DetalheCliente; b
           {detalhe.teste && <BadgeTeste origem={detalhe.testeOrigem} />}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {detalhe.cancelado && (
             <Badge className="bg-slate-200 px-3.5 py-2 font-semibold text-slate-600">
               Cancelado

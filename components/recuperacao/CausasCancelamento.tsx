@@ -36,9 +36,14 @@ export function CausasCancelamento({ cancelados }: { cancelados: ClientePainel[]
         <CardTitle className="text-lg">Principais causas de cancelamento</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {/* Em telas estreitas as 4 colunas fixas somam mais que a largura do
+            card, então o rótulo e os números viram linhas próprias. */}
         {linhas.map((linha) => (
-          <div key={linha.categoria} className="flex items-center gap-3">
-            <span className="w-32 shrink-0 text-xs font-medium text-slate-600">
+          <div
+            key={linha.categoria}
+            className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3"
+          >
+            <span className="text-xs font-medium text-slate-600 sm:w-32 sm:shrink-0">
               {linha.categoria === "sem_motivo" ? "Sem motivo registrado" : MOTIVOS_CANCELAMENTO[linha.categoria]}
             </span>
             <div className="h-4 flex-1 rounded-full bg-slate-100">
@@ -47,12 +52,14 @@ export function CausasCancelamento({ cancelados }: { cancelados: ClientePainel[]
                 style={{ width: `${(linha.receitaAnualPerdida / max) * 100}%` }}
               />
             </div>
-            <span className="w-16 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">
-              {linha.clientes} {linha.clientes === 1 ? "cliente" : "clientes"}
-            </span>
-            <span className="w-28 shrink-0 text-right text-xs font-semibold text-red-600 tabular-nums">
-              {formatCurrencyBRL(linha.receitaAnualPerdida)}
-            </span>
+            <div className="flex items-center justify-between gap-3 sm:contents">
+              <span className="text-xs font-semibold text-slate-700 tabular-nums sm:w-16 sm:shrink-0 sm:text-right">
+                {linha.clientes} {linha.clientes === 1 ? "cliente" : "clientes"}
+              </span>
+              <span className="text-xs font-semibold text-red-600 tabular-nums sm:w-28 sm:shrink-0 sm:text-right">
+                {formatCurrencyBRL(linha.receitaAnualPerdida)}
+              </span>
+            </div>
           </div>
         ))}
 

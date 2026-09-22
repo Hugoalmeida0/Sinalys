@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ComponentType, type ReactNode } from "react";
+import { useAbaVisivel } from "@/hooks/useAbaVisivel";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangleIcon,
@@ -35,15 +36,20 @@ type Tab = (typeof tabs)[number];
 
 export function ClienteTabs({ detalhe }: { detalhe: DetalheCliente }) {
   const [tab, setTab] = useState<Tab>("Visão geral");
+  const faixaAbas = useAbaVisivel(tab);
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
-      <div className="scroll-slim -mb-2 flex gap-2 overflow-x-auto border-b border-slate-200">
+      <div
+        ref={faixaAbas}
+        className="scroll-slim -mb-2 flex gap-2 overflow-x-auto border-b border-slate-200"
+      >
         {tabs.map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
+            data-aba-ativa={tab === t}
             className={`shrink-0 border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap transition-colors ${
               tab === t
                 ? "border-brand-royal text-brand-royal"

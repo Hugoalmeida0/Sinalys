@@ -16,6 +16,7 @@ import { AssistantCard } from "@/components/ui/AssistantCard";
 import { Button } from "@/components/ui/Button";
 import { SoftBadge } from "@/components/ui/Badge";
 import { Toggle } from "@/components/ui/Toggle";
+import { useAbaVisivel } from "@/hooks/useAbaVisivel";
 import { useModeloDeRisco } from "@/hooks/useModeloDeRisco";
 import { equipe, integracoes, usuarioAtual, type Integracao } from "@/lib/mock/dados";
 
@@ -31,17 +32,22 @@ type Tab = (typeof tabs)[number];
 
 export function ConfiguracoesTabs() {
   const [tab, setTab] = useState<Tab>("Geral");
+  const faixaAbas = useAbaVisivel(tab);
 
   const modeloState = useModeloDeRisco();
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="scroll-slim flex gap-2 overflow-x-auto border-b border-slate-200">
+      <div
+        ref={faixaAbas}
+        className="scroll-slim flex gap-2 overflow-x-auto border-b border-slate-200"
+      >
         {tabs.map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
+            data-aba-ativa={tab === t}
             className={`shrink-0 border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap transition-colors ${
               tab === t
                 ? "border-brand-royal text-brand-royal"

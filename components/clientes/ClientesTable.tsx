@@ -303,13 +303,19 @@ export function ClientesTable({
               <ChevronLeftIcon className="h-4 w-4" />
             </BotaoPagina>
 
+            {/* Os botões numerados não cabem em telas estreitas; lá vale só o
+                indicador de posição entre as setas. */}
+            <span className="px-2 text-sm font-semibold text-slate-600 tabular-nums sm:hidden">
+              {paginaAtual} de {totalPaginas}
+            </span>
+
             {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
               <button
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
                 aria-current={n === paginaAtual ? "page" : undefined}
-                className={`h-9 min-w-9 rounded-lg px-3 text-sm font-semibold transition-colors ${
+                className={`hidden h-10 min-w-10 rounded-lg px-3 text-sm font-semibold transition-colors sm:inline-flex sm:items-center sm:justify-center ${
                   n === paginaAtual
                     ? "bg-brand-royal text-white"
                     : "text-slate-500 hover:bg-slate-100"
@@ -376,7 +382,7 @@ function BotaoPagina({
       onClick={aoClicar}
       disabled={desabilitado}
       aria-label={rotulo}
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 sm:h-10 sm:w-10"
     >
       {children}
     </button>

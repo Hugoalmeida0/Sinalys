@@ -14,9 +14,11 @@ const variantClasses: Record<Variant, string> = {
   danger: "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600",
 };
 
+// min-h garante alvo de toque confortável no celular sem alterar a altura no
+// desktop, onde o ponteiro é preciso.
 const sizeClasses: Record<Size, string> = {
-  sm: "text-xs px-3 py-1.5 gap-1.5",
-  md: "text-sm px-4 py-2.5 gap-2",
+  sm: "text-xs px-3 py-1.5 gap-1.5 min-h-11 sm:min-h-0",
+  md: "text-sm px-4 py-2.5 gap-2 min-h-11 sm:min-h-0",
   lg: "text-sm px-5 py-3 gap-2",
 };
 

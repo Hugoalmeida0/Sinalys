@@ -17,7 +17,10 @@ export function AppShell({ usuario, children }: { usuario: UsuarioSessao; childr
           <MobileHeader usuario={usuario} />
           <Topbar usuario={usuario} />
 
-          <main className="flex-1 pb-24 lg:pb-0">{children}</main>
+          {/* Espaço para a navegação inferior fixa (4.5rem) + a safe area do aparelho. */}
+          <main className="flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
+            {children}
+          </main>
         </div>
 
         <MobileNav />

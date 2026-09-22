@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Montserrat, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -16,6 +16,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Sinalys",
   description: "Inteligência para relacionamentos duradouros",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // `cover` libera as env(safe-area-inset-*) usadas pela navegação inferior;
+  // `resizes-content` faz o layout encolher quando o teclado virtual abre, em
+  // vez de empurrar os elementos fixos para fora da tela.
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

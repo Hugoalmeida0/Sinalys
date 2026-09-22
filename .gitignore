@@ -12,6 +12,14 @@
 
 # testing
 /coverage
+/e2e/.artifacts/
+/e2e/.auth/
+/e2e/__screenshots__/
+/playwright-report/
+
+# gerados pelo next dev para agentes de IA
+/AGENTS.md
+/CLAUDE.md
 
 # next.js
 /.next/

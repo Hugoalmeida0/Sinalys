@@ -58,7 +58,9 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
         onClick={() => (aberto ? fechar() : abrir())}
         aria-expanded={aberto}
         aria-label={aberto ? "Fechar assistente" : "Abrir assistente da Sinalys"}
-        className="fixed right-5 bottom-24 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-brand-deep shadow-[0_18px_36px_-12px_rgba(37,99,235,0.85)] ring-1 ring-white/10 transition-transform hover:scale-105 active:scale-95 lg:bottom-6"
+        className={`fixed right-5 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-50 h-16 w-16 items-center justify-center rounded-full bg-brand-deep shadow-[0_18px_36px_-12px_rgba(37,99,235,0.85)] ring-1 ring-white/10 transition-transform hover:scale-105 active:scale-95 sm:flex lg:bottom-6 ${
+          aberto ? "hidden" : "flex"
+        }`}
       >
         {aberto ? (
           <XIcon className="h-6 w-6 text-white" />
@@ -84,9 +86,14 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
             className="fixed inset-0 z-40 bg-slate-900/40 sm:hidden"
           />
 
+          {/*
+            No mobile o painel é um bottom sheet ancorado no rodapé: `dvh` (e não
+            `vh`) desconta a barra de URL do navegador e o teclado virtual, que
+            antes empurravam o topo do painel para fora da área visível.
+          */}
           <section
             aria-label="Assistente da Sinalys"
-            className="fixed inset-x-3 bottom-44 z-50 flex max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-float sm:inset-x-auto sm:right-5 sm:bottom-44 sm:w-96 lg:bottom-26"
+            className="fixed inset-x-0 bottom-0 z-50 flex h-[85dvh] max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl border border-slate-200/80 bg-white pb-[env(safe-area-inset-bottom)] shadow-float sm:inset-x-auto sm:right-5 sm:bottom-44 sm:h-auto sm:max-h-[70dvh] sm:w-96 sm:rounded-2xl sm:pb-0 lg:bottom-26"
           >
             <header className="navy-surface flex items-center gap-3 px-4 py-3.5 text-white">
               <SinalysMascot variante="emblema" className="h-10 w-10 shrink-0" />
