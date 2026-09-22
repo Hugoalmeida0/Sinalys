@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { AcoesCliente } from "@/components/clientes/acoes/AcoesCliente";
 import { PrioridadeBadge } from "@/components/dashboard/FilaDoDia";
 import {
@@ -9,6 +9,7 @@ import {
   ChevronRightIcon,
   DownloadIcon,
   SearchIcon,
+  SlidersIcon,
 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
 import { useEmBreve } from "@/components/ui/EmBreve";
@@ -66,6 +67,10 @@ export function ClientesTable({
   const [segmento, setSegmento] = useState("todos");
   const [ordem, setOrdem] = useState<Ordenacao>(ordemInicial);
   const [pagina, setPagina] = useState(1);
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const idFiltros = useId();
+  const filtrosAtivos =
+    Number(situacao !== "ativos") + Number(risco !== "todos") + Number(segmento !== "todos");
 
   const opcoesSegmento = useMemo(() => {
     const unicos = Array.from(new Set(clientes.map((c) => c.segmento))).sort();
@@ -114,18 +119,43 @@ export function ClientesTable({
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white shadow-card">
       <div className="flex flex-col gap-3 p-5 xl:flex-row xl:items-center">
-        <div className="relative w-full xl:max-w-sm">
-          <SearchIcon className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            value={busca}
-            onChange={(e) => aoFiltrar(setBusca)(e.target.value)}
-            placeholder="Buscar por código, nome ou segmento..."
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2.5 pr-4 pl-11 text-sm text-slate-700 transition-colors placeholder:text-slate-400 focus:border-brand-royal focus:bg-white focus:outline-none"
-          />
+        <div className="flex w-full items-center gap-2 xl:max-w-sm">
+          <div className="relative min-w-0 flex-1">
+            <SearchIcon className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={busca}
+              onChange={(e) => aoFiltrar(setBusca)(e.target.value)}
+              placeholder="Buscar por código, nome ou segmento..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2.5 pr-4 pl-11 text-sm text-slate-700 transition-colors placeholder:text-slate-400 focus:border-brand-royal focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          {/* No celular os quatro selects ocupavam uma tela inteira antes da
+              lista; ficam recolhidos atrás deste botão. */}
+          <Button
+            variant="secondary"
+            onClick={() => setFiltrosAbertos((v) => !v)}
+            aria-expanded={filtrosAbertos}
+            aria-controls={idFiltros}
+            className="shrink-0 sm:hidden"
+          >
+            <SlidersIcon className="h-4 w-4" />
+            Filtros
+            {filtrosAtivos > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-royal px-1.5 text-[11px] font-bold text-white tabular-nums">
+                {filtrosAtivos}
+              </span>
+            )}
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:ml-auto xl:flex xl:items-center">
+        <div
+          id={idFiltros}
+          className={`grid grid-cols-1 gap-3 sm:grid-cols-2 xl:ml-auto xl:flex xl:items-center ${
+            filtrosAbertos ? "" : "max-sm:hidden"
+          }`}
+        >
           <Select
             value={situacao}
             options={opcoesSituacao}
@@ -153,7 +183,7 @@ export function ClientesTable({
           <Button
             variant="secondary"
             onClick={() => avisarEmBreve("Exportar carteira")}
-            className="justify-center sm:col-span-2 xl:col-auto"
+            className="justify-center max-sm:hidden sm:col-span-2 xl:col-auto"
           >
             <DownloadIcon className="h-4 w-4" />
             Exportar

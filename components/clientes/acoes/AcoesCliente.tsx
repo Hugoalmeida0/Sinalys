@@ -10,7 +10,7 @@ import { MarcarResolvidoModal } from "@/components/clientes/acoes/MarcarResolvid
 import { MarcarCanceladoModal } from "@/components/clientes/acoes/MarcarCanceladoModal";
 import { RegistrarContatoModal } from "@/components/clientes/acoes/RegistrarContatoModal";
 
-const ITEM = "block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50";
+const ITEM = "block w-full px-3 py-3 lg:py-2 text-left text-sm text-slate-700 hover:bg-slate-50";
 
 export function AcoesCliente({
   clienteId,
@@ -103,7 +103,7 @@ export function AcoesCliente({
           type="button"
           disabled
           title="Em breve"
-          className="block w-full px-3 py-2 text-left text-sm text-slate-400"
+          className="block w-full px-3 py-3 lg:py-2 text-left text-sm text-slate-400"
         >
           Agendar reunião
         </button>
@@ -117,7 +117,7 @@ export function AcoesCliente({
         aria-haspopup="menu"
         aria-label="Mais opções"
         disabled={silenciando}
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+        className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 lg:h-9 lg:w-9 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
       >
         <MoreIcon className="h-4 w-4" />
       </button>
@@ -139,14 +139,14 @@ export function AcoesCliente({
             setCanceladoOpen(true);
             setMoreOpen(false);
           }}
-          className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+          className="block w-full px-3 py-3 lg:py-2 text-left text-sm text-red-600 hover:bg-red-50"
         >
           Marcar como cancelado
         </button>
         <button
           type="button"
           onClick={silenciarAlertas}
-          className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+          className="block w-full px-3 py-3 lg:py-2 text-left text-sm text-red-600 hover:bg-red-50"
         >
           Silenciar alertas (30 dias)
         </button>
