@@ -156,7 +156,7 @@ export function PrioridadeBadge({ valor }: { valor: number }) {
   return (
     <span
       title="Risco × (0,5 + impacto financeiro relativo na carteira)"
-      className="inline-flex h-8 min-w-10 items-center justify-center rounded-lg bg-brand-navy px-2 text-sm font-bold text-puro tabular-nums"
+      className="inline-flex h-8 min-w-10 items-center justify-center rounded-lg bg-brand-navy px-2 text-sm font-bold text-white tabular-nums"
     >
       {Math.round(valor)}
     </span>

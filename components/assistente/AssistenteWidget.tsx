@@ -66,10 +66,10 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
         // No mobile quem abre o assistente é o mascote no centro da barra
         // inferior; manter também este botão flutuante seria um segundo
         // gatilho para a mesma ação, ainda por cima cobrindo o conteúdo.
-        className="fixed right-5 bottom-6 z-50 hidden h-16 w-16 items-center justify-center rounded-full bg-brand-deep shadow-[0_18px_36px_-12px_rgba(37,99,235,0.85)] ring-1 ring-puro/10 transition-transform hover:scale-105 active:scale-95 lg:flex"
+        className="fixed right-5 bottom-6 z-50 hidden h-16 w-16 items-center justify-center rounded-full bg-brand-deep shadow-[0_18px_36px_-12px_rgba(37,99,235,0.85)] ring-1 ring-white/10 transition-transform hover:scale-105 active:scale-95 lg:flex"
       >
         {aberto ? (
-          <XIcon className="h-6 w-6 text-puro" />
+          <XIcon className="h-6 w-6 text-white" />
         ) : (
           <SinalysMascot variante="emblema" className="h-14 w-14" />
         )}
@@ -89,7 +89,7 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
             type="button"
             aria-label="Fechar assistente"
             onClick={fechar}
-            className="fixed inset-0 z-40 bg-veu/40 sm:hidden"
+            className="fixed inset-0 z-40 bg-slate-900/40 sm:hidden"
           />
 
           {/*
@@ -101,7 +101,7 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
             aria-label="Assistente da Sinalys"
             className="fixed inset-x-0 bottom-0 z-50 flex h-[85dvh] max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl border border-slate-200/80 bg-white pb-[env(safe-area-inset-bottom)] shadow-float sm:inset-x-auto sm:right-5 sm:bottom-44 sm:h-auto sm:max-h-[70dvh] sm:w-96 sm:rounded-2xl sm:pb-0 lg:bottom-26"
           >
-            <header className="navy-surface flex items-center gap-3 px-4 py-3.5 text-puro">
+            <header className="navy-surface flex items-center gap-3 px-4 py-3.5 text-white">
               <SinalysMascot variante="emblema" className="h-10 w-10 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold">Sinalys</p>
@@ -122,7 +122,7 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
                   }}
                   aria-label="Nova conversa"
                   title="Nova conversa"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-blue-100/70 transition-colors hover:bg-puro/10 hover:text-puro"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-blue-100/70 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   <PlusIcon className="h-4 w-4" />
                 </button>
@@ -131,7 +131,7 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
                 type="button"
                 onClick={fechar}
                 aria-label="Fechar"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-blue-100/70 transition-colors hover:bg-puro/10 hover:text-puro"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-blue-100/70 transition-colors hover:bg-white/10 hover:text-white"
               >
                 <XIcon className="h-4 w-4" />
               </button>
@@ -208,7 +208,7 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
                   aria-label={ditado.ouvindo ? "Parar ditado" : "Ditar pergunta"}
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${
                     ditado.ouvindo
-                      ? "animate-pulse bg-red-500 text-puro"
+                      ? "animate-pulse bg-red-500 text-white"
                       : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                   }`}
                 >
@@ -230,7 +230,7 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
                   type="submit"
                   disabled={!rascunho.trim()}
                   aria-label="Enviar pergunta"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-royal text-puro transition-colors hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-royal text-white transition-colors hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <ArrowRightIcon className="h-4 w-4" />
                 </button>
@@ -251,7 +251,7 @@ function Mensagem({ mensagem }: { mensagem: UIMessage }) {
       .join("");
     return (
       <li className="flex justify-end">
-        <p className="max-w-[85%] rounded-2xl rounded-br-md bg-brand-royal px-3.5 py-2.5 text-sm leading-relaxed text-puro">
+        <p className="max-w-[85%] rounded-2xl rounded-br-md bg-brand-royal px-3.5 py-2.5 text-sm leading-relaxed text-white">
           {texto}
         </p>
       </li>

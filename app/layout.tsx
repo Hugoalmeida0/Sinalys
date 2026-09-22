@@ -43,10 +43,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
   // Pinta a barra de status do Android com o navy da marca.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#0a2d6b" },
-    { media: "(prefers-color-scheme: dark)", color: "#050f2b" },
-  ],
+  themeColor: "#0a2d6b",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

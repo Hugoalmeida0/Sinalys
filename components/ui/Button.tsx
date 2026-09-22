@@ -5,13 +5,13 @@ type Size = "sm" | "md" | "lg";
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-brand-royal text-puro shadow-[0_8px_18px_-10px_rgba(37,99,235,0.9)] hover:bg-[#1d4ed8] focus-visible:outline-brand-royal",
-  navy: "bg-brand-navy text-puro hover:bg-[#082357] focus-visible:outline-brand-navy",
+    "bg-brand-royal text-white shadow-[0_8px_18px_-10px_rgba(37,99,235,0.9)] hover:bg-[#1d4ed8] focus-visible:outline-brand-royal",
+  navy: "bg-brand-navy text-white hover:bg-[#082357] focus-visible:outline-brand-navy",
   secondary:
     "bg-white text-slate-700 ring-1 ring-inset ring-slate-200 hover:bg-slate-50 hover:ring-slate-300 focus-visible:outline-brand-royal",
   ghost:
     "bg-transparent text-slate-600 hover:bg-slate-100 focus-visible:outline-brand-royal",
-  danger: "bg-red-600 text-puro hover:bg-red-700 focus-visible:outline-red-600",
+  danger: "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600",
 };
 
 // min-h garante alvo de toque confortável no celular sem alterar a altura no

@@ -21,12 +21,6 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Branco que nunca inverte: texto e sobreposições em cima das superfícies
-     navy da marca, que continuam escuras nos dois temas. */
-  --color-puro: #ffffff;
-  /* Véu dos modais, que precisa escurecer o fundo nos dois temas. */
-  --color-veu: #020817;
-
   --color-brand-navy: var(--color-navy);
   --color-brand-royal: var(--color-royal);
   --color-brand-cyan: var(--color-cyan);
@@ -42,70 +36,6 @@
   --shadow-card: 0 1px 2px rgba(15, 37, 87, 0.04), 0 10px 26px -18px rgba(15, 37, 87, 0.22);
   --shadow-card-hover: 0 1px 2px rgba(15, 37, 87, 0.05), 0 18px 38px -20px rgba(15, 37, 87, 0.3);
   --shadow-float: 0 18px 40px -20px rgba(15, 37, 87, 0.35);
-}
-
-/*
- * Tema escuro.
- *
- * Em vez de espalhar `dark:` por centenas de utilitários, remapeia a própria
- * escala neutra do Tailwind — que na v4 é lida via var() a cada utilitário.
- * Uma única redefinição vira todas as superfícies de uma vez.
- *
- * Duas famílias ficam de fora de propósito: `puro` (texto e sobreposições em
- * cima do navy da marca) e `veu` (o escurecimento dos modais). Ambas precisam
- * do mesmo valor nos dois temas, e por isso têm tokens próprios.
- */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-
-    --background: #060e22;
-    --foreground: #e6edfa;
-    --color-ink: #e6edfa;
-
-    /* Superfícies: o que era branco vira a carta escura. */
-    --color-white: #0f1c39;
-    --color-slate-50: #0b1630;
-    --color-slate-100: #1a2747;
-    --color-slate-200: #24355c;
-    --color-slate-300: #35496f;
-
-    /* Texto: a escala inverte de sentido. */
-    --color-slate-400: #7f90b2;
-    --color-slate-500: #9eaecb;
-    --color-slate-600: #c0cbe2;
-    --color-slate-700: #d8e1f1;
-    --color-slate-800: #e8eefa;
-    --color-slate-900: #f2f6fd;
-
-    /* Tintas de badge: fundo escurece, texto clareia para manter contraste. */
-    --color-red-50: #3b1420;
-    --color-red-100: #4d1a29;
-    --color-red-600: #fb7185;
-    --color-red-700: #fda4af;
-
-    --color-emerald-50: #0c2a22;
-    --color-emerald-600: #34d399;
-    --color-emerald-700: #6ee7b7;
-
-    --color-amber-50: #372709;
-    --color-amber-600: #fbbf24;
-    --color-amber-700: #fcd34d;
-
-    --color-blue-50: #12244a;
-    --color-pale: #14284f;
-
-    /* No escuro a sombra some; a separação passa a vir da borda. */
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 26px -18px rgba(0, 0, 0, 0.7);
-    --shadow-card-hover: 0 1px 2px rgba(0, 0, 0, 0.5), 0 18px 38px -20px rgba(0, 0, 0, 0.8);
-    --shadow-float: 0 18px 40px -20px rgba(0, 0, 0, 0.85);
-  }
-
-  .app-canvas {
-    background:
-      radial-gradient(120% 70% at 78% -10%, #0d1a38 0%, rgba(13, 26, 56, 0) 60%),
-      linear-gradient(180deg, #081128 0%, #060e22 100%);
-  }
 }
 
 body {
@@ -168,6 +98,40 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .entrada-card {
     animation: none;
+  }
+}
+
+/* Holofote do tour.
+   A sombra de raio gigante escurece a tela inteira MENOS a área do elemento,
+   que fica sendo o único ponto claro — é o recorte que marca de verdade onde
+   olhar. O anel ciano pulsa para puxar o olho até ele. */
+@keyframes pulso-holofote {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 9999px rgba(2, 8, 23, 0.8),
+      0 0 0 3px #06b6d4,
+      0 0 0 9px rgba(6, 182, 212, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 9999px rgba(2, 8, 23, 0.8),
+      0 0 0 3px #22d3ee,
+      0 0 0 16px rgba(6, 182, 212, 0);
+  }
+}
+
+.holofote {
+  animation: pulso-holofote 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holofote {
+    animation: none;
+    box-shadow:
+      0 0 0 9999px rgba(2, 8, 23, 0.8),
+      0 0 0 3px #06b6d4,
+      0 0 0 9px rgba(6, 182, 212, 0.35);
   }
 }
 

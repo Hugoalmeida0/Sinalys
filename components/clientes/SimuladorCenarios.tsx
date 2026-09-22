@@ -139,7 +139,7 @@ export function SimuladorCenarios({ base, clienteId }: { base: BaseSimulacao; cl
                           onClick={() => definir(sinal.codigo, a.valor)}
                           className={`rounded-lg px-2.5 py-1 text-xs font-semibold ring-1 ring-inset transition-colors ${
                             reducao === a.valor
-                              ? "bg-brand-royal text-puro ring-brand-royal"
+                              ? "bg-brand-royal text-white ring-brand-royal"
                               : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50"
                           }`}
                         >

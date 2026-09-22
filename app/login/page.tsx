@@ -78,7 +78,7 @@ export default function LoginPage() {
                 <br />
                 Preserve conquistas.
               </h1>
-              <p className="mt-4 max-w-sm text-base text-puro/85">
+              <p className="mt-4 max-w-sm text-base text-white/85">
                 Inteligência de dados para manter seus clientes mais perto.
               </p>
             </div>
@@ -176,14 +176,14 @@ export default function LoginPage() {
         <div className="hidden items-end justify-between p-10 lg:flex">
           <div>
             <GlobalsysWordmark className="text-base" />
-            <p className="mt-1 text-sm text-puro/70">
+            <p className="mt-1 text-sm text-white/70">
               Conectando tecnologia
               <br />a resultados reais.
             </p>
           </div>
           <div className="text-right text-sm">
             <p className="text-brand-light">Clientes hoje.</p>
-            <p className="font-semibold text-puro">Conquistas amanhã.</p>
+            <p className="font-semibold text-white">Conquistas amanhã.</p>
           </div>
         </div>
       </div>

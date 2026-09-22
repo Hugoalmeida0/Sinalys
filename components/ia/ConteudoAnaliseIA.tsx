@@ -88,7 +88,7 @@ export function ConteudoAnaliseIA({
                       <span
                         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
                           feita
-                            ? "border-emerald-500 bg-emerald-500 text-puro"
+                            ? "border-emerald-500 bg-emerald-500 text-white"
                             : "border-slate-300 text-transparent"
                         }`}
                       >

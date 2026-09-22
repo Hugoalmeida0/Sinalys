@@ -87,7 +87,7 @@ export function ConviteInstalacao() {
   if (!visivel) return null;
 
   return (
-    <div className="mt-6 rounded-2xl border border-puro/15 bg-puro/10 p-4 text-left backdrop-blur">
+    <div className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4 text-left backdrop-blur">
       <div className="flex items-start gap-3">
         <span
           aria-hidden
@@ -97,12 +97,12 @@ export function ConviteInstalacao() {
         </span>
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-puro">Quer melhorar a experiência?</p>
-          <p className="mt-1 text-xs leading-relaxed text-blue-50/85">
+          <p className="text-sm font-bold text-white">Quer melhorar a experiência?</p>
+          <p className="mt-1 text-xs leading-relaxed text-blue-50">
             {ehIOS ? (
               <>
-                Toque em <strong className="font-semibold text-puro">Compartilhar</strong> e depois
-                em <strong className="font-semibold text-puro">Adicionar à Tela de Início</strong>{" "}
+                Toque em <strong className="font-semibold text-white">Compartilhar</strong> e depois
+                em <strong className="font-semibold text-white">Adicionar à Tela de Início</strong>{" "}
                 para abrir em tela cheia, sem a barra do navegador.
               </>
             ) : (
@@ -117,7 +117,7 @@ export function ConviteInstalacao() {
             <button
               type="button"
               onClick={instalar}
-              className="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl bg-puro px-4 py-2 text-xs font-bold text-brand-navy transition-colors hover:bg-blue-50"
+              className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#0a2d6b] shadow-sm transition-colors hover:bg-blue-50 sm:w-auto"
             >
               Adicionar à tela de início
             </button>
@@ -128,7 +128,7 @@ export function ConviteInstalacao() {
           type="button"
           onClick={dispensar}
           aria-label="Dispensar convite"
-          className="-mt-1 -mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-blue-100/70 transition-colors hover:bg-puro/10 hover:text-puro"
+          className="-mt-1 -mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-blue-100/70 transition-colors hover:bg-white/10 hover:text-white"
         >
           <XIcon className="h-4 w-4" />
         </button>

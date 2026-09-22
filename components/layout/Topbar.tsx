@@ -26,7 +26,7 @@ export function Topbar({ usuario }: { usuario: UsuarioSessao }) {
         </BotaoEmBreve>
 
         <div className="flex items-center gap-3 rounded-xl py-1.5 pr-2 pl-1.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-navy text-xs font-bold text-puro">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-navy text-xs font-bold text-white">
             {usuario.iniciais}
           </span>
           <span className="text-left leading-tight">

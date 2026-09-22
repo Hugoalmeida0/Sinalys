@@ -195,7 +195,7 @@ export function MapeamentoStep({
                   ignorada
                     ? "bg-slate-50 text-slate-400 line-through"
                     : aba.aba_origem === abaAtiva
-                      ? "bg-brand-navy text-puro"
+                      ? "bg-brand-navy text-white"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
@@ -210,7 +210,7 @@ export function MapeamentoStep({
                     ignorada
                       ? "bg-slate-200 text-slate-500 hover:bg-slate-300"
                       : aba.aba_origem === abaAtiva
-                        ? "bg-puro/20 text-puro hover:bg-puro/30"
+                        ? "bg-white/20 text-white hover:bg-white/30"
                         : "bg-slate-200 text-slate-500 hover:bg-slate-300"
                   }`}
                 >

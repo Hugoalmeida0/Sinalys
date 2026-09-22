@@ -153,7 +153,7 @@ function ModalCompartilhar({
       <button
         type="button"
         aria-label="Fechar"
-        className="absolute inset-0 bg-veu/40"
+        className="absolute inset-0 bg-slate-900/40"
         onClick={onClose}
       />
 

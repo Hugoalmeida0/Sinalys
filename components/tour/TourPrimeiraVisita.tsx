@@ -119,25 +119,31 @@ export function TourPrimeiraVisita() {
 
   return (
     <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Apresentação rápida">
-      {/* Tocar fora avança, como em qualquer tour. */}
+      {/*
+        Tocar fora avança. O escurecimento NÃO vem daqui: quem escurece é a
+        sombra gigante do holofote, que deixa um buraco exatamente sobre o
+        elemento. Um fundo escuro aqui cobriria esse buraco e apagaria o
+        destaque — só escurece quando não há alvo medido.
+      */}
       <button
         type="button"
         aria-label="Avançar"
         onClick={avancar}
-        className="absolute inset-0 h-full w-full cursor-default bg-veu/65"
+        className={`absolute inset-0 h-full w-full cursor-default ${
+          area ? "" : "bg-slate-950/75"
+        }`}
       />
 
-      {/* Holofote: um anel recortando o elemento real, sem escondê-lo. */}
+      {/* Holofote: recorta o elemento real e o cerca de um anel pulsante. */}
       {area && (
         <span
           aria-hidden
-          className="pointer-events-none absolute rounded-2xl ring-4 ring-brand-cyan transition-all duration-300"
+          className="holofote pointer-events-none absolute rounded-2xl transition-all duration-300"
           style={{
             top: area.top - MARGEM,
             left: area.left - MARGEM,
             width: area.width + MARGEM * 2,
             height: area.height + MARGEM * 2,
-            boxShadow: "0 0 0 9999px rgba(2, 8, 23, 0.65)",
           }}
         />
       )}
@@ -185,7 +191,7 @@ export function TourPrimeiraVisita() {
             <button
               type="button"
               onClick={avancar}
-              className="min-h-11 rounded-xl bg-brand-royal px-4 text-xs font-bold text-puro transition-colors hover:bg-[#1d4ed8]"
+              className="min-h-11 rounded-xl bg-brand-royal px-4 text-xs font-bold text-white transition-colors hover:bg-[#1d4ed8]"
             >
               {ultimo ? "Entendi" : "Próximo"}
             </button>
