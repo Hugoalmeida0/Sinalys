@@ -33,7 +33,6 @@ export function MobileHeader({ usuario }: { usuario: UsuarioSessao }) {
             aria-label="Notificações"
           >
             <BellIcon className="h-5 w-5" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#0b1e48]" />
           </BotaoEmBreve>
           <button
             type="button"

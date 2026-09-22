@@ -22,7 +22,6 @@ export function Topbar({ usuario }: { usuario: UsuarioSessao }) {
           aria-label="Notificações"
         >
           <BellIcon className="h-5 w-5" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
         </BotaoEmBreve>
 
         <div className="flex items-center gap-3 rounded-xl py-1.5 pr-2 pl-1.5">
