@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { EyeIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
+import { BotaoEmBreve } from "@/components/ui/BotaoEmBreve";
 import { GlobalsysWordmark } from "@/components/ui/GlobalsysWordmark";
 import { marcarRecalculoAoEntrar } from "@/components/dashboard/RecalculoFilaGate";
 
@@ -138,9 +139,12 @@ export default function LoginPage() {
                   />
                   Lembrar de mim
                 </label>
-                <button type="button" className="font-medium text-brand-royal hover:underline">
+                <BotaoEmBreve
+                  recurso="Recuperação de senha"
+                  className="font-medium text-brand-royal hover:underline"
+                >
                   Esqueceu a senha?
-                </button>
+                </BotaoEmBreve>
               </div>
 
               {erro && (

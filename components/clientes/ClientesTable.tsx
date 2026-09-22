@@ -11,6 +11,7 @@ import {
   SearchIcon,
 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
+import { useEmBreve } from "@/components/ui/EmBreve";
 import { ScorePill } from "@/components/ui/ScorePill";
 import { Select } from "@/components/ui/Select";
 import { BadgeTeste, SoftBadge } from "@/components/ui/Badge";
@@ -58,6 +59,7 @@ export function ClientesTable({
 
   ordemInicial?: Ordenacao;
 }) {
+  const avisarEmBreve = useEmBreve();
   const [busca, setBusca] = useState("");
   const [situacao, setSituacao] = useState<FiltroSituacao>("ativos");
   const [risco, setRisco] = useState<FiltroRisco>("todos");
@@ -148,7 +150,11 @@ export function ClientesTable({
             onChange={aoFiltrar(setOrdem)}
             className="xl:w-52"
           />
-          <Button variant="secondary" className="justify-center sm:col-span-2 xl:col-auto">
+          <Button
+            variant="secondary"
+            onClick={() => avisarEmBreve("Exportar carteira")}
+            className="justify-center sm:col-span-2 xl:col-auto"
+          >
             <DownloadIcon className="h-4 w-4" />
             Exportar
           </Button>

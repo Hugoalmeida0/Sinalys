@@ -14,6 +14,8 @@ import { MarcaIntegracao } from "@/components/configuracoes/MarcaIntegracao";
 import { PesosDetalhados, PesosResumo } from "@/components/configuracoes/ModeloDeRisco";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { Button } from "@/components/ui/Button";
+import { BotaoEmBreve } from "@/components/ui/BotaoEmBreve";
+import { useEmBreve } from "@/components/ui/EmBreve";
 import { SoftBadge } from "@/components/ui/Badge";
 import { Toggle } from "@/components/ui/Toggle";
 import { useAbaVisivel } from "@/hooks/useAbaVisivel";
@@ -96,6 +98,22 @@ export function ConfiguracoesTabs() {
   );
 }
 
+/** Mesmo visual do Button secundário, porém avisando que o recurso ainda vem. */
+function BotaoEmBreveEstilizado({
+  recurso,
+  children,
+}: {
+  recurso: string;
+  children: React.ReactNode;
+}) {
+  const avisar = useEmBreve();
+  return (
+    <Button variant="secondary" className="shrink-0" onClick={() => avisar(recurso)}>
+      {children}
+    </Button>
+  );
+}
+
 export function Painel({
   titulo,
   descricao,
@@ -136,10 +154,10 @@ function PerfilDaConta() {
           <p className="text-sm text-slate-500">{usuarioAtual.cargo}</p>
           <p className="text-sm text-slate-400">ana.souza@sinalys.com.br</p>
         </div>
-        <Button variant="secondary" className="shrink-0">
+        <BotaoEmBreveEstilizado recurso="Editar perfil">
           <PencilIcon className="h-4 w-4" />
           Editar perfil
-        </Button>
+        </BotaoEmBreveEstilizado>
       </div>
     </Painel>
   );
@@ -163,10 +181,10 @@ function ListaIntegracoes() {
       titulo="Integrações"
       descricao="Conecte os serviços utilizados pelo Sinalys."
       acao={
-        <Button variant="secondary" className="shrink-0">
+        <BotaoEmBreveEstilizado recurso="Adicionar integração">
           <PlusCircleIcon className="h-4 w-4" />
           Adicionar integração
-        </Button>
+        </BotaoEmBreveEstilizado>
       }
     >
       <ul className="flex flex-col divide-y divide-slate-100">
@@ -184,13 +202,13 @@ function ListaIntegracoes() {
                 <Icon className="h-3.5 w-3.5 shrink-0" />
                 {label}
               </SoftBadge>
-              <button
-                type="button"
+              <BotaoEmBreve
+                recurso={`Opções de ${integracao.nome}`}
                 aria-label={`Opções de ${integracao.nome}`}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
               >
                 <MoreIcon className="h-4 w-4" />
-              </button>
+              </BotaoEmBreve>
             </li>
           );
         })}
@@ -262,13 +280,13 @@ function Usuarios() {
               <p className="mt-0.5 text-xs text-slate-500">{membro.email}</p>
             </div>
             <SoftBadge className="shrink-0 px-3 py-1.5">{membro.papel}</SoftBadge>
-            <button
-              type="button"
+            <BotaoEmBreve
+              recurso={`Opções de ${membro.nome}`}
               aria-label={`Opções de ${membro.nome}`}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
             >
               <MoreIcon className="h-4 w-4" />
-            </button>
+            </BotaoEmBreve>
           </li>
         ))}
       </ul>

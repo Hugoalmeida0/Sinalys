@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BellIcon, MenuIcon, XIcon } from "@/components/ui/icons";
 import type { UsuarioSessao } from "@/lib/auth/usuario";
+import { BotaoEmBreve } from "@/components/ui/BotaoEmBreve";
 import { BotaoSair } from "./BotaoSair";
 import { navItems } from "./nav-items";
 
@@ -26,14 +27,14 @@ export function MobileHeader({ usuario }: { usuario: UsuarioSessao }) {
         />
 
         <div className="flex items-center gap-1">
-          <button
-            type="button"
+          <BotaoEmBreve
+            recurso="Notificações"
             className="relative flex h-10 w-10 items-center justify-center rounded-full text-blue-100/80"
             aria-label="Notificações"
           >
             <BellIcon className="h-5 w-5" />
             <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#0b1e48]" />
-          </button>
+          </BotaoEmBreve>
           <button
             type="button"
             onClick={() => setOpen(true)}

@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
+import { BotaoEmBreve } from "@/components/ui/BotaoEmBreve";
 import { SoftBadge } from "@/components/ui/Badge";
 import { RegistrarContatoTrigger } from "@/components/clientes/acoes/RegistrarContatoTrigger";
 import { formatCurrencyBRLOuTraco, mesAnoPtBR, tempoDesde } from "@/lib/utils/formatacao";
@@ -219,13 +220,13 @@ function VisaoGeral({ detalhe }: { detalhe: DetalheCliente }) {
         <Card>
           <CardHeader className="items-center">
             <CardTitle className="text-lg">Sinais de risco detectados</CardTitle>
-            <button
-              type="button"
+            <BotaoEmBreve
+              recurso="Ver todos os sinais"
               className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-brand-royal hover:underline"
             >
               Ver todos ({detalhe.evidencias.length})
               <ArrowRightIcon className="h-3.5 w-3.5" />
-            </button>
+            </BotaoEmBreve>
           </CardHeader>
           <CardContent>
             <ul className="flex flex-col divide-y divide-slate-100">

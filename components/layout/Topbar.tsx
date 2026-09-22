@@ -1,4 +1,5 @@
 import { BellIcon, SearchIcon } from "@/components/ui/icons";
+import { BotaoEmBreve } from "@/components/ui/BotaoEmBreve";
 import type { UsuarioSessao } from "@/lib/auth/usuario";
 import { BotaoSair } from "./BotaoSair";
 
@@ -15,14 +16,14 @@ export function Topbar({ usuario }: { usuario: UsuarioSessao }) {
       </div>
 
       <div className="ml-auto flex items-center gap-5">
-        <button
-          type="button"
+        <BotaoEmBreve
+          recurso="Notificações"
           className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100"
           aria-label="Notificações"
         >
           <BellIcon className="h-5 w-5" />
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-        </button>
+        </BotaoEmBreve>
 
         <div className="flex items-center gap-3 rounded-xl py-1.5 pr-2 pl-1.5">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-navy text-xs font-bold text-white">

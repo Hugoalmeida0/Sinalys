@@ -58,9 +58,10 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
         onClick={() => (aberto ? fechar() : abrir())}
         aria-expanded={aberto}
         aria-label={aberto ? "Fechar assistente" : "Abrir assistente da Sinalys"}
-        className={`fixed right-5 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-50 h-16 w-16 items-center justify-center rounded-full bg-brand-deep shadow-[0_18px_36px_-12px_rgba(37,99,235,0.85)] ring-1 ring-white/10 transition-transform hover:scale-105 active:scale-95 sm:flex lg:bottom-6 ${
-          aberto ? "hidden" : "flex"
-        }`}
+        // No mobile quem abre o assistente é o mascote no centro da barra
+        // inferior; manter também este botão flutuante seria um segundo
+        // gatilho para a mesma ação, ainda por cima cobrindo o conteúdo.
+        className="fixed right-5 bottom-6 z-50 hidden h-16 w-16 items-center justify-center rounded-full bg-brand-deep shadow-[0_18px_36px_-12px_rgba(37,99,235,0.85)] ring-1 ring-white/10 transition-transform hover:scale-105 active:scale-95 lg:flex"
       >
         {aberto ? (
           <XIcon className="h-6 w-6 text-white" />
