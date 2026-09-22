@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export interface RegraModeloUI {
   id: string;
@@ -40,6 +41,9 @@ export interface NovaRegraPayload {
 }
 
 export function useModeloDeRisco() {
+  // Salvar recalcula as predições: o refresh limpa o cache de navegação para
+  // Início e Clientes não seguirem mostrando os scores anteriores.
+  const router = useRouter();
   const [modelo, setModelo] = useState<ModeloResposta | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -78,6 +82,7 @@ export function useModeloDeRisco() {
       const corpo = await resposta.json().catch(() => ({}));
       if (!resposta.ok) throw new Error(corpo?.erro ?? "Não foi possível salvar os pesos.");
       setModelo(corpo);
+      router.refresh();
       return true;
     } catch (e) {
       setErro((e as Error).message);
@@ -85,7 +90,7 @@ export function useModeloDeRisco() {
     } finally {
       setSalvando(false);
     }
-  }, []);
+  }, [router]);
 
   const criarRegra = useCallback(async (payload: NovaRegraPayload): Promise<boolean> => {
     setSalvando(true);
@@ -99,6 +104,7 @@ export function useModeloDeRisco() {
       const corpo = await resposta.json().catch(() => ({}));
       if (!resposta.ok) throw new Error(corpo?.erro ?? "Não foi possível criar a regra.");
       setModelo(corpo);
+      router.refresh();
       return true;
     } catch (e) {
       setErro((e as Error).message);
@@ -106,7 +112,7 @@ export function useModeloDeRisco() {
     } finally {
       setSalvando(false);
     }
-  }, []);
+  }, [router]);
 
   return { modelo, carregando, salvando, erro, setErro, recarregar: carregar, salvarPesos, criarRegra };
 }
