@@ -136,9 +136,14 @@ export function ScoreEvolucaoChart({
         )}
       </svg>
 
-      <ul className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 sm:w-32 sm:flex-col sm:justify-around sm:pb-6">
+      {/* No celular as quatro faixas ficam numa linha só, mesmo apertadas. */}
+      <ul className="flex shrink-0 justify-between gap-x-2 gap-y-1 sm:w-32 sm:flex-col sm:justify-around sm:pb-6">
         {faixas.map((f) => (
-          <li key={f.rotulo} className="text-xs font-semibold" style={{ color: f.cor }}>
+          <li
+            key={f.rotulo}
+            className="text-[11px] font-semibold whitespace-nowrap sm:text-xs"
+            style={{ color: f.cor }}
+          >
             {f.rotulo}
           </li>
         ))}
