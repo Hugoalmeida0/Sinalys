@@ -1,10 +1,12 @@
 import type { PontoScore } from "@/lib/painel/tipos";
-import { faixaRiscoFromScore } from "@/lib/risco/faixa";
+import { faixaRiscoFromScore, faixaRiscoLabel } from "@/lib/risco/faixa";
 
-const L = 34;
+// Margens dimensionadas para a fonte maior do celular: à esquerda e em cima
+// para o "100" do eixo, embaixo para o "0" não encostar nos meses.
+const L = 48;
 const R = 8;
-const T = 10;
-const B = 26;
+const T = 18;
+const B = 34;
 const W = 620;
 const H = 230;
 
@@ -14,6 +16,12 @@ const CORES = {
   atencao: "#2563eb",
   saudavel: "#10b981",
 } as const;
+
+/*
+ * Fonte dos eixos em unidades do viewBox, que encolhe junto com o gráfico: no
+ * celular o SVG é desenhado a menos da metade da largura, e 12 viraria ~6 px.
+ */
+const FONTE_EIXO = "text-[22px] sm:text-[12px]";
 
 export function ScoreEvolucaoChart({
   pontos,
@@ -29,10 +37,10 @@ export function ScoreEvolucaoChart({
   const y = (v: number) => T + areaH - (areaH * v) / scoreMax;
 
   const faixas = [
-    { de: 0.5, ate: 1, cor: CORES.critico, rotulo: "Risco crítico" },
-    { de: 0.35, ate: 0.5, cor: CORES.alerta, rotulo: "Risco alto" },
-    { de: 0.25, ate: 0.35, cor: CORES.atencao, rotulo: "Atenção" },
-    { de: 0, ate: 0.25, cor: CORES.saudavel, rotulo: "Saudável" },
+    { de: 0.5, ate: 1, cor: CORES.critico, rotulo: faixaRiscoLabel.critico },
+    { de: 0.35, ate: 0.5, cor: CORES.alerta, rotulo: faixaRiscoLabel.alerta },
+    { de: 0.25, ate: 0.35, cor: CORES.atencao, rotulo: faixaRiscoLabel.atencao },
+    { de: 0, ate: 0.25, cor: CORES.saudavel, rotulo: faixaRiscoLabel.saudavel },
   ];
 
   const linha = pontos
@@ -71,8 +79,7 @@ export function ScoreEvolucaoChart({
             x={L - 10}
             y={y(v) + 4}
             textAnchor="end"
-            className="fill-slate-400"
-            fontSize="12"
+            className={`fill-slate-400 ${FONTE_EIXO}`}
           >
             {v}
           </text>
@@ -119,9 +126,9 @@ export function ScoreEvolucaoChart({
               key={p.mes}
               x={x(i)}
               y={H - 6}
-              textAnchor="middle"
-              className="fill-slate-400"
-              fontSize="12"
+              // Centralizado no último ponto, o rótulo passaria da borda direita.
+              textAnchor={i === pontos.length - 1 ? "end" : "middle"}
+              className={`fill-slate-400 ${FONTE_EIXO}`}
             >
               {p.mes}
             </text>
