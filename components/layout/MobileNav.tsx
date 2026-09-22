@@ -30,7 +30,7 @@ export function MobileNav() {
               type="button"
               onClick={alternar}
               aria-expanded={aberto}
-              data-tour="assistente"
+              data-tour="nav-assistente"
               aria-label={aberto ? "Fechar assistente" : "Falar com a Sinalys"}
               className={`flex h-14 w-14 -translate-y-4 items-center justify-center rounded-2xl bg-brand-deep shadow-[0_14px_28px_-12px_rgba(10,45,107,0.95)] ring-1 ring-white/10 transition-transform active:scale-90 ${
                 aberto ? "scale-95" : ""
@@ -48,7 +48,7 @@ export function MobileNav() {
           <Link
             key={item.href}
             href={item.href}
-            data-tour={item.href === "/clientes" ? "clientes" : undefined}
+            data-tour={`nav-${item.href}`}
             className="flex flex-1 flex-col items-center gap-1 py-1"
           >
             <ItemNav icone={item.icon} rotulo={item.label} ativo={isActive} />

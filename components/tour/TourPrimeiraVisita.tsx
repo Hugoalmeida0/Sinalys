@@ -1,101 +1,161 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { XIcon } from "@/components/ui/icons";
 import { vibrar } from "@/lib/ui/tatil";
 
 /**
- * Apresentação em três toques, só na primeira visita.
+ * Apresentação da barra inferior, só na primeira visita e só no celular.
  *
- * Quem abre o sistema pela primeira vez não sabe onde olhar, e o silêncio
- * inicial é o que faz a pessoa concluir "é mais um dashboard". Cada passo
- * aponta para um elemento real da tela — marcado com `data-tour` — em vez de
- * descrever a interface por cima dela.
+ * Todos os passos apontam para itens da mesma barra fixa, o que torna o
+ * posicionamento previsível: o cartão fica sempre logo acima dela. Não há
+ * rolagem, nem medição de elemento em meio à página, nem espera por conteúdo
+ * assíncrono — o que elimina as formas mais comuns de um tour travar.
+ *
+ * Princípio que rege o arquivo: **em nenhuma situação a pessoa pode ficar
+ * presa**. Se um alvo não for encontrado, o passo é pulado; se nenhum for, o
+ * tour se encerra sozinho; o botão de fechar existe em todos os estados; e a
+ * conclusão é gravada logo na abertura, então nem recarregar traz o tour de
+ * volta.
  */
 
-type Passo = {
-  alvo: string;
-  titulo: string;
-  texto: string;
-  /** Onde encaixar o cartão em relação ao elemento destacado. */
-  posicao: "abaixo" | "acima";
-};
+type Passo = { alvo: string; titulo: string; texto: string };
 
 const PASSOS: Passo[] = [
   {
-    alvo: '[data-tour="fila"]',
-    titulo: "Comece por aqui",
+    alvo: '[data-tour="nav-/"]',
+    titulo: "Início",
     texto:
-      "Esta é a fila do dia: os clientes ordenados por risco vezes impacto financeiro. O topo é quem merece atenção agora.",
-    posicao: "acima",
+      "O painel do dia: quanto de receita está em risco, quantos clientes precisam de atenção e a fila já priorizada.",
   },
   {
-    alvo: '[data-tour="assistente"]',
-    titulo: "Pergunte em português",
+    alvo: '[data-tour="nav-/clientes"]',
+    titulo: "Clientes",
     texto:
-      "A Sinalys responde sobre a sua carteira com base nos dados reais — quem está em risco, por quê, e o que fazer.",
-    posicao: "acima",
+      "A carteira inteira, com busca e filtros. Toque em qualquer cliente para ver o score, os sinais de risco e o simulador.",
   },
   {
-    alvo: '[data-tour="clientes"]',
-    titulo: "Entre num cliente",
+    alvo: '[data-tour="nav-assistente"]',
+    titulo: "Fale com a Sinalys",
     texto:
-      "No detalhe você vê a evolução do score, os sinais que pesaram e um simulador de cenários.",
-    posicao: "acima",
+      "Pergunte em português sobre a sua carteira. A resposta vem dos dados reais — quem está em risco, por quê e o que fazer.",
+  },
+  {
+    alvo: '[data-tour="nav-/recuperacao"]',
+    titulo: "Recuperação",
+    texto:
+      "Clientes que já cancelaram, com a causa provável e um plano gerado pela IA para tentar trazê-los de volta.",
+  },
+  {
+    alvo: '[data-tour="nav-/configuracoes"]',
+    titulo: "Mais",
+    texto: "Configurações, integrações e os pesos do modelo de risco.",
   },
 ];
 
 const CHAVE = "sinalys:tour-concluido";
-const MARGEM = 8;
+const MARGEM = 10;
+/** Se nada for medido neste tempo, o tour desiste em vez de insistir. */
+const LIMITE_SEM_ALVO_MS = 4000;
+
+function jaViu() {
+  try {
+    return localStorage.getItem(CHAVE) === "1";
+  } catch {
+    // Sem armazenamento não há como lembrar; melhor não exibir do que repetir
+    // o tour a cada navegação.
+    return true;
+  }
+}
+
+function marcarVisto() {
+  try {
+    localStorage.setItem(CHAVE, "1");
+  } catch {
+    /* segue sem persistir */
+  }
+}
 
 export function TourPrimeiraVisita() {
   const [indice, setIndice] = useState<number | null>(null);
   const [area, setArea] = useState<DOMRect | null>(null);
 
+  const encerrar = useCallback(() => {
+    setIndice(null);
+    setArea(null);
+    marcarVisto();
+  }, []);
+
+  // Abertura. A conclusão é gravada aqui, e não no fim: se a pessoa fechar o
+  // app, recarregar ou perder a conexão no meio, o tour não volta a aparecer.
   useEffect(() => {
-    try {
-      if (localStorage.getItem(CHAVE) === "1") return;
-    } catch {
-      return; // sem armazenamento, não insiste a cada navegação
-    }
-    // Espera a tela assentar: os alvos do primeiro passo só existem depois que
-    // a fila do dia sai do esqueleto.
-    const t = setTimeout(() => setIndice(0), 1200);
+    if (jaViu()) return;
+
+    const t = setTimeout(() => {
+      // A barra inferior só existe no celular; sem ela não há o que apresentar.
+      const barra = document.querySelector('[data-tour="nav-assistente"]');
+      if (!barra || !(barra as HTMLElement).offsetParent) {
+        marcarVisto();
+        return;
+      }
+      marcarVisto();
+      setIndice(0);
+    }, 900);
+
     return () => clearTimeout(t);
   }, []);
 
-  const encerrar = useCallback(() => {
-    setIndice(null);
-    try {
-      localStorage.setItem(CHAVE, "1");
-    } catch {
-      /* segue sem persistir */
-    }
-  }, []);
+  // Mede o alvo do passo atual. Nada de scroll: os alvos estão numa barra fixa.
+  useEffect(() => {
+    if (indice === null) return;
 
-  const passo = indice === null ? null : PASSOS[indice];
-
-  // Mede o alvo antes de pintar, e remede em scroll/resize.
-  useLayoutEffect(() => {
+    // O índice sempre vem de um setter limitado ao tamanho da lista; se ainda
+    // assim vier fora de faixa, o render devolve null e nada é medido.
+    const passo = PASSOS[indice];
     if (!passo) return;
 
+    let vivo = true;
+
     const medir = () => {
+      if (!vivo) return;
       const el = document.querySelector(passo.alvo);
-      if (!el) return setArea(null);
-      el.scrollIntoView({ block: "center", behavior: "smooth" });
-      setArea(el.getBoundingClientRect());
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      setArea(r);
     };
 
     medir();
-    const t = setTimeout(medir, 420); // depois do scroll suave
+
+    // Em aparelho lento a barra pode não estar pintada ainda: tenta de novo por
+    // alguns instantes e, se mesmo assim não achar, pula o passo em vez de
+    // deixar a pessoa olhando para uma tela escura sem destaque.
+    const inicio = Date.now();
+    const intervalo = setInterval(() => {
+      const el = document.querySelector(passo.alvo);
+      const r = el?.getBoundingClientRect();
+      if (r && r.width > 0) {
+        setArea(r);
+        clearInterval(intervalo);
+        return;
+      }
+      if (Date.now() - inicio > LIMITE_SEM_ALVO_MS) {
+        clearInterval(intervalo);
+        if (!vivo) return;
+        setIndice((i) => (i === null ? null : i + 1 < PASSOS.length ? i + 1 : null));
+      }
+    }, 250);
+
     window.addEventListener("resize", medir);
-    window.addEventListener("scroll", medir, true);
+    window.addEventListener("orientationchange", medir);
+
     return () => {
-      clearTimeout(t);
+      vivo = false;
+      clearInterval(intervalo);
       window.removeEventListener("resize", medir);
-      window.removeEventListener("scroll", medir, true);
+      window.removeEventListener("orientationchange", medir);
     };
-  }, [passo]);
+  }, [indice]);
 
   useEffect(() => {
     if (indice === null) return;
@@ -106,35 +166,46 @@ export function TourPrimeiraVisita() {
     return () => window.removeEventListener("keydown", aoTeclar);
   }, [indice, encerrar]);
 
-  if (indice === null || !passo) return null;
+  if (indice === null) return null;
 
-  function avancar() {
-    vibrar("toque");
-    if (indice === null) return;
-    if (indice >= PASSOS.length - 1) encerrar();
-    else setIndice(indice + 1);
-  }
+  const passo = PASSOS[indice];
+  if (!passo) return null;
 
   const ultimo = indice === PASSOS.length - 1;
 
+  function avancar() {
+    vibrar("toque");
+    setArea(null);
+    setIndice((i) => {
+      if (i === null) return null;
+      if (i + 1 >= PASSOS.length) {
+        marcarVisto();
+        return null;
+      }
+      return i + 1;
+    });
+  }
+
   return (
-    <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Apresentação rápida">
+    <div
+      className="fixed inset-0 z-[70]"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Apresentação rápida, passo ${indice + 1} de ${PASSOS.length}`}
+    >
       {/*
-        Tocar fora avança. O escurecimento NÃO vem daqui: quem escurece é a
-        sombra gigante do holofote, que deixa um buraco exatamente sobre o
-        elemento. Um fundo escuro aqui cobriria esse buraco e apagaria o
-        destaque — só escurece quando não há alvo medido.
+        Tocar em qualquer lugar avança. O escurecimento vem da sombra do
+        holofote, que recorta o item da barra; este botão só captura o toque.
+        Quando ainda não há alvo medido, ele mesmo escurece — assim a tela
+        nunca fica num estado ambíguo.
       */}
       <button
         type="button"
         aria-label="Avançar"
         onClick={avancar}
-        className={`absolute inset-0 h-full w-full cursor-default ${
-          area ? "" : "bg-slate-950/75"
-        }`}
+        className={`absolute inset-0 h-full w-full cursor-default ${area ? "" : "bg-slate-950/75"}`}
       />
 
-      {/* Holofote: recorta o elemento real e o cerca de um anel pulsante. */}
       {area && (
         <span
           aria-hidden
@@ -148,76 +219,63 @@ export function TourPrimeiraVisita() {
         />
       )}
 
-      <div
-        className="absolute inset-x-4 max-w-sm rounded-2xl bg-white p-4 shadow-float sm:left-1/2 sm:-translate-x-1/2"
-        style={posicionar(area, passo.posicao)}
-      >
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-brand-ink">{passo.titulo}</p>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{passo.texto}</p>
-          </div>
-          <button
-            type="button"
-            onClick={encerrar}
-            aria-label="Pular apresentação"
-            className="-mt-1 -mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100"
-          >
-            <XIcon className="h-4 w-4" />
-          </button>
-        </div>
+      {/*
+        Cartão ancorado acima da barra inferior. Posição fixa, sem cálculo
+        dependente do alvo: não há como ele cair fora da tela.
+      */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-[calc(7rem+env(safe-area-inset-bottom))] px-4">
+        <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl bg-white p-4 shadow-float">
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-brand-ink">{passo.titulo}</p>
+              <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{passo.texto}</p>
+            </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="flex items-center gap-1.5" aria-label={`Passo ${indice + 1} de ${PASSOS.length}`}>
-            {PASSOS.map((_, i) => (
-              <span
-                key={i}
-                aria-hidden
-                className={`h-1.5 rounded-full transition-all ${
-                  i === indice ? "w-5 bg-brand-royal" : "w-1.5 bg-slate-200"
-                }`}
-              />
-            ))}
-          </span>
-
-          <span className="flex items-center gap-1">
             <button
               type="button"
               onClick={encerrar}
-              className="min-h-11 rounded-xl px-3 text-xs font-semibold text-slate-400 transition-colors hover:text-slate-600"
+              aria-label="Fechar apresentação"
+              className="-mt-1 -mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
             >
-              Pular
+              <XIcon className="h-5 w-5" />
             </button>
-            <button
-              type="button"
-              onClick={avancar}
-              className="min-h-11 rounded-xl bg-brand-royal px-4 text-xs font-bold text-white transition-colors hover:bg-[#1d4ed8]"
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <span
+              className="flex items-center gap-1.5"
+              aria-label={`Passo ${indice + 1} de ${PASSOS.length}`}
             >
-              {ultimo ? "Entendi" : "Próximo"}
-            </button>
-          </span>
+              {PASSOS.map((_, i) => (
+                <span
+                  key={i}
+                  aria-hidden
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === indice ? "w-5 bg-brand-royal" : "w-1.5 bg-slate-200"
+                  }`}
+                />
+              ))}
+            </span>
+
+            <span className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={encerrar}
+                className="min-h-11 rounded-xl px-3 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-700"
+              >
+                Pular
+              </button>
+              <button
+                type="button"
+                onClick={avancar}
+                className="min-h-11 rounded-xl bg-brand-royal px-4 text-xs font-bold text-white transition-colors hover:bg-[#1d4ed8]"
+              >
+                {ultimo ? "Entendi" : "Próximo"}
+              </button>
+            </span>
+          </div>
         </div>
       </div>
     </div>
   );
-}
-
-/** Encaixa o cartão perto do alvo sem sair da tela. */
-function posicionar(area: DOMRect | null, preferencia: Passo["posicao"]): React.CSSProperties {
-  if (typeof window === "undefined" || !area) {
-    return { bottom: "12vh" };
-  }
-
-  const ALTURA_CARTAO = 190;
-  const alturaVp = window.innerHeight;
-
-  const cabeAcima = area.top - MARGEM - ALTURA_CARTAO > 12;
-  const cabeAbaixo = area.bottom + MARGEM + ALTURA_CARTAO < alturaVp - 12;
-
-  if (preferencia === "acima" && cabeAcima) return { top: area.top - MARGEM - ALTURA_CARTAO };
-  if (cabeAbaixo) return { top: area.bottom + MARGEM + 12 };
-  if (cabeAcima) return { top: area.top - MARGEM - ALTURA_CARTAO };
-
-  // Não cabe de nenhum lado: ancora na metade mais livre.
-  return area.top > alturaVp / 2 ? { top: 16 } : { bottom: 16 };
 }
