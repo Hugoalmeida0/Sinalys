@@ -166,6 +166,104 @@ body {
   }
 }
 
+/* Tela de abertura.
+   Ela cobre o intervalo entre o primeiro frame do HTML e a hidratação — o
+   trecho em que o navegador mostraria uma página em branco. Por isso é toda
+   desenhada em CSS e SVG inline: uma imagem aqui dependeria de uma requisição
+   que chegaria depois do momento que a tela existe para preencher. */
+.tela-abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 100; /* acima do holofote do tour (z-70), o mais alto do app */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 1.5rem) 1.5rem
+    calc(env(safe-area-inset-bottom, 0px) + 1.5rem);
+  background:
+    radial-gradient(90% 45% at 12% 0%, rgba(37, 99, 235, 0.35) 0%, rgba(37, 99, 235, 0) 62%),
+    linear-gradient(170deg, #0b1e48 0%, #081735 52%, #050f2b 100%);
+  transition:
+    opacity 260ms ease,
+    visibility 0s linear 260ms;
+}
+
+/* `visibility` junto com a opacidade para que a tela saia da árvore de
+   acessibilidade ao terminar a transição, e não só do campo de visão. */
+.tela-abertura[data-saindo] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tela-abertura-conteudo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.tela-abertura-sinal {
+  width: 4.5rem;
+  height: 4.5rem;
+  fill: #ffffff;
+}
+
+.tela-abertura-arco {
+  fill: none;
+  stroke: var(--color-light-blue);
+  stroke-width: 5;
+  stroke-linecap: round;
+  animation: pulso-sinal 1.6s ease-in-out infinite;
+}
+
+/* Os arcos acendem de dentro para fora, como um sinal sendo emitido. */
+.tela-abertura-arco:nth-of-type(2) {
+  animation-delay: 0.18s;
+}
+.tela-abertura-arco:nth-of-type(3) {
+  animation-delay: 0.36s;
+}
+
+@keyframes pulso-sinal {
+  0%,
+  55%,
+  100% {
+    opacity: 0.22;
+  }
+  25% {
+    opacity: 1;
+  }
+}
+
+.tela-abertura-marca {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.tela-abertura-barra {
+  position: relative;
+  overflow: hidden;
+  width: 8rem;
+  height: 3px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.tela-abertura-rodape {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 2rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tela-abertura-arco {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 .scroll-slim {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;

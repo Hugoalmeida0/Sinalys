@@ -20,38 +20,49 @@ function casa(pathname: string, rotas: string[]) {
 
 export async function atualizarSessao(request: NextRequest) {
   let resposta = NextResponse.next({ request });
-  const { url, chave } = obterConfigSupabasePublica();
 
-  const supabase = createServerClient(url, chave, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet, headers) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        resposta = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          resposta.cookies.set(name, value, options)
-        );
-        Object.entries(headers).forEach(([key, value]) => resposta.headers.set(key, value));
-      },
-    },
-  });
+  let autenticado = false;
 
   /*
-   * `getUser()` e não `getClaims()`: o segundo apenas confere a assinatura do
-   * JWT localmente e continua aceitando uma sessão já revogada ou com refresh
-   * token inválido. Como as páginas usam `getUser()`, o middleware passava a
-   * requisição adiante e a página redirecionava de volta para /login — que o
-   * middleware devolvia para /, fechando um laço de 307 que só terminava
-   * limpando os cookies na mão. Aqui os dois lados passam a enxergar o mesmo.
+   * Sem cookie de sessão não há o que validar, e perguntar ao Supabase só pode
+   * dar "não autenticado". Pular a chamada economiza uma ida à rede antes do
+   * primeiro byte de HTML — exatamente o tempo em que quem abriu o link está
+   * olhando para uma tela em branco, já que nada pode ser pintado antes da
+   * resposta do servidor.
    */
-  let autenticado = false;
-  try {
-    const { data, error } = await supabase.auth.getUser();
-    autenticado = Boolean(data?.user) && !error;
-  } catch {
-    autenticado = false;
+  if (temCookieDeSessao(request)) {
+    const { url, chave } = obterConfigSupabasePublica();
+
+    const supabase = createServerClient(url, chave, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet, headers) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          resposta = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            resposta.cookies.set(name, value, options)
+          );
+          Object.entries(headers).forEach(([key, value]) => resposta.headers.set(key, value));
+        },
+      },
+    });
+
+    /*
+     * `getUser()` e não `getClaims()`: o segundo apenas confere a assinatura do
+     * JWT localmente e continua aceitando uma sessão já revogada ou com refresh
+     * token inválido. Como as páginas usam `getUser()`, o middleware passava a
+     * requisição adiante e a página redirecionava de volta para /login — que o
+     * middleware devolvia para /, fechando um laço de 307 que só terminava
+     * limpando os cookies na mão. Aqui os dois lados passam a enxergar o mesmo.
+     */
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      autenticado = Boolean(data?.user) && !error;
+    } catch {
+      autenticado = false;
+    }
   }
 
   const { pathname } = request.nextUrl;
@@ -73,6 +84,13 @@ export async function atualizarSessao(request: NextRequest) {
   return resposta;
 }
 
+/** O Supabase guarda a sessão em `sb-<ref>-auth-token`, fatiado em `.0`, `.1`… */
+const COOKIE_DE_SESSAO = /^sb-.*-auth-token/;
+
+function temCookieDeSessao(request: NextRequest) {
+  return request.cookies.getAll().some((cookie) => COOKIE_DE_SESSAO.test(cookie.name));
+}
+
 /**
  * Apaga os cookies de sessão do Supabase ao mandar alguém para o login.
  *
@@ -82,7 +100,7 @@ export async function atualizarSessao(request: NextRequest) {
  */
 function limparCookiesDeSessao(resposta: NextResponse, request: NextRequest) {
   for (const cookie of request.cookies.getAll()) {
-    if (/^sb-.*-auth-token/.test(cookie.name)) {
+    if (COOKIE_DE_SESSAO.test(cookie.name)) {
       resposta.cookies.delete(cookie.name);
     }
   }

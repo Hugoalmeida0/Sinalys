@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Montserrat, Geist_Mono } from "next/font/google";
 import { RegistrarServiceWorker } from "@/components/pwa/RegistrarServiceWorker";
 import { EmBreveProvider } from "@/components/ui/EmBreve";
+import { TelaDeAbertura } from "@/components/ui/TelaDeAbertura";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         {/* No root para alcançar também /login e /health, que ficam fora do AppShell. */}
+        <TelaDeAbertura />
         <RegistrarServiceWorker />
         <EmBreveProvider>{children}</EmBreveProvider>
       </body>

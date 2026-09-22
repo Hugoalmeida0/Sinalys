@@ -45,8 +45,12 @@ export default function LoginPage() {
     }
   }
 
+  // `dvh` e não `vh`: no celular a barra de endereço entra na conta do 100vh, e
+  // a tela ficava ou cortada ou com uma faixa sobrando embaixo. O `dvh`
+  // acompanha a área realmente visível — inclusive quando o teclado abre, que é
+  // o que o `interactiveWidget: "resizes-content"` do layout já prevê.
   return (
-    <div className="relative min-h-screen overflow-hidden bg-brand-navy">
+    <div className="relative min-h-dvh overflow-hidden bg-brand-navy">
       <Image
         src="/imagem_fundo_login.png"
         alt=""
@@ -58,12 +62,16 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-gradient-to-r from-brand-navy/75 via-brand-navy/25 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
 
-      <div className="relative z-10 flex min-h-screen flex-col">
+      <div className="relative z-10 flex min-h-dvh flex-col">
         <div className="flex items-center justify-between p-6 sm:p-10">
           <GlobalsysWordmark className="text-xl sm:text-2xl" />
         </div>
 
-        <div className="flex flex-1 flex-col items-center justify-center gap-10 px-6 py-6 sm:px-10 lg:flex-row lg:items-center lg:justify-center lg:gap-70 lg:px-20">
+        {/* A faixa é centralizada com largura máxima, e não esticada de parede a
+            parede: assim o recuo do card à direita e o do texto à esquerda são
+            o mesmo número por construção, em qualquer largura de tela. Abaixo
+            de 80rem o max-w não morde e valem as margens do px. */}
+        <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-10 px-6 py-6 sm:px-10 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
           <div className="hidden max-w-md flex-col gap-6 lg:flex">
             <Image
               src="/sinalys-logo-horizontal-white.png"
@@ -92,83 +100,87 @@ export default function LoginPage() {
             className="h-auto w-36 lg:hidden"
           />
 
-          <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl sm:p-10">
-            <h2 className="text-2xl font-bold text-slate-900">Bem-vindo de volta</h2>
-            <p className="mt-1 text-sm text-slate-500">Acesse sua conta para continuar</p>
-            <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-medium text-slate-700">E-mail</span>
-                <input
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  required
-                  defaultValue="ana.souza@globalsys.com"
-                  placeholder="seuemail@globalsys.com"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-royal focus:outline-none"
-                />
-              </label>
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-medium text-slate-700">Senha</span>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="senha"
-                    autoComplete="current-password"
-                    required
-                    defaultValue="sinalys123"
-                    className="w-full rounded-lg border border-slate-200 py-2.5 pr-10 pl-3 text-sm text-slate-800 focus:border-brand-royal focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </label>
-
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 text-slate-600">
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="h-4 w-4 rounded border-slate-300 text-brand-royal focus:ring-brand-royal"
-                  />
-                  Lembrar de mim
-                </label>
-                <BotaoEmBreve
-                  recurso="Recuperação de senha"
-                  className="font-medium text-brand-royal hover:underline"
-                >
-                  Esqueceu a senha?
-                </BotaoEmBreve>
-              </div>
-
-              {erro && (
-                <p
-                  role="alert"
-                  className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600"
-                >
-                  {erro}
-                </p>
-              )}
-
-              <Button type="submit" disabled={loading} className="w-full py-2.5">
-                {loading ? "Entrando..." : "Entrar"}
-              </Button>
-            </form>
-
-            <p className="mt-8 text-center text-xs text-slate-400">
-              Sinalys é um produto{" "}
-              <span className="font-semibold text-slate-500">Globalsys</span>
-            </p>
-          </div>
-
+          {/* O convite mora na mesma coluna do card, e não como um terceiro
+              item da linha: ele some no desktop, e como item solto deixava uma
+              caixa vazia de max-w-sm — mais o gap — empurrando o card para a
+              esquerda. Aninhado, quando não aparece não ocupa nada. */}
           <div className="w-full max-w-sm">
+            <div className="rounded-2xl bg-white p-8 shadow-2xl sm:p-10">
+              <h2 className="text-2xl font-bold text-slate-900">Bem-vindo de volta</h2>
+              <p className="mt-1 text-sm text-slate-500">Acesse sua conta para continuar</p>
+              <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-slate-700">E-mail</span>
+                  <input
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    required
+                    defaultValue="ana.souza@globalsys.com"
+                    placeholder="seuemail@globalsys.com"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-royal focus:outline-none"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-slate-700">Senha</span>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="senha"
+                      autoComplete="current-password"
+                      required
+                      defaultValue="sinalys123"
+                      className="w-full rounded-lg border border-slate-200 py-2.5 pr-10 pl-3 text-sm text-slate-800 focus:border-brand-royal focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </label>
+
+                <div className="flex items-center justify-between text-sm">
+                  <label className="flex items-center gap-2 text-slate-600">
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="h-4 w-4 rounded border-slate-300 text-brand-royal focus:ring-brand-royal"
+                    />
+                    Lembrar de mim
+                  </label>
+                  <BotaoEmBreve
+                    recurso="Recuperação de senha"
+                    className="font-medium text-brand-royal hover:underline"
+                  >
+                    Esqueceu a senha?
+                  </BotaoEmBreve>
+                </div>
+
+                {erro && (
+                  <p
+                    role="alert"
+                    className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600"
+                  >
+                    {erro}
+                  </p>
+                )}
+
+                <Button type="submit" disabled={loading} className="w-full py-2.5">
+                  {loading ? "Entrando..." : "Entrar"}
+                </Button>
+              </form>
+
+              <p className="mt-8 text-center text-xs text-slate-400">
+                Sinalys é um produto{" "}
+                <span className="font-semibold text-slate-500">Globalsys</span>
+              </p>
+            </div>
+
             <ConviteInstalacao />
           </div>
         </div>
