@@ -13,10 +13,14 @@ function movimentoReduzido() {
  * Um KPI que sobe até o total comunica que o número foi calculado, não
  * digitado. Quem pediu menos movimento no sistema recebe o valor final de
  * imediato, sem animação nenhuma.
+ *
+ * Devolve `null` enquanto a animação não começou. Quem chama exibe o valor
+ * final nesse intervalo — o que é essencial: o primeiro render do cliente
+ * precisa bater com o HTML do servidor, e devolver zero aqui quebrava a
+ * hidratação (React #418, divergência de texto).
  */
-export function useContagem(alvo: number, duracaoMs = 700) {
-  // `null` = a animação ainda não começou; o valor exibido vem do fallback
-  // abaixo, evitando qualquer setState síncrono dentro do efeito.
+export function useContagem(alvo: number, duracaoMs = 700): number | null {
+  // `null` = a animação ainda não começou.
   const [valor, setValor] = useState<number | null>(null);
   const quadro = useRef<number | null>(null);
 
@@ -39,7 +43,5 @@ export function useContagem(alvo: number, duracaoMs = 700) {
     };
   }, [alvo, duracaoMs]);
 
-  if (valor !== null) return valor;
-  // Antes do primeiro quadro: zero quando vai animar, valor final quando não.
-  return movimentoReduzido() || !Number.isFinite(alvo) ? alvo : 0;
+  return valor;
 }

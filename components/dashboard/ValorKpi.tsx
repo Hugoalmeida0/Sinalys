@@ -26,9 +26,10 @@ export function ValorKpi({
 }) {
   const atual = useContagem(ate);
 
-  // Ao chegar no alvo entrega exatamente a string formatada no servidor,
-  // evitando divergência de arredondamento.
-  if (atual >= ate) return <>{final}</>;
+  // `null` é o primeiro render no cliente, que precisa ser idêntico ao HTML do
+  // servidor para a hidratação não quebrar. Ao chegar no alvo, entrega de novo
+  // a string formatada no servidor, evitando divergência de arredondamento.
+  if (atual === null || atual >= ate) return <>{final}</>;
 
   const texto =
     formato === "moeda"

@@ -33,5 +33,10 @@ setup("autenticar", async ({ page }) => {
   await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 90_000 });
   await expect(page.locator("main")).toBeVisible({ timeout: 60_000 });
 
+  // O tour de primeira visita cobre a tela inteira e intercepta os cliques.
+  // Marcá-lo como visto no estado compartilhado deixa os demais testes livres;
+  // quem precisa dele (o teste do próprio tour) limpa a chave e recarrega.
+  await page.evaluate(() => localStorage.setItem("sinalys:tour-concluido", "1"));
+
   await page.context().storageState({ path: ARQUIVO_ESTADO });
 });

@@ -1,174 +1,163 @@
-# Sugestões de experiência mobile
+# Sugestões de experiência mobile — segunda rodada
 
-Ideias para quando alguém abre o Sinalys no próprio celular pela primeira vez —
-numa apresentação, numa reunião comercial ou numa demonstração para cliente.
+Propostas novas para o Sinalys no celular.
 
-O critério aqui não é "o que falta no produto", e sim **o que faz diferença nos
-primeiros noventa segundos de uso por uma pessoa que nunca viu o sistema**. Está
-ordenado por relação impacto/esforço.
+O critério de entrada é estreito de propósito: **só entra o que a pessoa
+percebe usando**. Nada de instrumentação, cobertura de teste ou refinamento de
+estado vazio — coisas necessárias, mas que ninguém sente ao abrir o app. Cada
+item abaixo muda algo que a pessoa vê, toca ou deixa de sofrer.
 
-> **Situação:** de 1 a 10, tudo já foi implementado — exceto o item 9
-> ("Atualizado há X minutos"), que segue pendente por decisão de escopo. O item
-> 11 (um QR por cenário) também continua em aberto. Os itens entregues ficam
-> registrados abaixo com o que efetivamente foi feito, para servir de referência
-> de onde mexer depois.
+Ordenado por relação impacto/esforço.
 
 ---
 
-## 1. Instalável na tela de início (PWA)
+## Já entregue
 
-**Por que impressiona:** abre em tela cheia, sem a barra de URL do navegador.
-O app deixa de parecer um site e passa a parecer um aplicativo — e ainda ganha
-de volta os ~60px que a barra do Safari rouba, que foi justamente a origem do
-bug do assistente.
+Fica registrado para não se repetir aqui nem se perder de vista:
 
-Falta um `app/manifest.ts` (Next gera o `manifest.json`) com `display:
-"standalone"`, `theme_color: "#0a2d6b"` e os ícones 192/512, mais um
-`apple-touch-icon` em `public/`. O símbolo já existe em
-`public/sinalys-symbol-color.png`. É a mudança de maior efeito visual pelo menor
-esforço da lista.
+| Entregue | O que mudou |
+|---|---|
+| PWA instalável | Abre em tela cheia, sem a barra do navegador |
+| Tour da barra inferior | Cinco passos apresentando Início, Clientes, assistente, Recuperação e Mais |
+| Esqueletos de navegação | Troca de tela deixou de parecer travamento |
+| Contagem animada nos KPIs | Números sobem até o total, com entrada dos cards em cascata |
+| Ditado por voz | Pergunta falada no assistente, em pt-BR |
+| Compartilhamento nativo | Health Score vai direto para WhatsApp, e-mail ou AirDrop |
+| Retorno tátil | Vibração curta ao confirmar ações |
+| Streaming com Suspense | A fila do dia pinta antes dos KPIs |
+| Mascote na barra inferior | O botão central abre o assistente |
+| Aviso de implementação futura | Controles sem função deixaram de parecer quebrados |
+| Card do assistente por último | No celular vem depois do conteúdo principal |
+| Health Score para quem está logado | Link compartilhado deixou de expulsar quem tem conta |
+| Sessão expirada sem laço | Cookie velho não prende mais ninguém na porta |
 
-**Bônus:** com o manifest no lugar, dá para trocar o QR por um que leve direto
-ao app instalado, e a `theme_color` pinta a barra de status do Android de navy.
-
----
-
-## 2. Tour de primeira visita — três toques
-
-**Por que importa:** quem recebe o celular não sabe o que olhar. O silêncio
-inicial é o maior inimigo de uma demonstração; a pessoa rola a tela sem rumo e
-conclui que "é um dashboard".
-
-Um overlay que aparece só na primeira sessão (`localStorage`) apontando para três
-coisas, nessa ordem: o cliente no topo da fila, o botão do mascote, e a aba
-"Simulador". Cada passo com uma frase, não um parágrafo. Sair a qualquer momento.
-
-Um tour bem-feito converte "eu vi um dashboard" em "eu entendi o que ele faz".
+Da rodada anterior ficaram dois itens em aberto, que seguem valendo:
+**"atualizado há X minutos"** no cabeçalho do painel e **um QR por cenário**,
+apontando direto para um cliente crítico ou para o simulador.
 
 ---
 
-## 3. Números que sobem ao aparecer
+## 1. Gráficos que respondem ao toque
 
-**Por que impressiona:** um KPI que conta de zero até `R$ 1,2 mi` em 600ms
-comunica que o número foi *calculado*, não digitado. É o tipo de detalhe que a
-banca não consegue nomear, mas sente.
+**O que muda:** `ScoreEvolucaoChart` é um SVG estático. A pessoa toca num ponto
+da curva para saber o valor daquele mês e não acontece nada — o gráfico parece
+uma imagem colada na tela.
 
-Aplicável ao `KpiCard` e ao `StatsRow` do detalhe do cliente. Um hook pequeno com
-`requestAnimationFrame` e easing de saída resolve. Respeitar
-`prefers-reduced-motion`, como o CSS dos skeletons já faz.
-
-Combina bem com uma entrada escalonada dos cards (cada um 40ms depois do
-anterior), que faz o painel "montar" em vez de simplesmente surgir.
+Um marcador seguindo o dedo, mostrando mês e score do ponto mais próximo.
+Aproveita o SVG que já existe: é escuta de evento e posicionamento, não
+biblioteca nova. Vale igualmente para as barras de `/relatorios`.
 
 ---
 
-## 4. Pergunta por voz no assistente
+## 2. Transições entre telas
 
-**Por que impressiona:** é o recurso que mais provoca reação em demonstração no
-celular. A pessoa fala "quais clientes estão em risco?" e vê a resposta ser
-montada com as ferramentas sendo consultadas ao vivo.
+**O que muda:** hoje uma tela some e a outra aparece. Com a View Transitions
+API, o título e o cartão do cliente podem se mover continuamente da lista para
+o detalhe — a pessoa não perde o fio do que estava olhando.
 
-A Web Speech API (`SpeechRecognition`) funciona no Chrome Android e no Safari iOS
-com `pt-BR`. Entra como um botão de microfone ao lado do campo em
-`AssistenteWidget`, preenchendo o mesmo `rascunho` que já existe. Precisa de
-degradação limpa: onde a API não existe, o botão simplesmente não aparece.
-
----
-
-## 5. Compartilhar de verdade, pelo menu do sistema
-
-**Por que importa:** o `CompartilharHealthScore` já gera link e QR. Faltou o
-último passo — `navigator.share()`, que abre a folha nativa do iOS/Android com
-WhatsApp, e-mail e AirDrop.
-
-Em demonstração, mandar o health score de um cliente para o próprio WhatsApp em
-dois toques mostra que o produto se conecta ao mundo real. Sem a API disponível,
-o botão volta a ser "copiar link".
+É o recurso que mais aproxima a sensação de app nativo, e o Next 16 já dá
+suporte. Custa pouco porque o trabalho é do navegador: marcar os elementos
+correspondentes e deixar a transição acontecer. Degrada sozinho onde a API não
+existe.
 
 ---
 
-## 6. Resposta tátil nas ações
+## 3. Atalhos no ícone do app
 
-**Por que importa:** a `Vibration API` (Android) num toque de 10ms ao confirmar
-uma ação faz a interface parecer física. É uma linha de código por ação.
+**O que muda:** com o PWA instalado, segurar o ícone hoje não oferece nada.
+Podia abrir direto na fila do dia, na carteira ou já com o assistente aberto.
 
-Vale nos pontos de confirmação — registrar contato, marcar resolvido — e no
-envio de pergunta ao assistente. Não vale em navegação, onde vira ruído. No iOS a
-API não existe e o retorno é silencioso, o que é aceitável.
-
----
-
-## 7. Streaming granular em vez de tela inteira
-
-**Por que importa:** hoje a página só aparece quando *todos* os dados chegam.
-Os KPIs dependem de `calcularKpisPainel`, que é a consulta mais pesada do
-dashboard, e a fila do dia fica esperando por ela sem necessidade.
-
-Envolver cada bloco em seu próprio `<Suspense>` com o skeleton correspondente faz
-a fila pintar primeiro e os KPIs preencherem depois. A percepção de velocidade
-muda mais do que qualquer otimização de consulta — e os componentes de skeleton
-já existem em `components/ui/Skeleton.tsx`.
-
-O passo seguinte seria o Partial Prerendering do Next 16: a casca estática vai
-para a borda e só os dados viajam.
+São algumas linhas no `app/manifest.ts` (campo `shortcuts`), e funcionam no
+Android e no Windows. Transforma o ícone num ponto de partida em vez de uma
+porta única.
 
 ---
 
-## 8. Tema escuro
+## 4. Contador de alertas no ícone
 
-**Por que importa:** boa parte das pessoas mantém o celular em modo escuro. Um
-app totalmente branco numa sala de apresentação com luz baixa incomoda, e ainda
-entrega que ninguém pensou nesse caso.
+**O que muda:** o número de clientes em alerta só aparece depois de abrir o app.
+Com a Badging API, ele vira um distintivo no próprio ícone — a informação central
+do produto passa a ser vista sem abrir nada.
 
-As cores já estão centralizadas como variáveis em `app/globals.css`, então o
-caminho é definir o contraponto escuro num bloco
-`@media (prefers-color-scheme: dark)` em vez de espalhar `dark:` pelos
-componentes. É mais trabalho do que as outras, mas é o tipo de acabamento que
-separa protótipo de produto.
+É o tipo de detalhe que faz o app ocupar espaço mental entre uma sessão e outra.
+Funciona no PWA instalado e some sozinho onde não há suporte.
 
 ---
 
-## 9. "Atualizado há X minutos"
+## 5. Ouvir o diagnóstico da IA
 
-**Por que importa:** um número sem data é uma afirmação; com data, é evidência.
-Numa banca avaliando confiabilidade, isso pesa.
+**O que muda:** o assistente já aceita pergunta falada. Falta o outro lado: um
+botão para ouvir a resposta e o plano de ação, via `SpeechSynthesis`, em pt-BR.
 
-Uma linha discreta no `PageHeader` do painel, alimentada pelo `atualizadoEm` que
-já vem nos dados. O mesmo dado que a lista de clientes já mostra por linha, só
-que promovido ao topo da tela.
-
----
-
-## 10. Voltar ao topo ao trocar de rota
-
-**Por que importa:** é um detalhe pequeno com efeito desproporcional. Se a pessoa
-rolou até o fim da lista de clientes e toca em "Início", a nova tela pode abrir
-já rolada, dando a impressão de que carregou errado.
-
-Vale conferir o comportamento real nos aparelhos e, se acontecer, forçar o topo a
-cada mudança de `pathname`.
+Quem está dirigindo para uma visita consegue ouvir o diagnóstico do cliente a
+caminho — um uso que o produto simplesmente não atende hoje. E, numa
+demonstração, é o recurso que provoca reação imediata.
 
 ---
 
-## 11. Um QR por cenário
+## 6. O próximo passo vira lembrete
 
-**Por que importa:** o QR atual leva ao login e daí ao painel — a visão geral.
-Mas as histórias mais fortes moram em telas específicas.
+**O que muda:** ao registrar um contato, já se informa o próximo passo e a data.
+Esse dado fica guardado e nada acontece com ele — a pessoa ainda precisa anotar
+na agenda por fora, ou vai esquecer.
 
-Um segundo QR apontando direto para o detalhe de um cliente crítico, ou para a
-aba do simulador, permite dirigir a atenção sem pedir para ninguém navegar. Em
-apresentação, é a diferença entre "procure o cliente C080" e todo mundo já
-estar olhando para ele.
+Um botão "adicionar à agenda" gerando um `.ics` (ou link do Google Calendar) com
+o cliente, o passo combinado e a data fecha o ciclo dentro do app. No celular o
+arquivo abre direto no calendário nativo.
 
-O gerador que produziu a folha de cartões aceita qualquer URL — dá para montar
-uma folha com QRs diferentes por cenário.
+---
+
+## 7. Linha do tempo do cliente
+
+**O que muda:** a tela do cliente mostra o estado de hoje — score, sinais,
+plano. Não mostra a história: quando o score piorou, qual contato veio antes,
+o que foi combinado da última vez.
+
+Uma linha do tempo única, misturando mudanças de score e contatos registrados,
+responde a pergunta que toda conversa com cliente começa: "onde paramos?". Os
+dois conjuntos de dados já existem separados.
+
+---
+
+## 8. "Por que este score?" em português
+
+**O que muda:** o score aparece como número e faixa. Os sinais aparecem como
+chips. Falta a frase que liga uma coisa à outra — o raciocínio que justifica o
+número.
+
+Uma explicação curta e legível, montada a partir dos pesos do modelo que já
+estão em `/configuracoes`: quais fatores puxaram o score para cima e quanto cada
+um pesou. É o que transforma o número de veredito em argumento — e é exatamente
+o que a pessoa precisa repetir ao falar com o cliente.
+
+---
+
+## 9. Copiar o resumo da fila
+
+**O que muda:** para levar a fila do dia a uma reunião ou a um grupo de
+WhatsApp, hoje é preciso ler da tela e digitar.
+
+Um "copiar resumo" gerando texto pronto — os cinco clientes prioritários com
+score e receita em risco — faz o produto conversar com o lugar onde o time já
+se comunica, sem exigir que todos tenham acesso ao sistema.
+
+---
+
+## 10. Clientes que eu acompanho
+
+**O que muda:** a fila é a mesma para todo mundo e muda todo dia. Não há como
+alguém marcar os poucos clientes que está acompanhando de perto naquela semana.
+
+Uma marcação pessoal, com um filtro rápido na carteira, dá ao produto uma
+dimensão de uso individual em vez de painel coletivo. É o que faz a pessoa
+voltar por vontade própria, e não só quando o alerta aparece.
 
 ---
 
 ## Ordem sugerida
 
-Se houver tempo para apenas três antes da próxima demonstração: **PWA (1)**,
-**tour de primeira visita (2)** e **streaming granular (7)**. A primeira muda a
-moldura, a segunda diz o que olhar, e a terceira muda a sensação de velocidade —
-que são exatamente as três coisas que uma pessoa julga antes de olhar para o
-conteúdo.
+Se houver espaço para três: **gráficos que respondem ao toque (1)**, porque
+conserta algo que hoje frustra na primeira tentativa; **transições entre telas
+(2)**, porque é o maior salto de percepção de qualidade pelo menor esforço; e
+**"por que este score?" (8)**, porque é o que transforma o número no argumento
+que a pessoa vai usar na conversa com o cliente.

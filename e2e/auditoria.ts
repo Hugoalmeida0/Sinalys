@@ -130,16 +130,37 @@ export function registrar(projeto: string, achados: Achado[]) {
  * client component, por exemplo) não aparecem no tsc nem no ESLint: só
  * estouram ao renderizar. Sem isso, a suíte passava com a tela quebrada.
  */
+/**
+ * Ruído conhecido do motor de teste, que não indica problema na aplicação:
+ *
+ * - `interactive-widget`: chave de viewport que o WebKit ainda não conhece e
+ *   simplesmente ignora. É intencional — serve ao Chrome, onde faz o layout
+ *   reagir ao teclado virtual.
+ * - prefetch RSC bloqueado: o WebKit sob automação recusa alguns `_rsc=`, mas
+ *   a navegação segue normalmente pelo caminho completo.
+ */
+const RUIDO_CONHECIDO = [
+  /Viewport argument key "interactive-widget"/i,
+  /_rsc=.*due to access control checks/i,
+  /favicon/i,
+  /net::ERR_/i,
+  /Failed to load resource/i,
+];
+
+const ehRuido = (texto: string) => RUIDO_CONHECIDO.some((re) => re.test(texto));
+
 export function vigiarErros(page: Page) {
   const erros: string[] = [];
 
-  page.on("pageerror", (e) => erros.push(`pageerror: ${e.message.slice(0, 300)}`));
+  page.on("pageerror", (e) => {
+    if (ehRuido(e.message)) return;
+    erros.push(`pageerror: ${e.message.slice(0, 300)}`);
+  });
 
   page.on("console", (m) => {
     if (m.type() !== "error") return;
     const texto = m.text();
-    // Ruído de rede de terceiros não diz nada sobre a saúde da aplicação.
-    if (/favicon|net::ERR_|Failed to load resource/i.test(texto)) return;
+    if (ehRuido(texto)) return;
     erros.push(`console: ${texto.slice(0, 300)}`);
   });
 

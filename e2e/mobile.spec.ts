@@ -112,6 +112,86 @@ test.describe("responsividade mobile", () => {
     expect(problemas, formatar(problemas)).toHaveLength(0);
   });
 
+
+  test("tour de primeira visita", async ({ page }, info) => {
+    const projeto = info.project.name;
+    const todos: Achado[] = [];
+    const erros = vigiarErros(page);
+
+    await irPara(page, "/");
+    await page.evaluate(() => localStorage.removeItem("sinalys:tour-concluido"));
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await assentar(page);
+
+    const dialogo = page.getByRole("dialog", { name: /apresentação rápida/i });
+    await expect(dialogo, "o tour precisa abrir na primeira visita").toBeVisible({ timeout: 20_000 });
+
+    const ESPERADOS = ["Início", "Clientes", "Fale com a Sinalys", "Recuperação", "Mais"];
+    const alturaVp = page.viewportSize()!.height;
+
+    for (const esperado of ESPERADOS) {
+      await expect(dialogo).toBeVisible();
+
+      const titulo = (await dialogo.locator("p.font-bold").first().textContent())?.trim();
+      expect(titulo, `ordem dos passos do tour`).toBe(esperado);
+
+      // Todo passo precisa ter uma saída visível e tocável.
+      const fechar = dialogo.getByRole("button", { name: /fechar apresentação/i });
+      await expect(fechar, `passo "${esperado}" sem botão de fechar`).toBeInViewport();
+      const caixaFechar = await fechar.boundingBox();
+      expect(
+        Math.min(caixaFechar!.width, caixaFechar!.height),
+        `botão de fechar pequeno demais no passo "${esperado}"`
+      ).toBeGreaterThanOrEqual(40);
+
+      // O holofote precisa estar sobre a barra inferior, não no meio da tela.
+      const holofote = dialogo.locator(".holofote");
+      if ((await holofote.count()) > 0) {
+        const caixa = await holofote.boundingBox();
+        expect(
+          caixa!.y,
+          `holofote fora da barra inferior no passo "${esperado}"`
+        ).toBeGreaterThan(alturaVp * 0.6);
+      }
+
+      await auditar(page, projeto, `tour-${esperado}`, todos);
+      await dialogo.getByRole("button", { name: /^(próximo|entendi)$/i }).click();
+      await page.waitForTimeout(600);
+    }
+
+    await expect(dialogo, "o tour precisa encerrar no último passo").toBeHidden();
+
+    // Recarregar não pode trazer o tour de volta: é a garantia de que ninguém
+    // fica preso num laço de tutorial.
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await assentar(page);
+    await expect(dialogo, "o tour reapareceu após recarregar").toBeHidden();
+
+    expect(erros(), "erros de runtime:\n  " + erros().join("\n  ")).toHaveLength(0);
+
+    const problemas = bloqueantes(todos);
+    expect(problemas, formatar(problemas)).toHaveLength(0);
+  });
+
+  test("tour fecha por Escape a qualquer momento", async ({ page }) => {
+    await irPara(page, "/");
+    await page.evaluate(() => localStorage.removeItem("sinalys:tour-concluido"));
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await assentar(page);
+
+    const dialogo = page.getByRole("dialog", { name: /apresentação rápida/i });
+    await expect(dialogo).toBeVisible({ timeout: 20_000 });
+
+    await dialogo.getByRole("button", { name: /^próximo$/i }).click();
+    await page.waitForTimeout(500);
+
+    await page.keyboard.press("Escape");
+    await expect(dialogo, "Escape precisa encerrar o tour em qualquer passo").toBeHidden();
+
+    // E a página fica utilizável logo em seguida.
+    await expect(page.getByRole("button", { name: "Falar com a Sinalys", exact: true })).toBeEnabled();
+  });
+
   test("assistente virtual", async ({ page }, info) => {
     const projeto = info.project.name;
     const todos: Achado[] = [];
