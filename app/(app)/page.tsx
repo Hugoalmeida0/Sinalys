@@ -115,7 +115,7 @@ async function GradeKpis({ painel }: { painel: Awaited<ReturnType<typeof carrega
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
         <KpiCard
-          label="Receita salva (30d)"
+          label="Receita que saiu do alerta (30d)"
           value={formatCurrencyBRL(kpis.receitaSalva30d)}
           animar={{ ate: kpis.receitaSalva30d, formato: "moeda" }}
           indice={0}
@@ -128,7 +128,7 @@ async function GradeKpis({ painel }: { painel: Awaited<ReturnType<typeof carrega
           icon={HeartHandshakeIcon}
         />
         <KpiCard
-          label="Receita em risco (ano)"
+          label="Exposição ponderada (ano)"
           value={formatCurrencyBRL(kpis.receitaEmRiscoAno)}
           animar={{ ate: kpis.receitaEmRiscoAno, formato: "moeda" }}
           indice={1}

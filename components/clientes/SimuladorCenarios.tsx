@@ -199,7 +199,7 @@ export function SimuladorCenarios({ base, clienteId }: { base: BaseSimulacao; cl
               }
             />
             <LinhaComparacao
-              label="Receita em risco (ano)"
+              label="Exposição ponderada (ano)"
               antes={formatCurrencyBRLOuTraco(resultado.receitaRiscoAntes)}
               depois={formatCurrencyBRLOuTraco(resultado.receitaRiscoDepois)}
               mudou={temAjuste && resultado.receitaRiscoAntes != null}
@@ -211,7 +211,7 @@ export function SimuladorCenarios({ base, clienteId }: { base: BaseSimulacao; cl
                     {formatCurrencyBRLOuTraco(
                       resultado.receitaRiscoAntes - (resultado.receitaRiscoDepois ?? 0)
                     )}{" "}
-                    protegidos por ano
+                    a menos de exposição por ano
                   </span>
                 ) : (
                   "MRR × 12 × score"

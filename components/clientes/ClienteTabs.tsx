@@ -28,6 +28,7 @@ import { formatCurrencyBRLOuTraco, mesAnoPtBR, tempoDesde } from "@/lib/utils/fo
 import { useAnaliseIA, type PlanoIA } from "@/hooks/useAnaliseIA";
 import { ConteudoAnaliseIA } from "@/components/ia/ConteudoAnaliseIA";
 import type { DetalheClientePainel as DetalheCliente } from "@/lib/painel/detalhe";
+import { FAIXAS_FILA_PADRAO } from "@/lib/painel/clientes";
 import { faixaRiscoLabel, severidadeLabel, severidadeNome } from "@/lib/risco/faixa";
 import { faixaRiscoTextClasses, severidadeChipClasses, severidadeClasses } from "@/lib/risco/estilos";
 
@@ -114,9 +115,11 @@ function StatsRow({ detalhe }: { detalhe: DetalheCliente }) {
       <StatCard
         icone={AlertTriangleIcon}
         tom="vermelho"
-        label="Receita em risco (ano)"
+        label="Exposição ponderada (ano)"
         valor={formatCurrencyBRLOuTraco(detalhe.receitaAnualRisco)}
-        valorClasse="text-red-600"
+        valorClasse={
+          FAIXAS_FILA_PADRAO.includes(detalhe.faixaRisco) ? "text-red-600" : "text-slate-700"
+        }
         rodape={multiplo == null ? "Sem receita mapeada" : `${multiplo}x o MRR atual`}
       />
 

@@ -26,7 +26,7 @@ const PASSOS: Passo[] = [
     alvo: '[data-tour="nav-/"]',
     titulo: "Início",
     texto:
-      "O painel do dia: quanto de receita está em risco, quantos clientes precisam de atenção e a fila já priorizada.",
+      "O painel do dia: a exposição ponderada da carteira, quantos clientes precisam de atenção e a fila já priorizada.",
   },
   {
     alvo: '[data-tour="nav-/clientes"]',

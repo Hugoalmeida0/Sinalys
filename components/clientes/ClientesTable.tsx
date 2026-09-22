@@ -16,7 +16,7 @@ import { ScorePill } from "@/components/ui/ScorePill";
 import { Select } from "@/components/ui/Select";
 import { BadgeTeste, SoftBadge } from "@/components/ui/Badge";
 import { formatCurrencyBRLOuTraco, formatDateLongPtBR } from "@/lib/utils/formatacao";
-import { compararPrioridade } from "@/lib/painel/clientes";
+import { compararPrioridade, FAIXAS_FILA_PADRAO } from "@/lib/painel/clientes";
 import type { FaixaRisco } from "@/lib/risco/faixa";
 import type { ClientePainel } from "@/lib/painel/tipos";
 import { faixaRiscoLabelCurto } from "@/lib/risco/faixa";
@@ -44,7 +44,7 @@ const opcoesRisco: { value: FiltroRisco; label: string }[] = [
 const opcoesOrdenacao: { value: Ordenacao; label: string }[] = [
   { value: "prioridade", label: "Ordenar por prioridade" },
   { value: "score", label: "Ordenar por risco" },
-  { value: "receita", label: "Ordenar por receita em risco" },
+  { value: "receita", label: "Ordenar por exposição" },
   { value: "mrr", label: "Ordenar por MRR" },
   { value: "atualizacao", label: "Ordenar por atualização" },
 ];
@@ -171,7 +171,7 @@ export function ClientesTable({
               <th className="py-3 pr-3 font-semibold">Cliente</th>
               <th className="py-3 pr-3 font-semibold">Segmento</th>
               <th className="py-3 pr-3 font-semibold">MRR</th>
-              <th className="py-3 pr-3 font-semibold">Receita em risco (ano)</th>
+              <th className="py-3 pr-3 font-semibold">Exposição ponderada (ano)</th>
               <th className="py-3 pr-3 font-semibold">Principais sinais</th>
               <th className="py-3 pr-3 font-semibold">Última atualização</th>
               <th className="py-3 pr-5 text-right font-semibold">Ações</th>
@@ -219,7 +219,11 @@ export function ClientesTable({
                 <td className="py-3.5 pr-3 text-sm font-medium whitespace-nowrap text-slate-700">
                   {formatCurrencyBRLOuTraco(cliente.mrr)}
                 </td>
-                <td className="py-3.5 pr-3 text-sm font-bold whitespace-nowrap text-red-600">
+                <td
+                  className={`py-3.5 pr-3 text-sm font-bold whitespace-nowrap ${
+                    FAIXAS_FILA_PADRAO.includes(cliente.faixaRisco) ? "text-red-600" : "text-slate-700"
+                  }`}
+                >
                   {formatCurrencyBRLOuTraco(cliente.receitaAnualRisco)}
                 </td>
                 <td className="py-3.5 pr-3">
@@ -277,8 +281,12 @@ export function ClientesTable({
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-slate-400">Em risco/ano</p>
-                  <p className="text-sm font-bold text-red-600">
+                  <p className="text-xs text-slate-400">Exposição/ano</p>
+                  <p
+                    className={`text-sm font-bold ${
+                      FAIXAS_FILA_PADRAO.includes(cliente.faixaRisco) ? "text-red-600" : "text-slate-700"
+                    }`}
+                  >
                     {formatCurrencyBRLOuTraco(cliente.receitaAnualRisco)}
                   </p>
                 </div>

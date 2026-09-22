@@ -4,7 +4,7 @@ import { ArrowRightIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { BadgeTeste } from "@/components/ui/Badge";
 import { ScorePill } from "@/components/ui/ScorePill";
 import { formatCurrencyBRLOuTraco } from "@/lib/utils/formatacao";
-import { TAMANHO_RESUMO_FILA } from "@/lib/painel/clientes";
+import { FAIXAS_FILA_PADRAO, TAMANHO_RESUMO_FILA } from "@/lib/painel/clientes";
 import type { ClientePainel } from "@/lib/painel/tipos";
 
 const HREF_FILA_COMPLETA = "/clientes?ordem=prioridade";
@@ -53,7 +53,7 @@ export function FilaDoDia({
               <th className="py-3 pr-3 pl-5 font-semibold">#</th>
               <th className="py-3 pr-4 font-semibold">Cliente</th>
               <th className="py-3 pr-4 font-semibold">MRR</th>
-              <th className="py-3 pr-4 font-semibold">Receita em risco (ano)</th>
+              <th className="py-3 pr-4 font-semibold">Exposição ponderada (ano)</th>
               <th className="py-3 pr-4 font-semibold">Prioridade</th>
               <th className="py-3 pr-4 font-semibold">Risco</th>
               <th className="py-3 pr-4 font-semibold">Principais sinais</th>
@@ -84,7 +84,11 @@ export function FilaDoDia({
                   {formatCurrencyBRLOuTraco(cliente.mrr)}
                 </td>
                 <td className="py-3.5 pr-4">
-                  <p className="text-sm font-bold whitespace-nowrap text-red-600">
+                  <p
+                    className={`text-sm font-bold whitespace-nowrap ${
+                      FAIXAS_FILA_PADRAO.includes(cliente.faixaRisco) ? "text-red-600" : "text-slate-700"
+                    }`}
+                  >
                     {formatCurrencyBRLOuTraco(cliente.receitaAnualRisco)}
                   </p>
                 </td>
@@ -136,7 +140,11 @@ export function FilaDoDia({
                 </p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-sm font-semibold text-red-600">
+                <p
+                  className={`text-sm font-semibold ${
+                    FAIXAS_FILA_PADRAO.includes(cliente.faixaRisco) ? "text-red-600" : "text-slate-700"
+                  }`}
+                >
                   {formatCurrencyBRLOuTraco(cliente.receitaAnualRisco)}
                 </p>
                 <p className="text-xs text-slate-400">
