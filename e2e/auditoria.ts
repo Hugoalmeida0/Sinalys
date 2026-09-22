@@ -108,7 +108,9 @@ export async function screenshot(page: Page, projeto: string, nome: string) {
   const dir = path.join(DIR_SHOTS, projeto);
   fs.mkdirSync(dir, { recursive: true });
   const seguro = nome.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase();
-  await page.screenshot({ path: path.join(dir, `${seguro}.png`), fullPage: true });
+  // `scale: "css"` evita estourar o limite de 32767px do WebKit em páginas
+  // longas quando o perfil tem deviceScaleFactor 3.
+  await page.screenshot({ path: path.join(dir, `${seguro}.png`), fullPage: true, scale: "css" });
 }
 
 /** Acumula achados num arquivo único para eu revisar tudo de uma vez. */

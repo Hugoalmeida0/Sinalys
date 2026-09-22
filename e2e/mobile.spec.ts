@@ -39,6 +39,16 @@ const ROTAS_BASE = [
   { caminho: "/configuracoes", nome: "configuracoes" },
 ];
 
+/**
+ * Aba da faixa rolável. Buscar só pelo nome acessível é ambíguo: "Notificações"
+ * também é o rótulo do sino no header.
+ */
+function aba_(page: Page, nome: string) {
+  return page
+    .locator("[data-aba-ativa]")
+    .filter({ hasText: new RegExp(`^${nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`) });
+}
+
 async function irPara(page: Page, caminho: string) {
   await page.goto(caminho, { waitUntil: "domcontentloaded" });
   await assentar(page);
@@ -144,7 +154,7 @@ test.describe("responsividade mobile", () => {
     await irPara(page, href!);
 
     for (const aba of ["Visão geral", "Sinais de risco", "Simulador", "Plano de ação"]) {
-      const botao = page.getByRole("button", { name: aba, exact: true });
+      const botao = aba_(page, aba);
       if ((await botao.count()) === 0) continue;
 
       // A aba precisa estar alcançável na faixa rolável antes do clique.
@@ -165,7 +175,7 @@ test.describe("responsividade mobile", () => {
     await irPara(page, "/configuracoes");
 
     for (const aba of ["Geral", "Integrações", "Modelo de risco", "Usuários", "Notificações"]) {
-      const botao = page.getByRole("button", { name: aba, exact: true });
+      const botao = aba_(page, aba);
       if ((await botao.count()) === 0) continue;
 
       await expect(botao, `aba "${aba}" não está visível na faixa de abas`).toBeInViewport();
