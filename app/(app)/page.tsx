@@ -44,41 +44,47 @@ export default async function DashboardPage() {
 
   return (
     <RecalculoFilaGate>
-      <div className="mx-auto flex max-w-[1600px] flex-col gap-6 p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="flex flex-col gap-6">
-            <PageHeader
-              titulo={primeiroNome ? `Bom dia, ${primeiroNome}.` : "Bom dia."}
-              descricao="Aqui estão os clientes que precisam da sua atenção hoje."
-            />
-
-            <Suspense fallback={<EsqueletoKpis />}>
-              <GradeKpis painel={painel} />
-            </Suspense>
-          </div>
-
-          <AssistantCard
-            titulo={
-              <>
-                Por onde começar hoje?
-                <br />
-                Pergunte à Sinalys.
-              </>
-            }
-            descricao="Peça um resumo da carteira, priorize contatos ou investigue um cliente específico."
-            assunto="Por onde devo começar hoje?"
+      {/*
+        No celular tudo empilha numa coluna só, e aí o card do assistente vai
+        para o fim com `order-last`: a fila do dia é o que a pessoa veio ver, e
+        o convite para conversar faz mais sentido depois dela. A partir de xl o
+        layout volta a ser a grade de duas colunas, com a fila ocupando a
+        largura inteira embaixo.
+      */}
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-6 p-4 sm:p-6 lg:p-8 xl:grid xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="flex flex-col gap-6">
+          <PageHeader
+            titulo={primeiroNome ? `Bom dia, ${primeiroNome}.` : "Bom dia."}
+            descricao="Aqui estão os clientes que precisam da sua atenção hoje."
           />
+
+          <Suspense fallback={<EsqueletoKpis />}>
+            <GradeKpis painel={painel} />
+          </Suspense>
         </div>
 
-        <div data-tour="fila">
+        <AssistantCard
+          className="order-last xl:order-none"
+          titulo={
+            <>
+              Por onde começar hoje?
+              <br />
+              Pergunte à Sinalys.
+            </>
+          }
+          descricao="Peça um resumo da carteira, priorize contatos ou investigue um cliente específico."
+          assunto="Por onde devo começar hoje?"
+        />
+
+        <div data-tour="fila" className="xl:col-span-2">
           <FilaDoDia
             clientes={fila}
-          mensagemVazia={
-            !painel.modeloId
-              ? "Nenhum modelo de risco ativo no projeto. Ative um modelo para gerar a fila."
-              : painel.clientes.length === 0
-                ? "Nenhuma predição calculada ainda. Rode o motor de risco após a ingestão de dados."
-                : "Nenhum cliente na fila hoje."
+            mensagemVazia={
+              !painel.modeloId
+                ? "Nenhum modelo de risco ativo no projeto. Ative um modelo para gerar a fila."
+                : painel.clientes.length === 0
+                  ? "Nenhuma predição calculada ainda. Rode o motor de risco após a ingestão de dados."
+                  : "Nenhum cliente na fila hoje."
             }
           />
         </div>

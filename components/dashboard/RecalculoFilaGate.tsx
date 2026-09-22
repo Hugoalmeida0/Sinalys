@@ -52,7 +52,9 @@ function FilaSkeleton() {
         Calculando a fila de hoje…
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      {/* Mesma ordem da tela real: no celular o card do assistente fica por
+          último, para o esqueleto não sugerir um arranjo que muda depois. */}
+      <div className="flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="flex flex-col gap-6">
           <div className="h-8 w-72 animate-pulse rounded-lg bg-slate-200" />
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -61,13 +63,14 @@ function FilaSkeleton() {
             ))}
           </div>
         </div>
-        <div className="h-48 animate-pulse rounded-2xl bg-slate-200" />
-      </div>
 
-      <div className="flex flex-col gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-200" />
-        ))}
+        <div className="order-last h-48 animate-pulse rounded-2xl bg-slate-200 xl:order-none" />
+
+        <div className="flex flex-col gap-3 xl:col-span-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-200" />
+          ))}
+        </div>
       </div>
     </div>
   );
