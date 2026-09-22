@@ -18,6 +18,7 @@ import {
 import { ScoreEvolucaoChart } from "@/components/clientes/ScoreEvolucaoChart";
 import { SimuladorCenarios } from "@/components/clientes/SimuladorCenarios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { AjudaScore } from "@/components/ui/AjudaScore";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
@@ -135,6 +136,7 @@ function StatsRow({ detalhe }: { detalhe: DetalheCliente }) {
         icone={ReportsIcon}
         tom="royal"
         label="Score de risco"
+        ajuda={<AjudaScore className="-my-3" />}
         valor={`${detalhe.scoreRisco}/${detalhe.scoreMax}`}
         rodape={
           <>
@@ -166,6 +168,7 @@ function StatCard({
   valor,
   valorClasse = "text-brand-ink",
   rodape,
+  ajuda,
 }: {
   icone: ComponentType<IconProps>;
   tom: keyof typeof tonsStat;
@@ -173,6 +176,8 @@ function StatCard({
   valor: string;
   valorClasse?: string;
   rodape?: ReactNode;
+  /** Botão de ajuda ao lado do rótulo. */
+  ajuda?: ReactNode;
 }) {
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-card">
@@ -183,7 +188,14 @@ function StatCard({
           <Icon className="h-5.5 w-5.5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-slate-500">{label}</p>
+          {ajuda ? (
+            <div className="flex items-center gap-0.5">
+              <p className="text-sm text-slate-500">{label}</p>
+              {ajuda}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">{label}</p>
+          )}
           <p className={`mt-1 truncate text-2xl font-bold ${valorClasse}`}>{valor}</p>
           {rodape && <div className="mt-1.5 text-xs text-slate-400">{rodape}</div>}
         </div>

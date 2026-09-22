@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AcoesCliente } from "@/components/clientes/acoes/AcoesCliente";
+import { AjudaScore } from "@/components/ui/AjudaScore";
 import { ArrowRightIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { BadgeTeste } from "@/components/ui/Badge";
 import { ScorePill } from "@/components/ui/ScorePill";
@@ -22,7 +23,10 @@ export function FilaDoDia({
     <div className="rounded-2xl border border-slate-200/80 bg-white shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-3 p-5">
         <div>
-          <h2 className="text-xl font-bold text-brand-ink">Breve resumo da sua fila hoje</h2>
+          <div className="flex items-start gap-0.5">
+            <h2 className="text-xl font-bold text-brand-ink">Breve resumo da sua fila hoje</h2>
+            <AjudaScore className="-my-2" />
+          </div>
           <p className="mt-1 text-sm text-slate-500">
             Os {TAMANHO_RESUMO_FILA} clientes que mais merecem atenção, ordenados por prioridade
             (risco × impacto financeiro).
