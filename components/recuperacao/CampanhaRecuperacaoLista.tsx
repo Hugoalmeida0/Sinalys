@@ -72,7 +72,10 @@ function CardCliente({
 
   return (
     <li className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
-      <div className="flex flex-wrap items-start justify-between gap-4 p-5">
+      {/* Em coluna até xl: numa linha com `flex-wrap`, o texto (`min-w-0 flex-1`)
+          encolhia em vez de a linha quebrar, e ficava espremido em ~1/3 da
+          largura, uma palavra por linha, ao lado dos botões. */}
+      <div className="flex flex-col gap-4 p-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-base font-bold text-brand-ink">{cliente.nome}</span>
@@ -115,7 +118,7 @@ function CardCliente({
           )}
         </div>
 
-        <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:shrink-0">
           <Button variant="secondary" size="sm" onClick={() => setRecuperadoOpen(true)}>
             <HeartHandshakeIcon className="h-4 w-4" />
             Marcar como recuperado
