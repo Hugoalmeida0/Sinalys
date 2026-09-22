@@ -192,6 +192,8 @@ async function GradeKpis({ painel }: { painel: Awaited<ReturnType<typeof carrega
           description="nos últimos 7 dias"
           tone="emerald"
           icon={CheckIcon}
+          // No celular a grade é de 2 colunas, e o 5º card ficava sozinho numa linha.
+          className="hidden sm:block"
         />
       </div>
   );
@@ -201,7 +203,10 @@ function EsqueletoKpis() {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
       {Array.from({ length: 5 }).map((_, i) => (
-        <SkeletonKpi key={i} />
+        // O 5º some no celular, como o card "Clientes contatados" que ele antecipa.
+        <div key={i} className={i === 4 ? "hidden sm:block" : undefined}>
+          <SkeletonKpi />
+        </div>
       ))}
     </div>
   );

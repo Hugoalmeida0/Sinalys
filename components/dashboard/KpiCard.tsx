@@ -26,6 +26,7 @@ export function KpiCard({
   icon: Icon,
   animar,
   indice = 0,
+  className = "",
 }: {
   label: string;
   value: string;
@@ -39,12 +40,13 @@ export function KpiCard({
   animar?: { ate: number; formato: FormatoKpi; sufixo?: string };
   /** Posição na grade: escalona a entrada dos cards em cascata. */
   indice?: number;
+  className?: string;
 }) {
   const classes = toneClasses[tone];
 
   return (
     <div
-      className="entrada-card min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card sm:p-5"
+      className={`entrada-card min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card sm:p-5 ${className}`}
       style={{ animationDelay: `${Math.min(indice, 8) * 55}ms` }}
     >
       <div className="flex items-start justify-between gap-2">
