@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { vibrar } from "@/lib/ui/tatil";
 import { XIcon } from "@/components/ui/icons";
 import { MOTIVOS_CANCELAMENTO, CODIGOS_MOTIVO_CANCELAMENTO } from "@/lib/cancelamento/constantes";
 
@@ -53,6 +54,7 @@ export function MarcarCanceladoModal({
         setEnviando(false);
         return;
       }
+      vibrar("confirmacao");
       setEnviado(true);
       router.refresh();
       setTimeout(handleClose, 900);
@@ -67,7 +69,7 @@ export function MarcarCanceladoModal({
       <button
         type="button"
         aria-label="Fechar"
-        className="absolute inset-0 bg-slate-900/40"
+        className="absolute inset-0 bg-veu/40"
         onClick={handleClose}
       />
 

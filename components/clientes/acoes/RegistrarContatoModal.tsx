@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
+import { vibrar } from "@/lib/ui/tatil";
 import { XIcon } from "@/components/ui/icons";
 import { TIPOS_CONTATO } from "@/lib/contatos/constantes";
 
@@ -65,6 +66,7 @@ export function RegistrarContatoModal({
         setEnviando(false);
         return;
       }
+      vibrar("confirmacao");
       setEnviado(true);
 
       router.refresh();
@@ -80,7 +82,7 @@ export function RegistrarContatoModal({
       <button
         type="button"
         aria-label="Fechar"
-        className="absolute inset-0 bg-slate-900/40"
+        className="absolute inset-0 bg-veu/40"
         onClick={handleClose}
       />
 

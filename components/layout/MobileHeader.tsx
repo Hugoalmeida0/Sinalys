@@ -38,7 +38,7 @@ export function MobileHeader({ usuario }: { usuario: UsuarioSessao }) {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-puro"
             aria-label="Abrir menu"
           >
             <MenuIcon className="h-5 w-5" />
@@ -51,17 +51,17 @@ export function MobileHeader({ usuario }: { usuario: UsuarioSessao }) {
           <button
             type="button"
             aria-label="Fechar menu"
-            className="absolute inset-0 bg-slate-900/50"
+            className="absolute inset-0 bg-veu/50"
             onClick={() => setOpen(false)}
           />
           <div className="navy-surface absolute inset-y-0 right-0 flex w-72 max-w-[82%] flex-col shadow-float">
             <div className="flex h-16 items-center justify-between px-4">
               <div className="flex items-center gap-2.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-royal text-[11px] font-bold text-white">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-royal text-[11px] font-bold text-puro">
                   {usuario.iniciais}
                 </span>
                 <span className="leading-tight">
-                  <span className="block text-sm font-bold text-white">{usuario.nome}</span>
+                  <span className="block text-sm font-bold text-puro">{usuario.nome}</span>
                   <span className="block text-[11px] text-blue-100/60">
                     {usuario.cargo ?? usuario.email}
                   </span>
@@ -70,7 +70,7 @@ export function MobileHeader({ usuario }: { usuario: UsuarioSessao }) {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-blue-100/70 hover:bg-white/10"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-blue-100/70 hover:bg-puro/10"
                 aria-label="Fechar"
               >
                 <XIcon className="h-5 w-5" />
@@ -92,8 +92,8 @@ export function MobileHeader({ usuario }: { usuario: UsuarioSessao }) {
                     onClick={() => setOpen(false)}
                     className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-colors ${
                       isActive
-                        ? "bg-brand-royal text-white"
-                        : "text-blue-100/70 hover:bg-white/10 hover:text-white"
+                        ? "bg-brand-royal text-puro"
+                        : "text-blue-100/70 hover:bg-puro/10 hover:text-puro"
                     }`}
                   >
                     <Icon className="h-5 w-5 shrink-0" />
@@ -104,11 +104,11 @@ export function MobileHeader({ usuario }: { usuario: UsuarioSessao }) {
             </nav>
 
             <div className="px-4 pb-2">
-              <BotaoSair className="w-full rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-blue-100/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-60" />
+              <BotaoSair className="w-full rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-blue-100/70 transition-colors hover:bg-puro/10 hover:text-puro disabled:opacity-60" />
             </div>
 
             <div className="px-6 pb-7">
-              <p className="text-sm font-bold text-white">Sinalys</p>
+              <p className="text-sm font-bold text-puro">Sinalys</p>
               <p className="mt-0.5 text-xs leading-snug text-blue-100/60">
                 Dados que antecipam o futuro.
               </p>

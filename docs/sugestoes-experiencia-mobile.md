@@ -7,9 +7,11 @@ O critério aqui não é "o que falta no produto", e sim **o que faz diferença 
 primeiros noventa segundos de uso por uma pessoa que nunca viu o sistema**. Está
 ordenado por relação impacto/esforço.
 
-> Nada nesta lista está implementado. As que já foram aplicadas (skeletons de
-> navegação, mascote na barra inferior, aviso de implementação futura) ficaram
-> de fora de propósito.
+> **Situação:** de 1 a 10, tudo já foi implementado — exceto o item 9
+> ("Atualizado há X minutos"), que segue pendente por decisão de escopo. O item
+> 11 (um QR por cenário) também continua em aberto. Os itens entregues ficam
+> registrados abaixo com o que efetivamente foi feito, para servir de referência
+> de onde mexer depois.
 
 ---
 

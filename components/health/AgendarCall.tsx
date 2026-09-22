@@ -11,7 +11,7 @@ const CLASSE_BOTAO =
   "inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-brand-navy shadow-lg transition-colors hover:bg-brand-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-60";
 
 const CLASSE_CAMPO =
-  "w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/60 focus:bg-white/15 focus:outline-none";
+  "w-full rounded-lg border border-puro/20 bg-puro/10 px-3 py-2 text-sm text-puro placeholder:text-puro/50 focus:border-puro/60 focus:bg-puro/15 focus:outline-none";
 
 export function AgendarCall({ token, linkAgendamento }: { token: string; linkAgendamento: string | null }) {
   if (linkAgendamento) {
@@ -67,7 +67,7 @@ function FormularioPedido({ token }: { token: string }) {
 
   if (enviado) {
     return (
-      <p className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/30">
+      <p className="inline-flex items-center gap-2 rounded-xl bg-puro/15 px-5 py-3 text-sm font-semibold text-puro ring-1 ring-puro/30">
         <CheckIcon className="h-4 w-4" />
         Pedido enviado! Seu time de sucesso vai entrar em contato para confirmar o horário.
       </p>
@@ -90,7 +90,7 @@ function FormularioPedido({ token }: { token: string }) {
       aria-label="Pedir uma call de alinhamento"
     >
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-white/80">Seu nome</span>
+        <span className="text-xs font-semibold text-puro/80">Seu nome</span>
         <input
           name="nome"
           required
@@ -102,16 +102,16 @@ function FormularioPedido({ token }: { token: string }) {
       </label>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-white/80">E-mail (opcional)</span>
+          <span className="text-xs font-semibold text-puro/80">E-mail (opcional)</span>
           <input name="email" type="email" autoComplete="email" className={CLASSE_CAMPO} placeholder="voce@empresa.com" />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-white/80">Melhor horário (opcional)</span>
+          <span className="text-xs font-semibold text-puro/80">Melhor horário (opcional)</span>
           <input name="preferencia_em" type="datetime-local" className={`${CLASSE_CAMPO} [color-scheme:dark]`} />
         </label>
       </div>
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-white/80">Sobre o que quer conversar? (opcional)</span>
+        <span className="text-xs font-semibold text-puro/80">Sobre o que quer conversar? (opcional)</span>
         <textarea
           name="mensagem"
           rows={2}
@@ -133,7 +133,7 @@ function FormularioPedido({ token }: { token: string }) {
         <button
           type="button"
           onClick={() => setAberto(false)}
-          className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/10"
+          className="rounded-xl px-4 py-2.5 text-sm font-semibold text-puro/80 hover:bg-puro/10"
         >
           Cancelar
         </button>

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { FilaDoDia } from "@/components/dashboard/FilaDoDia";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { RecalculoFilaGate } from "@/components/dashboard/RecalculoFilaGate";
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/icons";
 import { AssistantCard } from "@/components/ui/AssistantCard";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { SkeletonKpi } from "@/components/ui/Skeleton";
 import { obterUsuarioSessao } from "@/lib/auth/usuario";
 import { formatCurrencyBRL } from "@/lib/utils/formatacao";
 import { montarResumoFila } from "@/lib/painel/clientes";
@@ -38,18 +40,7 @@ export default async function DashboardPage() {
   const [usuario, painel] = await Promise.all([obterUsuarioSessao(), carregarPainel()]);
   const primeiroNome = usuario?.nome.split(" ")[0] ?? "";
 
-  const kpis = painel.modeloId
-    ? await calcularKpisPainel({
-        supabase: painel.supabase,
-        projetoId: painel.projetoId,
-        modeloId: painel.modeloId,
-        clientes: painel.clientes,
-      })
-    : KPIS_VAZIOS;
   const fila = montarResumoFila(painel.clientes);
-  const percentualAlerta = kpis.totalCarteira
-    ? Math.round((kpis.clientesEmAlerta / kpis.totalCarteira) * 100)
-    : 0;
 
   return (
     <RecalculoFilaGate>
@@ -61,55 +52,9 @@ export default async function DashboardPage() {
               descricao="Aqui estão os clientes que precisam da sua atenção hoje."
             />
 
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
-              <KpiCard
-                label="Receita salva (30d)"
-                value={formatCurrencyBRL(kpis.receitaSalva30d)}
-                description={
-                  kpis.clientesRecuperados30d
-                    ? `${kpis.clientesRecuperados30d} clientes saíram do alerta`
-                    : "nenhuma recuperação na janela"
-                }
-                tone="emerald"
-                icon={HeartHandshakeIcon}
-              />
-              <KpiCard
-                label="Receita em risco (ano)"
-                value={formatCurrencyBRL(kpis.receitaEmRiscoAno)}
-                description={`${kpis.clientesEmAlerta} clientes com risco relevante`}
-                tone="red"
-                icon={ArrowUpRightIcon}
-              />
-              <KpiCard
-                label="Clientes em alerta"
-                value={`${kpis.clientesEmAlerta}`}
-                description={`de ${kpis.totalCarteira} na carteira (${percentualAlerta}%)`}
-                tone="amber"
-                icon={UsersIcon}
-              />
-              <KpiCard
-                label="Antecedência média"
-                value={
-                  kpis.antecedenciaMediaMeses == null
-                    ? "—"
-                    : `${meses(kpis.antecedenciaMediaMeses)} meses`
-                }
-                description={
-                  kpis.antecedenciaMediaMeses == null
-                    ? "sem desfechos antecipados ainda"
-                    : `(mediana ${meses(kpis.antecedenciaMedianaMeses)} | máx. ${meses(kpis.antecedenciaMaximaMeses)})`
-                }
-                tone="blue"
-                icon={CalendarIcon}
-              />
-              <KpiCard
-                label="Clientes contatados"
-                value={`${kpis.clientesContatados7d}`}
-                description="nos últimos 7 dias"
-                tone="emerald"
-                icon={CheckIcon}
-              />
-            </div>
+            <Suspense fallback={<EsqueletoKpis />}>
+              <GradeKpis painel={painel} />
+            </Suspense>
           </div>
 
           <AssistantCard
@@ -125,17 +70,115 @@ export default async function DashboardPage() {
           />
         </div>
 
-        <FilaDoDia
-          clientes={fila}
+        <div data-tour="fila">
+          <FilaDoDia
+            clientes={fila}
           mensagemVazia={
             !painel.modeloId
               ? "Nenhum modelo de risco ativo no projeto. Ative um modelo para gerar a fila."
               : painel.clientes.length === 0
                 ? "Nenhuma predição calculada ainda. Rode o motor de risco após a ingestão de dados."
                 : "Nenhum cliente na fila hoje."
-          }
-        />
+            }
+          />
+        </div>
       </div>
     </RecalculoFilaGate>
+  );
+}
+
+/**
+ * Os KPIs dependem da consulta mais pesada do painel. Isolados num Suspense
+ * próprio, a fila do dia pinta primeiro e estes preenchem quando ficam
+ * prontos, em vez de toda a tela esperar pelo dado mais lento.
+ */
+async function GradeKpis({ painel }: { painel: Awaited<ReturnType<typeof carregarPainel>> }) {
+  const kpis = painel.modeloId
+    ? await calcularKpisPainel({
+        supabase: painel.supabase,
+        projetoId: painel.projetoId,
+        modeloId: painel.modeloId,
+        clientes: painel.clientes,
+      })
+    : KPIS_VAZIOS;
+
+  const percentualAlerta = kpis.totalCarteira
+    ? Math.round((kpis.clientesEmAlerta / kpis.totalCarteira) * 100)
+    : 0;
+
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+        <KpiCard
+          label="Receita salva (30d)"
+          value={formatCurrencyBRL(kpis.receitaSalva30d)}
+          animar={{ ate: kpis.receitaSalva30d, formato: "moeda" }}
+          indice={0}
+          description={
+            kpis.clientesRecuperados30d
+              ? `${kpis.clientesRecuperados30d} clientes saíram do alerta`
+              : "nenhuma recuperação na janela"
+          }
+          tone="emerald"
+          icon={HeartHandshakeIcon}
+        />
+        <KpiCard
+          label="Receita em risco (ano)"
+          value={formatCurrencyBRL(kpis.receitaEmRiscoAno)}
+          animar={{ ate: kpis.receitaEmRiscoAno, formato: "moeda" }}
+          indice={1}
+          description={`${kpis.clientesEmAlerta} clientes com risco relevante`}
+          tone="red"
+          icon={ArrowUpRightIcon}
+        />
+        <KpiCard
+          label="Clientes em alerta"
+          value={`${kpis.clientesEmAlerta}`}
+          animar={{ ate: kpis.clientesEmAlerta, formato: "inteiro" }}
+          indice={2}
+          description={`de ${kpis.totalCarteira} na carteira (${percentualAlerta}%)`}
+          tone="amber"
+          icon={UsersIcon}
+        />
+        <KpiCard
+          label="Antecedência média"
+          value={
+            kpis.antecedenciaMediaMeses == null
+              ? "—"
+              : `${meses(kpis.antecedenciaMediaMeses)} meses`
+          }
+          description={
+            kpis.antecedenciaMediaMeses == null
+              ? "sem desfechos antecipados ainda"
+              : `(mediana ${meses(kpis.antecedenciaMedianaMeses)} | máx. ${meses(kpis.antecedenciaMaximaMeses)})`
+          }
+          animar={
+            kpis.antecedenciaMediaMeses == null
+              ? undefined
+              : { ate: kpis.antecedenciaMediaMeses, formato: "decimal", sufixo: " meses" }
+          }
+          indice={3}
+          tone="blue"
+          icon={CalendarIcon}
+        />
+        <KpiCard
+          label="Clientes contatados"
+          value={`${kpis.clientesContatados7d}`}
+          animar={{ ate: kpis.clientesContatados7d, formato: "inteiro" }}
+          indice={4}
+          description="nos últimos 7 dias"
+          tone="emerald"
+          icon={CheckIcon}
+        />
+      </div>
+  );
+}
+
+function EsqueletoKpis() {
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <SkeletonKpi key={i} />
+      ))}
+    </div>
   );
 }

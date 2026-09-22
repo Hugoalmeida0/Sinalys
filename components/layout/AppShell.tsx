@@ -1,15 +1,19 @@
 import type { ReactNode } from "react";
 import { AssistenteProvider } from "@/components/assistente/AssistenteProvider";
 import { AssistenteWidget } from "@/components/assistente/AssistenteWidget";
+import { TourPrimeiraVisita } from "@/components/tour/TourPrimeiraVisita";
 import type { UsuarioSessao } from "@/lib/auth/usuario";
 import { MobileHeader } from "./MobileHeader";
 import { MobileNav } from "./MobileNav";
+import { RolarAoTopo } from "./RolarAoTopo";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
 export function AppShell({ usuario, children }: { usuario: UsuarioSessao; children: ReactNode }) {
   return (
     <AssistenteProvider>
+      <RolarAoTopo />
+
       <div className="flex min-h-screen bg-brand-darkest">
         <Sidebar />
 
@@ -26,6 +30,8 @@ export function AppShell({ usuario, children }: { usuario: UsuarioSessao; childr
         <MobileNav />
         <AssistenteWidget nomeUsuario={usuario.nome} />
       </div>
+
+      <TourPrimeiraVisita />
     </AssistenteProvider>
   );
 }

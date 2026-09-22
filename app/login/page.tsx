@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { EyeIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
+import { ConviteInstalacao } from "@/components/pwa/ConviteInstalacao";
 import { BotaoEmBreve } from "@/components/ui/BotaoEmBreve";
 import { GlobalsysWordmark } from "@/components/ui/GlobalsysWordmark";
 import { marcarRecalculoAoEntrar } from "@/components/dashboard/RecalculoFilaGate";
@@ -77,7 +78,7 @@ export default function LoginPage() {
                 <br />
                 Preserve conquistas.
               </h1>
-              <p className="mt-4 max-w-sm text-base text-white/85">
+              <p className="mt-4 max-w-sm text-base text-puro/85">
                 Inteligência de dados para manter seus clientes mais perto.
               </p>
             </div>
@@ -166,19 +167,23 @@ export default function LoginPage() {
               <span className="font-semibold text-slate-500">Globalsys</span>
             </p>
           </div>
+
+          <div className="w-full max-w-sm">
+            <ConviteInstalacao />
+          </div>
         </div>
 
         <div className="hidden items-end justify-between p-10 lg:flex">
           <div>
             <GlobalsysWordmark className="text-base" />
-            <p className="mt-1 text-sm text-white/70">
+            <p className="mt-1 text-sm text-puro/70">
               Conectando tecnologia
               <br />a resultados reais.
             </p>
           </div>
           <div className="text-right text-sm">
             <p className="text-brand-light">Clientes hoje.</p>
-            <p className="font-semibold text-white">Conquistas amanhã.</p>
+            <p className="font-semibold text-puro">Conquistas amanhã.</p>
           </div>
         </div>
       </div>

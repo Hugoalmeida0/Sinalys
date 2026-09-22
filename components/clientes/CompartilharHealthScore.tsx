@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { useSuporteNavegador } from "@/hooks/useSuporteNavegador";
+import { vibrar } from "@/lib/ui/tatil";
 import { ArrowUpRightIcon, CheckIcon, XIcon } from "@/components/ui/icons";
 import {
   BENEFICIOS_PLANO,
@@ -59,6 +61,11 @@ function ModalCompartilhar({
   const [link, setLink] = useState(config.linkAgendamento ?? "");
 
   const [salvando, setSalvando] = useState(false);
+  // No servidor não existe `navigator`; o hook entrega false lá e o valor real
+  // no cliente, sem divergência de hidratação.
+  const podeCompartilhar = useSuporteNavegador(
+    () => typeof navigator !== "undefined" && typeof navigator.share === "function"
+  );
   const [erro, setErro] = useState<string | null>(null);
   const [status, setStatus] = useState<"salvo" | "copiado" | null>(null);
 
@@ -67,6 +74,9 @@ function ModalCompartilhar({
     if (lista.length >= max) return null;
     return [...lista, codigo];
   }
+
+  // Definido no cliente para não divergir entre servidor e navegador.
+  const rotuloCompartilhar = podeCompartilhar ? "Salvar e compartilhar" : "Salvar e copiar link";
 
   async function salvar(copiarDepois: boolean) {
     setErro(null);
@@ -95,6 +105,27 @@ function ModalCompartilhar({
       }
       router.refresh();
       if (copiarDepois) {
+        // No celular a folha nativa abre WhatsApp, e-mail e AirDrop — bem mais
+        // útil do que um link na área de transferência. Fora dela, copia.
+        if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+          try {
+            vibrar("toque");
+            await navigator.share({
+              title: `Health Score — ${clienteLabel}`,
+              text: `Acompanhe o Health Score de ${clienteLabel}:`,
+              url,
+            });
+            setStatus("salvo");
+            return;
+          } catch (e) {
+            // Cancelar a folha não é erro: só segue para o caminho de cópia.
+            if ((e as Error)?.name === "AbortError") {
+              setStatus("salvo");
+              return;
+            }
+          }
+        }
+
         try {
           await navigator.clipboard.writeText(url);
           setStatus("copiado");
@@ -122,7 +153,7 @@ function ModalCompartilhar({
       <button
         type="button"
         aria-label="Fechar"
-        className="absolute inset-0 bg-slate-900/40"
+        className="absolute inset-0 bg-veu/40"
         onClick={onClose}
       />
 
@@ -305,7 +336,7 @@ function ModalCompartilhar({
               Salvar
             </Button>
             <Button type="submit" disabled={salvando}>
-              {salvando ? "Salvando..." : "Salvar e copiar link"}
+              {salvando ? "Salvando..." : rotuloCompartilhar}
             </Button>
           </div>
         </form>

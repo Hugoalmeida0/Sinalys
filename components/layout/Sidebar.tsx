@@ -38,8 +38,8 @@ export function Sidebar() {
               aria-current={isActive ? "page" : undefined}
               className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-colors ${
                 isActive
-                  ? "bg-brand-royal text-white shadow-[0_10px_24px_-12px_rgba(37,99,235,0.95)]"
-                  : "text-blue-100/70 hover:bg-white/10 hover:text-white"
+                  ? "bg-brand-royal text-puro shadow-[0_10px_24px_-12px_rgba(37,99,235,0.95)]"
+                  : "text-blue-100/70 hover:bg-puro/10 hover:text-puro"
               }`}
             >
               <Icon className="h-5 w-5 shrink-0" />
@@ -50,7 +50,7 @@ export function Sidebar() {
       </nav>
 
       <div className="relative px-6 pb-7">
-        <p className="text-sm font-bold text-white">Sinalys</p>
+        <p className="text-sm font-bold text-puro">Sinalys</p>
         <p className="mt-0.5 text-xs leading-snug text-blue-100/60">
           Dados que
           <br />

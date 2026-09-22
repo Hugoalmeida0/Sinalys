@@ -17,6 +17,21 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Sinalys",
   description: "Inteligência para relacionamentos duradouros",
+  applicationName: "Sinalys",
+  // O iOS ignora o manifest para instalação: quem define o modo standalone e
+  // o ícone da tela de início são estas metatags.
+  appleWebApp: {
+    capable: true,
+    title: "Sinalys",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
@@ -27,6 +42,11 @@ export const viewport: Viewport = {
   // vez de empurrar os elementos fixos para fora da tela.
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
+  // Pinta a barra de status do Android com o navy da marca.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0a2d6b" },
+    { media: "(prefers-color-scheme: dark)", color: "#050f2b" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

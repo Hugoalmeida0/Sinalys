@@ -89,9 +89,11 @@ test.describe("responsividade mobile", () => {
 
     await irPara(page, "/");
 
-    const fab = page.getByRole("button", { name: "Abrir assistente da Sinalys", exact: true });
-    await expect(fab).toBeVisible();
-    await fab.click();
+    // No mobile o gatilho é o mascote no centro da navegação inferior.
+    const gatilho = page.getByRole("button", { name: "Falar com a Sinalys", exact: true });
+    await expect(gatilho).toBeVisible();
+    await expect(gatilho, "o gatilho do assistente precisa estar ao alcance do polegar").toBeInViewport();
+    await gatilho.click();
 
     const painel = page.getByRole("region", { name: /assistente da sinalys/i });
     await expect(painel).toBeVisible();
@@ -124,6 +126,29 @@ test.describe("responsividade mobile", () => {
     await expect(painel).toBeHidden();
     const travado = await page.evaluate(() => getComputedStyle(document.body).overflow === "hidden");
     expect(travado, "scroll da página ficou travado após fechar o assistente").toBe(false);
+
+    const erros = bloqueantes(todos);
+    expect(erros, formatar(erros)).toHaveLength(0);
+  });
+
+  test("aviso de implementacao futura", async ({ page }, info) => {
+    const projeto = info.project.name;
+    const todos: Achado[] = [];
+
+    await irPara(page, "/clientes");
+
+    const exportar = page.getByRole("button", { name: /exportar/i }).first();
+    await expect(exportar).toBeVisible();
+    await exportar.click();
+
+    const aviso = page.getByRole("status").filter({ hasText: /implementação futura/i });
+    await expect(aviso, "o controle decorativo precisa dar algum retorno").toBeVisible();
+    await expect(aviso).toBeInViewport();
+
+    await auditar(page, projeto, "aviso-implementacao-futura", todos);
+
+    // Some sozinho, sem exigir ação de quem está usando.
+    await expect(aviso).toBeHidden({ timeout: 10_000 });
 
     const erros = bloqueantes(todos);
     expect(erros, formatar(erros)).toHaveLength(0);

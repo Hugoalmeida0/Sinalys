@@ -146,7 +146,7 @@ function PerfilDaConta() {
       descricao="Suas informações de acesso e perfil no Sinalys."
     >
       <div className="flex flex-wrap items-center gap-4">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-navy text-base font-bold text-white">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-navy text-base font-bold text-puro">
           {usuarioAtual.iniciais}
         </span>
         <div className="min-w-0 flex-1">

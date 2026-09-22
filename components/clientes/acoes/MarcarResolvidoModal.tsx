@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { vibrar } from "@/lib/ui/tatil";
 import { XIcon } from "@/components/ui/icons";
 
 export function MarcarResolvidoModal({
@@ -51,6 +52,7 @@ export function MarcarResolvidoModal({
         setEnviando(false);
         return;
       }
+      vibrar("confirmacao");
       setEnviado(true);
       router.refresh();
       setTimeout(handleClose, 900);
@@ -65,7 +67,7 @@ export function MarcarResolvidoModal({
       <button
         type="button"
         aria-label="Fechar"
-        className="absolute inset-0 bg-slate-900/40"
+        className="absolute inset-0 bg-veu/40"
         onClick={handleClose}
       />
 

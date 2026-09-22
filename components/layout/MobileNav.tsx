@@ -21,7 +21,7 @@ export function MobileNav() {
   const { aberto, alternar } = useAssistente();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 flex h-[calc(4.5rem+env(safe-area-inset-bottom))] items-center justify-around border-t border-slate-200/80 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 flex h-[calc(4.5rem+env(safe-area-inset-bottom))] items-center justify-around border-t border-slate-200/80 bg-puro/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
       {mobileItems.map((item) => {
         if (item === null) {
           return (
@@ -30,8 +30,9 @@ export function MobileNav() {
               type="button"
               onClick={alternar}
               aria-expanded={aberto}
+              data-tour="assistente"
               aria-label={aberto ? "Fechar assistente" : "Falar com a Sinalys"}
-              className={`flex h-14 w-14 -translate-y-4 items-center justify-center rounded-2xl bg-brand-deep shadow-[0_14px_28px_-12px_rgba(10,45,107,0.95)] ring-1 ring-white/10 transition-transform active:scale-90 ${
+              className={`flex h-14 w-14 -translate-y-4 items-center justify-center rounded-2xl bg-brand-deep shadow-[0_14px_28px_-12px_rgba(10,45,107,0.95)] ring-1 ring-puro/10 transition-transform active:scale-90 ${
                 aberto ? "scale-95" : ""
               }`}
             >
@@ -47,6 +48,7 @@ export function MobileNav() {
           <Link
             key={item.href}
             href={item.href}
+            data-tour={item.href === "/clientes" ? "clientes" : undefined}
             className="flex flex-1 flex-col items-center gap-1 py-1"
           >
             <ItemNav icone={item.icon} rotulo={item.label} ativo={isActive} />

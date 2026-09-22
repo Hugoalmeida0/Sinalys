@@ -25,9 +25,9 @@ export function StepIndicator({ atual }: { atual: 1 | 2 | 3 }) {
               <span
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
                   concluido
-                    ? "bg-brand-navy text-white"
+                    ? "bg-brand-navy text-puro"
                     : ativo
-                      ? "bg-brand-royal text-white shadow-[0_10px_20px_-10px_rgba(37,99,235,0.95)]"
+                      ? "bg-brand-royal text-puro shadow-[0_10px_20px_-10px_rgba(37,99,235,0.95)]"
                       : "bg-slate-100 text-slate-400"
                 }`}
               >

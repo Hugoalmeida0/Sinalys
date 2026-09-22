@@ -134,6 +134,18 @@ export async function logar(page: Page) {
 /** Espera a página assentar: fontes, imagens e animações. */
 export async function assentar(page: Page) {
   await page.waitForLoadState("domcontentloaded");
-  await page.evaluate(() => document.fonts?.ready);
+
+  // O contexto de execução pode ser descartado no meio do evaluate enquanto a
+  // navegação ainda está trocando o documento — basta esperar e tentar de novo.
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    try {
+      await page.evaluate(() => document.fonts?.ready);
+      break;
+    } catch {
+      await page.waitForLoadState("domcontentloaded").catch(() => {});
+      await page.waitForTimeout(300);
+    }
+  }
+
   await page.waitForTimeout(400);
 }

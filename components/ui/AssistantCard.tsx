@@ -29,7 +29,7 @@ export function AssistantCard({
 
   return (
     <div
-      className={`navy-surface relative isolate overflow-hidden rounded-2xl p-5 text-white shadow-float ${className}`}
+      className={`navy-surface relative isolate overflow-hidden rounded-2xl p-5 text-puro shadow-float ${className}`}
     >
       <Faiscas />
 
@@ -51,7 +51,7 @@ export function AssistantCard({
           <button
             type="button"
             onClick={() => abrir(assunto)}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-royal px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_22px_-10px_rgba(96,165,250,0.9)] transition-colors hover:bg-[#1d4ed8]"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-royal px-4 py-2.5 text-sm font-semibold text-puro shadow-[0_10px_22px_-10px_rgba(96,165,250,0.9)] transition-colors hover:bg-[#1d4ed8]"
           >
             {comIconeChat && <ChatIcon className="h-4 w-4" />}
             {rotuloBotao}

@@ -323,7 +323,7 @@ export function ClientesTable({
                 aria-current={n === paginaAtual ? "page" : undefined}
                 className={`hidden h-10 min-w-10 rounded-lg px-3 text-sm font-semibold transition-colors sm:inline-flex sm:items-center sm:justify-center ${
                   n === paginaAtual
-                    ? "bg-brand-royal text-white"
+                    ? "bg-brand-royal text-puro"
                     : "text-slate-500 hover:bg-slate-100"
                 }`}
               >
