@@ -187,27 +187,27 @@ test.describe("responsividade mobile", () => {
     for (const rota of alvos) {
       await irPara(page, rota.caminho);
 
-      const controles = page.locator(
-        'main button:visible, main [role="button"]:visible, main summary:visible'
-      );
-      const total = Math.min(await controles.count(), 25);
+      const seletor = 'main button:visible, main [role="button"]:visible, main summary:visible';
+      const total = Math.min(await page.locator(seletor).count(), 25);
 
       for (let i = 0; i < total; i++) {
-        await irPara(page, rota.caminho);
-        const alvo = page
-          .locator('main button:visible, main [role="button"]:visible, main summary:visible')
-          .nth(i);
+        const alvo = page.locator(seletor).nth(i);
         if ((await alvo.count()) === 0) continue;
 
         const nome = ((await alvo.getAttribute("aria-label")) ?? (await alvo.innerText()) ?? "").trim();
         if (!nome || proibido(nome)) continue;
 
         await alvo.click({ timeout: 5_000 }).catch(() => {});
-        await page.waitForTimeout(400);
+        await page.waitForTimeout(350);
         await auditar(page, projeto, `clique-${rota.nome}-${i}-${nome.slice(0, 20)}`, todos);
 
-        // Devolve a página ao estado neutro.
+        // Fecha o que tiver aberto. Só recarrega se o clique navegou para fora
+        // da rota — recarregar a cada controle torna a varredura inviável.
         await page.keyboard.press("Escape").catch(() => {});
+        await page.waitForTimeout(150);
+        if (!page.url().includes(rota.caminho === "/" ? "/" : rota.caminho)) {
+          await irPara(page, rota.caminho);
+        }
       }
     }
 
