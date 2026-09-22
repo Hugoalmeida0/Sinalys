@@ -38,7 +38,7 @@ Legenda de status:
 
 Antes do roteiro, o projeto precisa ter pelo menos um usuário no Supabase Auth, um projeto, um modelo ativo com regras, entidades, observações e predições. As credenciais preenchidas por padrão na tela de login são apenas uma conveniência da interface: elas só funcionarão se esse usuário tiver sido criado no Supabase usado pelo ambiente.
 
-1. Acesse `/login`, autentique-se e aguarde “Calculando a fila de hoje…”.
+1. Acesse `/login` e autentique-se. O painel aparece na hora; enquanto o aviso “Atualizando a fila…” estiver na tela, o motor está recalculando e os números se atualizam ao fim.
 2. Em `/`, confira os KPIs e abra um cliente da fila. O link **Ver fila completa** leva à carteira já ordenada por prioridade.
 3. Em `/clientes`, teste busca, filtros e ordenações; abra um cliente com sinais de risco.
 4. No detalhe, compare **Visão geral**, **Sinais de risco** e **Simulador**.

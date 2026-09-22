@@ -40,38 +40,24 @@ export function RecalculoFilaGate({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (calculando || isPending) return <FilaSkeleton />;
-  return <>{children}</>;
-}
-
-function FilaSkeleton() {
+  /*
+   * O painel que o servidor já entregou fica na tela durante o recálculo; o
+   * `router.refresh()` do fim só troca os números. O aviso é fixo, fora do
+   * fluxo: uma faixa no topo empurraria a página ao sumir, e o Safari do iPhone
+   * não compensa esse salto na rolagem de quem já desceu até a fila.
+   */
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
-      <div className="flex items-center gap-3 rounded-2xl border border-brand-royal/20 bg-brand-pale px-4 py-3 text-sm font-medium text-brand-navy">
-        <LoaderIcon className="h-4 w-4 shrink-0 animate-spin" />
-        Calculando a fila de hoje…
-      </div>
-
-      {/* Mesma ordem da tela real: no celular o card do assistente fica por
-          último, para o esqueleto não sugerir um arranjo que muda depois. */}
-      <div className="flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="flex flex-col gap-6">
-          <div className="h-8 w-72 animate-pulse rounded-lg bg-slate-200" />
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-28 animate-pulse rounded-2xl bg-slate-200" />
-            ))}
-          </div>
+    <>
+      {children}
+      {(calculando || isPending) && (
+        <div
+          role="status"
+          className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-1/2 z-30 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-2.5 rounded-full border border-brand-royal/20 bg-brand-pale px-4 py-2.5 text-sm font-medium whitespace-nowrap text-brand-navy shadow-float lg:bottom-6"
+        >
+          <LoaderIcon className="h-4 w-4 shrink-0 animate-spin" />
+          Atualizando a fila…
         </div>
-
-        <div className="order-last h-48 animate-pulse rounded-2xl bg-slate-200 xl:order-none" />
-
-        <div className="flex flex-col gap-3 xl:col-span-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-200" />
-          ))}
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
