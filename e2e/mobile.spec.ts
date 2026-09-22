@@ -57,8 +57,26 @@ function aba_(page: Page, nome: string) {
     .filter({ hasText: new RegExp(`^${nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`) });
 }
 
+/**
+ * Navega tolerando navegações que o próprio app dispara.
+ *
+ * O RecalculoFilaGate chama `router.refresh()` quando termina de recalcular a
+ * fila, e esse refresh pode atropelar o goto do teste ("interrupted by another
+ * navigation"). É comportamento legítimo da aplicação, então quem se adapta é
+ * o teste.
+ */
 async function irPara(page: Page, caminho: string) {
-  await page.goto(caminho, { waitUntil: "domcontentloaded" });
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    try {
+      await page.goto(caminho, { waitUntil: "domcontentloaded" });
+      break;
+    } catch (e) {
+      const msg = (e as Error).message;
+      const atropelado = /interrupted by another navigation|Execution context was destroyed/i.test(msg);
+      if (!atropelado || tentativa === 2) throw e;
+      await page.waitForTimeout(700);
+    }
+  }
   await assentar(page);
 }
 
