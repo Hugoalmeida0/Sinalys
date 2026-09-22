@@ -36,9 +36,27 @@ function meses(valor: number | null): string {
   return valor == null ? "—" : valor.toLocaleString("pt-BR", { minimumFractionDigits: 1 });
 }
 
+/**
+ * Calculada no servidor, com o fuso explícito: a Vercel roda em UTC, e o
+ * cliente recebe a string pronta, sem nada a divergir na hidratação.
+ */
+function saudacao(agora: Date): string {
+  const hora = Number(
+    new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      hour: "numeric",
+      hourCycle: "h23",
+    }).format(agora)
+  );
+  if (hora >= 5 && hora < 12) return "Bom dia";
+  if (hora >= 12 && hora < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 export default async function DashboardPage() {
   const [usuario, painel] = await Promise.all([obterUsuarioSessao(), carregarPainel()]);
   const primeiroNome = usuario?.nome.split(" ")[0] ?? "";
+  const cumprimento = saudacao(new Date());
 
   const fila = montarResumoFila(painel.clientes);
 
@@ -54,7 +72,7 @@ export default async function DashboardPage() {
       <div className="mx-auto flex max-w-[1600px] flex-col gap-6 p-4 sm:p-6 lg:p-8 xl:grid xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="flex flex-col gap-6">
           <PageHeader
-            titulo={primeiroNome ? `Bom dia, ${primeiroNome}.` : "Bom dia."}
+            titulo={primeiroNome ? `${cumprimento}, ${primeiroNome}.` : `${cumprimento}.`}
             descricao="Aqui estão os clientes que precisam da sua atenção hoje."
           />
 
