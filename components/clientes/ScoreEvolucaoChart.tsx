@@ -141,7 +141,7 @@ export function ScoreEvolucaoChart({
         {faixas.map((f) => (
           <li
             key={f.rotulo}
-            className="text-[11px] font-semibold whitespace-nowrap sm:text-xs"
+            className="text-[11px] font-semibold whitespace-nowrap max-[359px]:text-[10px] sm:text-xs"
             style={{ color: f.cor }}
           >
             {f.rotulo}
