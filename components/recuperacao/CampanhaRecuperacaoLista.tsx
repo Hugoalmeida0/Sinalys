@@ -163,6 +163,7 @@ function CardCliente({
           <ConteudoAnaliseIA
             estado={estado}
             textoVazio="A IA cruza o perfil deste cliente no momento do cancelamento com casos parecidos do histórico da sua empresa e sugere um plano para tentar reativá-lo."
+            aoTentarNovamente={analisarERecarregar}
           />
         </div>
       )}

@@ -7,6 +7,7 @@ import { DefaultChatTransport, getToolName, isToolUIPart, type UIMessage } from 
 import { ArrowRightIcon, LoaderIcon, MicrofoneIcon, PlusIcon, XIcon } from "@/components/ui/icons";
 import { SinalysMascot } from "@/components/ui/SinalysMascot";
 import { useDitado } from "@/hooks/useDitado";
+import { traduzirErroIA } from "@/lib/ui/erros-ia";
 import { vibrar } from "@/lib/ui/tatil";
 import { useAssistente } from "./AssistenteProvider";
 import { TextoFormatado } from "./TextoFormatado";
@@ -18,7 +19,9 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
   const clienteId = clienteDaRota(caminho);
 
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/inteligencia/chat" }), []);
-  const { messages, sendMessage, status, error, stop, setMessages, clearError } = useChat({ transport });
+  const { messages, sendMessage, regenerate, status, error, stop, setMessages, clearError } =
+    useChat({ transport });
+  const falha = error ? traduzirErroIA(error.message) : null;
 
   const ocupado = status === "submitted" || status === "streaming";
   const ditado = useDitado(setRascunho);
@@ -50,6 +53,14 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
 
     void sendMessage({ text: conteudo }, { body: { tela: { caminho, clienteId } } });
     setRascunho("");
+  }
+
+  // Refaz a última pergunta: descarta a resposta parcial, se houver, e reenvia.
+  function tentarNovamente() {
+    if (ocupado) return;
+    clearError();
+    vibrar("toque");
+    void regenerate({ body: { tela: { caminho, clienteId } } });
   }
 
   const primeiroNome = nomeUsuario.split(/\s+/)[0] || nomeUsuario;
@@ -159,10 +170,22 @@ export function AssistenteWidget({ nomeUsuario }: { nomeUsuario: string }) {
                   </li>
                 )}
 
-                {error && (
+                {falha && (
                   <li className="flex justify-start">
-                    <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm leading-relaxed text-red-700">
-                      {error.message || "Não consegui responder agora."}
+                    <div
+                      role="alert"
+                      className="max-w-[85%] rounded-2xl rounded-bl-md border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm leading-relaxed text-red-700"
+                    >
+                      <p>{falha.mensagem}</p>
+                      {falha.podeTentarDeNovo && (
+                        <button
+                          type="button"
+                          onClick={tentarNovamente}
+                          className="mt-2 min-h-11 rounded-lg px-3 font-semibold text-red-700 ring-1 ring-red-200 ring-inset transition-colors hover:bg-red-100 sm:min-h-9"
+                        >
+                          Tentar novamente
+                        </button>
+                      )}
                     </div>
                   </li>
                 )}

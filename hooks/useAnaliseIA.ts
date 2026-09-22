@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { traduzirErroIA, type ErroIA } from "@/lib/ui/erros-ia";
 
 export interface PlanoIA {
   diagnostico: string;
@@ -12,21 +13,34 @@ export interface PlanoIA {
 export function useAnaliseIA(clienteId: string, planoInicial: PlanoIA | null = null) {
   const [plano, setPlano] = useState<PlanoIA | null>(planoInicial);
   const [analisando, setAnalisando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [falha, setFalha] = useState<ErroIA | null>(null);
   const [concluidas, setConcluidas] = useState<Record<number, boolean>>({});
 
   async function analisar(forcar = false) {
     setAnalisando(true);
-    setErro(null);
+    setFalha(null);
     try {
-      const resposta = await fetch("/api/inteligencia/analisar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cliente_id: clienteId, trigger_source: "manual", forcar }),
-      });
+      let resposta: Response;
+      try {
+        resposta = await fetch("/api/inteligencia/analisar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cliente_id: clienteId, trigger_source: "manual", forcar }),
+        });
+      } catch (e) {
+        setFalha(traduzirErroIA((e as Error).message));
+        return false;
+      }
       const corpo = await resposta.json().catch(() => ({}));
       if (!resposta.ok) {
-        throw new Error(corpo?.erro ?? `Falha na análise (HTTP ${resposta.status}).`);
+        // 404 e 422 já trazem o motivo de negócio (cliente não encontrado, sem
+        // predição): esse texto fica, e repetir a análise não mudaria nada.
+        setFalha(
+          (resposta.status === 404 || resposta.status === 422) && corpo?.erro
+            ? { mensagem: corpo.erro, podeTentarDeNovo: false }
+            : traduzirErroIA(corpo?.erro, resposta.status)
+        );
+        return false;
       }
       setPlano({
         diagnostico: corpo.diagnostico_principal,
@@ -38,7 +52,7 @@ export function useAnaliseIA(clienteId: string, planoInicial: PlanoIA | null = n
       setConcluidas({});
       return true;
     } catch (e) {
-      setErro((e as Error).message);
+      setFalha(traduzirErroIA((e as Error).message));
       return false;
     } finally {
       setAnalisando(false);
@@ -49,7 +63,15 @@ export function useAnaliseIA(clienteId: string, planoInicial: PlanoIA | null = n
     setConcluidas((prev) => ({ ...prev, [index]: !prev[index] }));
   }
 
-  return { plano, analisando, erro, concluidas, analisar, alternarAcao };
+  return {
+    plano,
+    analisando,
+    erro: falha?.mensagem ?? null,
+    podeTentarDeNovo: falha?.podeTentarDeNovo ?? false,
+    concluidas,
+    analisar,
+    alternarAcao,
+  };
 }
 
 export type UseAnaliseIA = ReturnType<typeof useAnaliseIA>;

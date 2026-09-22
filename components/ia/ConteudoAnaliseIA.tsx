@@ -11,11 +11,14 @@ import type { UseAnaliseIA } from "@/hooks/useAnaliseIA";
 export function ConteudoAnaliseIA({
   estado,
   textoVazio,
+  aoTentarNovamente,
 }: {
   estado: UseAnaliseIA;
   textoVazio: string;
+  /** Refaz a análise; o botão só aparece quando repetir pode resolver. */
+  aoTentarNovamente?: () => void;
 }) {
-  const { plano, analisando, erro, concluidas, alternarAcao } = estado;
+  const { plano, analisando, erro, podeTentarDeNovo, concluidas, alternarAcao } = estado;
 
   return (
     <div className="flex flex-col gap-5">
@@ -32,7 +35,18 @@ export function ConteudoAnaliseIA({
       {erro && (
         <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>{erro}</p>
+          <div className="min-w-0 flex-1">
+            <p>{erro}</p>
+            {podeTentarDeNovo && aoTentarNovamente && (
+              <button
+                type="button"
+                onClick={aoTentarNovamente}
+                className="mt-2 min-h-11 rounded-lg px-3 font-semibold text-red-700 ring-1 ring-red-200 ring-inset transition-colors hover:bg-red-100 sm:min-h-9"
+              >
+                Tentar novamente
+              </button>
+            )}
+          </div>
         </div>
       )}
 

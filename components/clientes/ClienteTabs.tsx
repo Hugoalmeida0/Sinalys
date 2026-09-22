@@ -395,6 +395,7 @@ function PlanoDeAcao({ detalhe }: { detalhe: DetalheCliente }) {
         <ConteudoAnaliseIA
           estado={estado}
           textoVazio="A IA cruza os sinais de risco deste cliente com casos parecidos do histórico da sua empresa e devolve um diagnóstico e um plano de ação estruturado."
+          aoTentarNovamente={analisarERecarregar}
         />
         <RegistrarContatoTrigger clienteId={detalhe.id} clienteLabel={detalhe.nome} fullWidth />
       </CardContent>
