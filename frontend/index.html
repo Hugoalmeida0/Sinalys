@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full antialiased">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" content="#0a2d6b" />
+    <meta name="description" content="Inteligência para relacionamentos duradouros" />
+    <meta name="application-name" content="Sinalys" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Sinalys" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Sinalys</title>
+  </head>
+  <body class="min-h-full flex flex-col">
+    <!-- Tela de abertura: desenhada só com CSS e SVG inline para aparecer no
+         primeiro frame. O React a retira ao montar (TelaDeAbertura.tsx). -->
+    <div id="tela-abertura" class="tela-abertura" role="status" aria-label="Carregando o Sinalys">
+      <div class="tela-abertura-conteudo">
+        <svg class="tela-abertura-sinal" viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="46" r="4" />
+          <path class="tela-abertura-arco" d="M23.5 37.5a12 12 0 0 1 17 0" />
+          <path class="tela-abertura-arco" d="M16.4 30.4a22 22 0 0 1 31.2 0" />
+          <path class="tela-abertura-arco" d="M9.4 23.4a32 32 0 0 1 45.2 0" />
+        </svg>
+        <p class="tela-abertura-marca">Sinalys</p>
+        <div class="barra-rota tela-abertura-barra"></div>
+      </div>
+    </div>
+    <noscript><style>.tela-abertura{display:none}</style></noscript>
+    <div id="root" class="flex min-h-full flex-1 flex-col"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
