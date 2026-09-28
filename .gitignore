@@ -1,49 +1,39 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Segredos: nunca versionar arquivos .env (os modelos são os .env.example)
+.env
+.env.*
+!.env.example
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-/e2e/.artifacts/
-/e2e/.auth/
-/e2e/__screenshots__/
-/playwright-report/
-
-# gerados pelo next dev para agentes de IA
-/AGENTS.md
-/CLAUDE.md
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
+# ---------- frontend (Node / Vite) ----------
+node_modules/
+frontend/dist/
+*.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# testes e2e (Playwright)
+frontend/e2e/.artifacts/
+frontend/e2e/.auth/
+frontend/e2e/__screenshots__/
+frontend/playwright-report/
+frontend/test-results/
 
-# vercel
+# ---------- backend (Python) ----------
+backend/.venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ---------- diversos ----------
+.DS_Store
+*.pem
+/coverage
 .vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# gerados por ferramentas de agentes de IA
+/AGENTS.md
+/CLAUDE.md
