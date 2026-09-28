@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+// Suba backend e frontend antes (ver README). Credenciais: E2E_EMAIL e E2E_SENHA.
+const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:5173";
 const ESTADO = "e2e/.auth/estado.json";
 
 export default defineConfig({

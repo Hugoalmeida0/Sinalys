@@ -195,5 +195,13 @@ export async function assentar(page: Page) {
     }
   }
 
+  // No SPA os dados chegam depois do DOM: espera sair a tela de abertura e os
+  // esqueletos de carregamento, para auditar a tela real e não o placeholder.
+  await page
+    .waitForFunction(() => !document.querySelector('[role="status"][aria-label^="Carregando"]'), undefined, {
+      timeout: 30_000,
+    })
+    .catch(() => {});
+
   await page.waitForTimeout(400);
 }

@@ -10,8 +10,8 @@ setup("autenticar", async ({ page }) => {
   await page.goto("/login", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("button", { name: "Entrar" })).toBeVisible({ timeout: 60_000 });
 
-  // Sem esperar a hidratação, o clique dispara o submit nativo do form (GET com
-  // as credenciais na query string) em vez do handler React.
+  // Sem esperar o React montar, o clique dispara o submit nativo do form (GET
+  // com as credenciais na query string) em vez do handler React.
   await page.waitForLoadState("networkidle");
   await expect
     .poll(
@@ -26,8 +26,11 @@ setup("autenticar", async ({ page }) => {
     .toBe(true);
   await page.getByRole("button", { name: "Ocultar senha" }).click();
 
-  await page.locator('input[name="email"]').fill("ana.souza@globalsys.com");
-  await page.locator('input[name="senha"]').fill("sinalys123");
+  const email = process.env.E2E_EMAIL;
+  const senha = process.env.E2E_SENHA;
+  if (!email || !senha) throw new Error("Defina E2E_EMAIL e E2E_SENHA com um usuário do Supabase Auth.");
+  await page.locator('input[name="email"]').fill(email);
+  await page.locator('input[name="senha"]').fill(senha);
   await page.getByRole("button", { name: "Entrar" }).click();
 
   await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 90_000 });
