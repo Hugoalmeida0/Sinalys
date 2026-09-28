@@ -1,6 +1,8 @@
-# ⚙️ Motor Matemático de Predição (Risk & Urgency Engine)
+# ⚙️ Motor Matemático de Risco (Risk & Urgency Engine)
 
 O motor matemático é o núcleo do sistema agnóstico. Sua função é transformar dados de origens, tipos e grandezas completamente diferentes (dias, reais, percentuais, quantidades) em uma única **Fila de Priorização de Atendimento**.
+
+É um cálculo **determinístico**: os mesmos dados sempre produzem o mesmo score. A IA não participa dele — ela só lê o resultado. Implementação: [`backend/app/services/motor/`](../backend/app/services/motor/).
 
 O cálculo é executado em quatro etapas sequenciais:
 
@@ -13,20 +15,24 @@ Como não é possível cruzar "dias de atraso" com "percentual de uso" diretamen
 *   **Sinal acionado:** um motivo só conta como "acionado" (evidência mostrada ao analista) quando o desvio é de pelo menos 1 desvio-padrão (`LIMIAR_Z_ACIONADO`). Abaixo disso ele entra no score, mas não vira alerta.
 
 ### 2. Atribuição de Pesos (Modelagem)
-Com todas as métricas niveladas, o sistema consulta a tabela de `regras_modelo`. Cada indicador é multiplicado pelo peso definido pelo usuário na parametrização (ou sugerido pela IA com base na análise de perdas passadas).
+Com todas as métricas niveladas, o sistema consulta a tabela de `regras_modelo`. Cada indicador é multiplicado pelo peso definido pelo usuário na parametrização.
 *   *Exemplo:* O Risco de Atraso de Pagamento pode ter peso 2, enquanto a Queda Severa de Uso do Sistema recebe peso 5.
 
-### 3. Cálculo do Score de Risco (Probabilidade de Churn)
-O motor consolida os alertas ponderados para gerar uma probabilidade matemática, que é salva na tabela `predicoes`.
-*   **Lógica:** `Risco Base = Σ (Valor Normalizado × Peso da Métrica)`
-*   **Resultado:** Um termômetro consolidado de 0 a 100 para o cliente, indicando o quão próximo ele está do padrão de cancelamento.
+### 3. Cálculo do Score de Risco (0–100)
+O motor consolida os alertas ponderados em um **score de 0 a 100**, salvo na tabela `predicoes` junto com os motivos (`motivos_predicao`) que o explicam.
+*   **Lógica:** `Score = Σ (Valor Normalizado × Peso) / Σ (Pesos das regras avaliáveis)`
+*   **Resultado:** um índice operacional de 0 a 100 que indica o quão próximo o cliente está do padrão de cancelamento. **Não é uma probabilidade**: o score ainda não passou por validação estatística (calibração contra desfechos reais).
+*   **Faixas:** crítico (acima de 50), alerta (35 a 50), atenção (25 a 35) e saudável (abaixo de 25).
 
 ### 4. Matriz de Urgência (Impacto de Negócio)
-Um risco de 90% em um contrato de R$ 500 exige menos urgência do que um risco de 65% em um contrato de R$ 15.000. Para montar a fila de atendimento real, o motor cruza o risco matemático com o impacto financeiro — mas sem deixar o dinheiro engolir o risco (o produto puro `risco × receita` colocava uma conta grande e saudável na frente de uma pequena em alerta):
+Um score 90 em um contrato de R$ 500 exige menos urgência do que um score 65 em um contrato de R$ 15.000. Para montar a fila de atendimento real, o motor cruza o score com o impacto financeiro — mas sem deixar o dinheiro engolir o risco (o produto puro `risco × receita` colocava uma conta grande e saudável na frente de uma pequena em alerta):
 
 *   **Impacto relativo:** `impacto_rel = ln(MRR / MRR_min) / ln(MRR_max / MRR_min)` — posição da receita na carteira **ativa**, em escala log, de 0 (menor conta) a 1 (maior). Sem receita mapeada usa o porte cadastral (Pequeno 0,25 / Médio 0,5 / Grande 0,75); nunca zero.
 *   **Cálculo Final:** `Score de Prioridade = Score de Risco × (0,5 + impacto_rel)` — o impacto modula o risco entre 0,5× e 1,5×.
 
-Assim uma conta grande com score médio passa uma pequena com score alto, mas uma grande saudável não passa ninguém em alerta. O Score de Risco e a faixa continuam puros (dinheiro é impacto, nunca risco); a prioridade é derivada ao montar a fila (`lib/motor/urgencia.ts`) e não é persistida.
+Assim uma conta grande com score médio passa uma pequena com score alto, mas uma grande saudável não passa ninguém em alerta. O score de risco e a faixa continuam puros (dinheiro é impacto, nunca risco); a prioridade é derivada ao montar a fila ([`urgencia.py`](../backend/app/services/motor/urgencia.py)) e não é persistida.
+
+### Exposição
+O valor em reais exibido ao lado do score é a **exposição ponderada**: `MRR × 12 × score / 100`. Ela mede quanto da receita anual está sob risco na leitura do motor — não é previsão de perda.
 
 O painel de Customer Success é ordenado pelo **Score de Prioridade**. Isso garante que o analista saiba exatamente com quem falar primeiro, focando tempo e energia nos clientes que representam a maior ameaça à receita da empresa.

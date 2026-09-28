@@ -15,7 +15,7 @@ O motor de IA recebe simultaneamente dois blocos de informação estruturada:
 * **Contexto Histórico (Lookalike):** Os casos passados mais similares encontrados pelo banco vetorial (ex: *"Este comportamento é 90% idêntico ao do Cliente Y, que cancelou no trimestre passado após falhar nas reuniões de alinhamento"*).
 
 ### 3. O Analista Virtual (Geração de Insights com LLM)
-Utilizando um modelo de linguagem otimizado (como o Gemini via Vercel AI SDK), o sistema atua como um gestor sênior de Customer Success. 
+Utilizando um modelo de linguagem via OpenRouter (os embeddings da memória vêm do Gemini), o sistema atua como um gestor sênior de Customer Success. A IA é **somente leitura**: recebe o score e os motivos já calculados pelo motor determinístico, não tem acesso ao banco e não altera o score. Se a LLM falhar, um diagnóstico de contingência é montado apenas com regras.
 * A IA cruza a severidade do risco financeiro com os padrões do passado para redigir um **Diagnóstico de Risco** claro e direto.
 * Em vez de alertas genéricos, o motor gera um **Plano de Ação Imediato** prescritivo (ex: *"Ligar para o decisor e agendar um re-onboarding focado no módulo crítico"*).
 

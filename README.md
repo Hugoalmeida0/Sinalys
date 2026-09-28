@@ -1,170 +1,70 @@
 # Sinalys
 
-Plataforma de Customer Success para antecipar churn. A Sinalys transforma observações operacionais em score de risco, prioriza a carteira pelo impacto financeiro e usa IA com memória de casos anteriores para explicar o risco e recomendar ações.
+Plataforma de Customer Success que antecipa o cancelamento de clientes (churn). A Sinalys lê os indicadores de cada cliente (uso, pagamentos, SLA, NPS…), calcula um **score de risco de 0 a 100**, ordena a carteira por prioridade — risco combinado com o peso financeiro da conta — e mostra ao analista **quem contatar hoje, por quê e o que fazer**, com apoio de uma IA que compara o caso com clientes parecidos do histórico da própria empresa. Projeto criado no hackathon Desafio InovaApps.
 
-O projeto é full-stack em Next.js 16 (App Router): páginas, componentes e Route Handlers vivem no mesmo repositório; Supabase fornece autenticação, PostgreSQL, Storage e `pgvector`; OpenRouter gera análises e conversas; Gemini gera embeddings.
+## Arquitetura
 
-## O que está disponível hoje
+```
+frontend/  React + Vite  ──/api──▶  backend/  Python + FastAPI  ──▶  Supabase (PostgreSQL + pgvector)
+                                              │
+                                              ├─▶ OpenRouter (LLM)
+                                              └─▶ Gemini (embeddings)
+```
 
-Legenda de status:
+- **Motor determinístico calcula o score.** Cada indicador é comparado com a carteira (z-score) ou com o histórico do próprio cliente (média móvel), ponderado pelos pesos do modelo e consolidado num score 0–100 com faixa (crítico, alerta, atenção, saudável). Mesmos dados, mesmo resultado. Cada score guarda os motivos que o explicam. É um índice operacional, ainda sem validação estatística — não é probabilidade.
+- **A IA assiste, não decide.** A LLM recebe os fatos já calculados, busca casos históricos semelhantes (pgvector) e sugere diagnóstico e plano de ação. É somente leitura: não acessa o banco e não altera o score. Se ela falhar, um diagnóstico de contingência é montado só com regras.
+- **Exposição** é o valor em reais associado ao score (`MRR × 12 × score/100`): quanto da receita está sob risco, não uma previsão de perda.
+- O backend segue MVC: `routes` → `controllers` → `services` (motor, IA, fallback) → `models` (Supabase), com `schemas` Pydantic como view. Detalhes em [`docs/`](docs/).
 
-- **Operacional:** lê ou grava dados reais no Supabase.
-- **Local:** funciona na interface, mas não persiste o resultado.
-- **Demonstrativo:** está visível, porém o controle ainda não executa a ação anunciada.
-- **Oculto:** existe no código, mas a feature flag atual redireciona a página para o Início.
+## Como rodar localmente
 
-| Funcionalidade | Onde testar | Status | O que é possível validar |
-| --- | --- | --- | --- |
-| Login e logout | `/login`; depois use **Sair** no topo ou menu móvel | Operacional | Login por e-mail e senha com Supabase Auth, sessão por cookie e proteção das páginas internas. |
-| Painel e fila do dia | `/` | Operacional | KPIs de receita salva/em risco, clientes em alerta, antecedência, contatos recentes e fila ordenada por prioridade. Ao entrar, o motor é recalculado antes de atualizar o painel. |
-| Carteira de clientes | `/clientes` | Operacional + Local | Resumo por faixa, busca, filtros por situação/risco/segmento, ordenação e paginação sobre dados reais. Os filtros são executados no navegador. |
-| Detalhe do cliente | `/clientes` → clique em um cliente | Operacional | MRR, receita em risco, score, evolução, sinais, explicação, plano de ação e dados cadastrais. |
-| Simulador de cenários | detalhe do cliente → **Simulador** | Local | Reduzir sinais individualmente, comparar score/receita/prioridade e copiar a frase do cenário. A simulação não altera dados nem o score persistido. |
-| Diagnóstico e plano por IA | detalhe do cliente → **Plano de ação** → **Analisar cliente** | Operacional | Geração ou reanálise do diagnóstico, comparação com casos semelhantes e plano imediato. Marcar itens como concluídos é apenas local. |
-| Assistente Sinalys | botão flutuante em qualquer página interna ou cards “Pergunte à Sinalys” | Operacional | Chat com contexto da tela e ferramentas somente leitura para fila, carteira, raio-X de cliente e casos semelhantes. |
-| Registrar contato | cliente → **Ações** → **Registrar contato** | Operacional | Tipo, data, resumo, próximo passo e data prevista; o contato entra no histórico usado pelo painel e pelo assistente. |
-| Registrar recuperação | cliente → menu `…` → **Marcar como resolvido**, ou `/recuperacao` | Operacional | Grava desfecho recuperado e indexa o caso para recomendações futuras. |
-| Registrar cancelamento | cliente → menu `…` → **Marcar como cancelado** | Operacional | Grava motivo, detalhe e ação já tentada; o cliente passa a aparecer na campanha de recuperação. |
-| Silenciar alertas | cliente → menu `…` → **Silenciar alertas (30 dias)** | Operacional | Retira temporariamente o cliente da fila padrão, sem apagar seu risco. |
-| Campanha de recuperação | `/recuperacao` | Operacional | Causas de cancelamento, clientes cancelados, análise de perfil, plano de reativação e registro de recuperação. |
-| Health Score compartilhável | detalhe do cliente → **Compartilhar com o cliente** | Operacional | Selecionar destaques positivos e benefícios, informar um link de agenda e copiar o link público. Abra-o sem uma sessão autenticada; a página não exibe risco, score ou MRR. |
-| Pedido de call pelo cliente | página pública `/health/[token]` | Operacional | Com link de agenda, abre o serviço externo; sem link, registra no histórico um pedido de contato com nome, horário e mensagem. |
-| Calibração do modelo | `/configuracoes` → **Modelo de risco** | Operacional | Alterar pesos, adicionar um sinal, escolher comparação com carteira ou histórico e configurar omissão. Salvar dispara o recálculo das predições. |
-| Preferências, usuários e integrações | `/configuracoes` | Demonstrativo | Abas, toggles, listas e botões são uma prévia visual; somente a aba **Modelo de risco** persiste mudanças. |
-| Ingestão de Excel/CSV | `/ingestao` | Oculto | Wizard e APIs existem, mas `EXIBIR_INGESTAO` está `false`; a URL redireciona para `/`. |
-| Playbook e relatórios | `/playbook` e `/relatorios` | Oculto | Telas baseadas em mocks existem, mas as flags estão desativadas e as URLs redirecionam para `/`. |
+Requisitos: Python 3.11+, Node.js 20+ e um projeto Supabase com o schema aplicado (rode [`backend/db/modelagem.sql`](backend/db/modelagem.sql) e depois [`backend/db/rls.sql`](backend/db/rls.sql) no SQL Editor, e crie um usuário em Authentication).
 
-## Roteiro recomendado de teste
-
-Antes do roteiro, o projeto precisa ter pelo menos um usuário no Supabase Auth, um projeto, um modelo ativo com regras, entidades, observações e predições. As credenciais preenchidas por padrão na tela de login são apenas uma conveniência da interface: elas só funcionarão se esse usuário tiver sido criado no Supabase usado pelo ambiente.
-
-1. Acesse `/login` e autentique-se. O painel aparece na hora; enquanto o aviso “Atualizando a fila…” estiver na tela, o motor está recalculando e os números se atualizam ao fim.
-2. Em `/`, confira os KPIs e abra um cliente da fila. O link **Ver fila completa** leva à carteira já ordenada por prioridade.
-3. Em `/clientes`, teste busca, filtros e ordenações; abra um cliente com sinais de risco.
-4. No detalhe, compare **Visão geral**, **Sinais de risco** e **Simulador**.
-5. Em **Plano de ação**, gere uma análise. Para validar lookalikes de verdade, a base precisa ter casos históricos indexados.
-6. Use **Ações → Registrar contato** e confirme depois, no assistente, perguntando “Já houve contato recente com este cliente?”.
-7. Use **Compartilhar com o cliente**, escolha o conteúdo, salve e abra a prévia pública em uma janela anônima.
-8. Registre um cancelamento e confirme sua aparição em `/recuperacao`; nessa página, gere um plano de reativação.
-9. Em `/configuracoes` → **Modelo de risco**, altere um peso ou adicione um sinal. A operação salva e recalcula a carteira.
-
-Para testar a IA, configure as chaves de OpenRouter e Gemini. Sem casos históricos, a análise ainda pode ser gerada, mas deve informar que não encontrou comparações reais. Para testar o Health Score, escolha um cliente que tenha `token_compartilhamento` válido.
-
-## Controles visíveis que ainda não estão implementados
-
-Os seguintes elementos não devem ser usados como critério de aceite funcional neste momento:
-
-- busca global e sino de notificações no topo;
-- botão central de ação rápida no menu móvel;
-- “Esqueceu a senha?”;
-- exportação da carteira;
-- “Agendar reunião” no menu de ações;
-- “Ver todos” no resumo de sinais;
-- botão geral “Salvar alterações” de Configurações;
-- edição de perfil, gestão de integrações/usuários e persistência das preferências de notificação.
-
-## Como executar localmente
-
-Requisitos: Node.js 20 ou superior, npm e um projeto Supabase preparado com o schema deste repositório.
+**Backend** (API em http://localhost:8000, documentação em `/docs`):
 
 ```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env             # preencha as variáveis abaixo
+uvicorn main:app --reload --port 8000
+```
+
+**Frontend** (em outro terminal; abre em http://localhost:5173):
+
+```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Crie manualmente um `.env.local` na raiz — o repositório não contém `.env.example` — e abra [http://localhost:3000](http://localhost:3000).
+Testes: `pip install -r requirements-dev.txt && pytest` no backend; `npm run typecheck` no frontend.
 
-### Variáveis de ambiente
+## Variáveis de ambiente
 
-```env
-# Public — exposed to the browser bundle. Must be prefixed with NEXT_PUBLIC_.
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=https://eimlvnmuvazbztozzrtk.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=***REMOVED***
+Os modelos estão em [`backend/.env.example`](backend/.env.example) e [`frontend/.env.example`](frontend/.env.example). Nenhum valor real vai para o repositório.
 
-# Private — server-only, never sent to the client. No NEXT_PUBLIC_ prefix.
-SUPABASE_SERVICE_ROLE_KEY=***REMOVED***
-GOOGLE_GENERATIVE_AI_API_KEY=***REMOVED***
-CRON_SECRET=***REMOVED***
+**backend/.env**
 
-# Módulo 2 — Ingestão. DEFAULT_PROJETO_ID é um placeholder até existir autenticação
-# multi-tenant (ver pendência em TASKS.md); todas as rotas de ingestão usam este
-# projeto quando nenhum projeto_id é enviado explicitamente na requisição.
-DEFAULT_PROJETO_ID=8a13faae-c4df-4364-8e20-4d44ac37ff53
-SUPABASE_STORAGE_BUCKET_INGESTAO=ingestao-raw
-
-# Módulo 4 — Inteligência/RAG (ver lib/ia/constantes.ts). LLM na OpenRouter,
-# embeddings no Gemini (híbrido).
-OPENROUTER_API_KEY=***REMOVED***
-OPENROUTER_MODELO_LLM=nvidia/nemotron-3-ultra-550b-a55b:free
-OPENROUTER_MODELO_CHAT=nvidia/nemotron-3-super-120b-a12b:free
-GEMINI_MODELO_EMBEDDING=gemini-embedding-001
-```
-
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` é preferida; `NEXT_PUBLIC_SUPABASE_ANON_KEY` funciona como fallback. Nunca exponha `SUPABASE_SERVICE_ROLE_KEY` no navegador ou em variáveis `NEXT_PUBLIC_*`.
-
-### Preparação do Supabase
-
-Em um banco novo:
-
-1. execute [`db/modelagem.sql`](db/modelagem.sql) para criar tabelas, índices, extensão vetorial e a função de similaridade;
-2. execute [`db/rls.sql`](db/rls.sql) para habilitar RLS e as políticas atuais;
-3. crie o bucket privado configurado em `SUPABASE_STORAGE_BUCKET_INGESTAO` se for habilitar ingestão;
-4. crie um usuário em Supabase Auth;
-5. informe o UUID do projeto em `app_metadata.projeto_id` do usuário ou configure `DEFAULT_PROJETO_ID`.
-
-Os SQLs foram escritos para inicialização de um banco novo e não são migrações idempotentes.
-
-## Como o sistema funciona
-
-O fluxo principal é:
-
-1. observações numéricas alimentam regras do modelo;
-2. o motor normaliza cada sinal por comparação com a carteira (`zscore_carteira`) ou com o histórico do próprio cliente (`media_movel`);
-3. pesos consolidam os sinais em um score de risco de 0 a 100, com faixa saudável, atenção, alerta ou crítica;
-4. risco e impacto relativo da receita formam o score de prioridade mostrado na fila;
-5. a IA recebe a predição, seus motivos e casos historicamente semelhantes para produzir diagnóstico e plano;
-6. contatos, recuperações e cancelamentos fecham o ciclo operacional; recuperações e cancelamentos com uma ação informada viram memória vetorial para análises futuras.
-
-O diagrama completo, os limites entre frontend/API/domínio e o mapa das tabelas e endpoints estão em [`docs/fluxograma-projeto-mermaid.md`](docs/fluxograma-projeto-mermaid.md).
-
-## Estrutura do repositório
-
-```text
-app/
-  (app)/                 páginas autenticadas
-  api/                   Route Handlers da aplicação
-  health/[token]/        página pública compartilhável
-  login/                 autenticação
-components/              componentes React por feature
-hooks/                   estado e clientes HTTP da interface
-lib/
-  motor/                 normalização, score, faixas e prioridade
-  painel/                consultas e montagem dos view models
-  ia/                    LLM, embeddings, RAG, prompts e chat tools
-  ingestao/              leitura, mapeamento e normalização de planilhas
-  health/                configuração e leitura da página pública
-  supabase/              clientes browser/server/admin e proxy de sessão
-db/                      schema e políticas RLS
-docs/                    documentação funcional e técnica
-public/                  imagens e assets
-proxy.ts                 renovação de sessão e proteção de páginas
-```
-
-A dependência segue o sentido `app → components/hooks → lib`. Route Handlers devem validar a requisição e delegar regras para `lib/`; código de domínio não deve depender de componentes React.
-
-## Scripts
-
-| Comando | Uso |
+| Variável | O que é e onde obter |
 | --- | --- |
-| `npm run dev` | inicia o servidor de desenvolvimento |
-| `npm run build` | gera o build de produção |
-| `npm start` | executa o build de produção |
-| `npm run lint` | executa o ESLint |
+| `SUPABASE_URL` | URL do projeto Supabase — painel do Supabase > Project Settings > API (Project URL). |
+| `SUPABASE_ANON_KEY` | Chave pública (anon), usada no login — Project Settings > API. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço, só no servidor (ignora RLS) — Project Settings > API (service_role). Nunca a exponha no frontend. |
+| `DEFAULT_PROJETO_ID` | UUID do projeto usado quando o usuário não tem `app_metadata.projeto_id` — coluna `id` da tabela `projetos` (Table Editor). |
+| `SUPABASE_STORAGE_BUCKET_INGESTAO` | Bucket privado dos arquivos de ingestão (padrão `ingestao-raw`) — crie em Storage no painel do Supabase. |
+| `OPENROUTER_API_KEY` | Chave da LLM — openrouter.ai/keys. |
+| `OPENROUTER_MODELO_LLM` | Modelo do diagnóstico — escolha um ID em openrouter.ai/models (padrão já preenchido). |
+| `OPENROUTER_MODELO_CHAT` | Modelo do assistente; precisa suportar *tool calling* — openrouter.ai/models. |
+| `GEMINI_API_KEY` | Chave dos embeddings — Google AI Studio > API Keys (aistudio.google.com/apikey). |
+| `GEMINI_MODELO_EMBEDDING` | Modelo de embedding (padrão `gemini-embedding-001`). |
+| `APP_URL` | Endereço do frontend (padrão `http://localhost:5173`). |
+| `CORS_ORIGINS` | Origens liberadas para chamar a API, separadas por vírgula. |
+| `COOKIE_SECURE` | `true` quando a API estiver atrás de HTTPS (cookie de sessão seguro). |
 
-## Documentação complementar
+**frontend/.env** (opcional)
 
-- [`docs/fluxograma-projeto-mermaid.md`](docs/fluxograma-projeto-mermaid.md) — arquitetura e fluxos técnicos atuais
-- [`docs/setup.md`](docs/setup.md) — ingestão e mapeamento agnóstico
-- [`docs/motor-matematico.md`](docs/motor-matematico.md) — cálculo de risco e prioridade
-- [`docs/inteligencia.md`](docs/inteligencia.md) — RAG, diagnóstico e feedback
+| Variável | O que é e onde obter |
+| --- | --- |
+| `VITE_API_URL` | Endereço da API para onde o Vite encaminha `/api` (padrão `http://localhost:8000`). |
